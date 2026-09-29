@@ -1,6 +1,7 @@
 export interface BreadcrumbItem {
   name: string;
-  url: string;
+  url?: string;
+  item?: string; // Schema.org alias for url
 }
 
 const COMMON_SLUG_LABELS: Record<string, string> = {
@@ -39,7 +40,7 @@ export function generateAutoBreadcrumbs(
   const cleanPath = pathname.replace(/^\/+|\/+$/g, '');
 
   const breadcrumbs: BreadcrumbItem[] = [
-    { name: 'Home', url: `${cleanSiteUrl}/` }
+    { name: 'Home', url: `${cleanSiteUrl}/`, item: `${cleanSiteUrl}/` }
   ];
 
   if (!cleanPath) {
@@ -66,15 +67,18 @@ export function generateAutoBreadcrumbs(
     breadcrumbs.push({
       name: label,
       url: accumulatedPath,
+      item: accumulatedPath,
     });
   }
 
   // If a single slug post with category provided, insert category between Home and post
   if (segments.length === 1 && category && category.toLowerCase() !== 'home') {
     const catSlug = category.toLowerCase().replace(/\s+/g, '-');
+    const catUrl = `${cleanSiteUrl}/category/${catSlug}/`;
     breadcrumbs.splice(1, 0, {
       name: category,
-      url: `${cleanSiteUrl}/category/${catSlug}/`,
+      url: catUrl,
+      item: catUrl,
     });
   }
 

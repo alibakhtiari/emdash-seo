@@ -72,6 +72,12 @@ export interface SeoPluginOptions {
   business?: LocalBusinessInfo;
 }
 
+export interface BreadcrumbItem {
+  name: string;
+  url?: string;
+  item?: string; // Schema.org alias for url
+}
+
 export interface ContentCheck {
   id: string;
   label: string;
@@ -96,15 +102,25 @@ export interface AnalysisReport {
     imageCount: number;
     imagesWithoutAlt: number;
   };
+  keywordInTitle: boolean;
+  keywordInSlug: boolean;
+  keywordInDescription: boolean;
+  keywordInFirstParagraph: boolean;
+  keywordInSubheadings: boolean;
+  hasImagesWithAlt: boolean;
+  recommendations: string[];
 }
 
 export interface RedirectRule {
-  id: string;
-  pattern: string;
-  destination: string;
-  comparison: 'exact' | 'prefix' | 'regex';
-  statusCode: 301 | 302 | 307 | 410;
-  status: 'active' | 'inactive';
+  id?: string;
+  pattern?: string;
+  from?: string;
+  destination?: string;
+  to?: string;
+  comparison?: 'exact' | 'prefix' | 'regex';
+  matchType?: 'exact' | 'prefix' | 'regex';
+  statusCode?: 301 | 302 | 307 | 410 | number;
+  status?: 'active' | 'inactive';
 }
 
 export interface LinkGraphEntry {

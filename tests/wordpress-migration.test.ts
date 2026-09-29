@@ -71,14 +71,15 @@ describe("WordPress Migration Engine & Importers", () => {
 
   describe("Edge Redirect Matcher", () => {
     const redirects = [
-      { id: "1", pattern: "/services/carpet-cleaning", destination: "/services/deep-cleaning/", statusCode: 301 as const, comparison: "exact" as const, status: "active" as const },
-      { id: "2", pattern: "/old-blog/*", destination: "/posts/", statusCode: 301 as const, comparison: "prefix" as const, status: "active" as const },
+      { from: "/services/carpet-cleaning", to: "/services/deep-cleaning/", statusCode: 301, matchType: "exact" as const },
+      { from: "/old-blog/*", to: "/posts/", statusCode: 301, matchType: "prefix" as const },
     ];
 
     it("matches exact path redirect", () => {
       const match = matchRedirect("/services/carpet-cleaning", redirects);
       expect(match).not.toBeNull();
       expect(match?.destination).toBe("/services/deep-cleaning/");
+      expect(match?.to).toBe("/services/deep-cleaning/");
       expect(match?.statusCode).toBe(301);
     });
 
@@ -86,6 +87,7 @@ describe("WordPress Migration Engine & Importers", () => {
       const match = matchRedirect("/old-blog/spring-cleaning-tips", redirects);
       expect(match).not.toBeNull();
       expect(match?.destination).toBe("/posts/spring-cleaning-tips");
+      expect(match?.to).toBe("/posts/spring-cleaning-tips");
     });
 
     it("returns null for non-matching URLs", () => {

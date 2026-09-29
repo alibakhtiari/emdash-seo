@@ -161,7 +161,7 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
         "@type": "ListItem",
         "position": idx + 1,
         "name": crumb.name,
-        "item": crumb.url
+        "item": crumb.url || crumb.item
       }))
     });
   }

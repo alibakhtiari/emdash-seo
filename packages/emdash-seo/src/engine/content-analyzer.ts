@@ -3,7 +3,8 @@ import type { AnalysisReport, ContentCheck } from '../types.js';
 export interface ContentAnalyzeOptions {
   title: string;
   slug?: string;
-  content: string; // HTML or Markdown or raw text
+  content?: string; // HTML or Markdown or raw text
+  contentHtml?: string; // Alias for content
   focusKeywords: string[];
   metaDescription?: string;
   description?: string;
@@ -87,6 +88,13 @@ export function analyzeContent(options: ContentAnalyzeOptions): AnalysisReport {
         imageCount: imgMatches.length,
         imagesWithoutAlt: imgWithoutAlt,
       },
+      keywordInTitle: false,
+      keywordInSlug: false,
+      keywordInDescription: false,
+      keywordInFirstParagraph: false,
+      keywordInSubheadings: false,
+      hasImagesWithAlt: imgWithoutAlt === 0 && imgMatches.length > 0,
+      recommendations: checks.map((c) => c.message),
     };
   }
 
@@ -239,6 +247,14 @@ export function analyzeContent(options: ContentAnalyzeOptions): AnalysisReport {
   if (rawScore >= 80) grade = 'Good';
   else if (rawScore >= 60) grade = 'OK';
 
+  const keywordInTitle = checks.find(c => c.id === 'kw_in_title')?.passed ?? false;
+  const keywordInSlug = checks.find(c => c.id === 'kw_in_slug')?.passed ?? false;
+  const keywordInDescription = checks.find(c => c.id === 'kw_in_desc')?.passed ?? false;
+  const keywordInFirstParagraph = checks.find(c => c.id === 'kw_in_intro')?.passed ?? false;
+  const keywordInSubheadings = checks.find(c => c.id === 'kw_in_headings')?.passed ?? false;
+  const hasImagesWithAlt = checks.find(c => c.id === 'img_alt')?.passed ?? false;
+  const recommendations = checks.filter(c => !c.passed).map(c => c.message);
+
   return {
     score: rawScore,
     grade,
@@ -255,5 +271,12 @@ export function analyzeContent(options: ContentAnalyzeOptions): AnalysisReport {
       imageCount: imgMatches.length,
       imagesWithoutAlt: imgWithoutAlt,
     },
+    keywordInTitle,
+    keywordInSlug,
+    keywordInDescription,
+    keywordInFirstParagraph,
+    keywordInSubheadings,
+    hasImagesWithAlt,
+    recommendations,
   };
 }

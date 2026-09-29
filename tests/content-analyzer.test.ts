@@ -13,7 +13,7 @@ describe("Content Analyzer", () => {
     `;
 
     const result = analyzeContent({
-      content: html,
+      contentHtml: html,
       focusKeywords: ["carpet cleaning london"],
       title: "Professional Carpet Cleaning London | CleanPro",
       description: "Book expert carpet cleaning london with CleanPro. 5.0-star rated cleaning specialists.",
@@ -22,6 +22,12 @@ describe("Content Analyzer", () => {
     });
 
     expect(result.score).toBeGreaterThanOrEqual(80);
+    expect(result.keywordInTitle).toBe(true);
+    expect(result.keywordInSlug).toBe(true);
+    expect(result.keywordInDescription).toBe(true);
+    expect(result.keywordInFirstParagraph).toBe(true);
+    expect(result.keywordInSubheadings).toBe(true);
+    expect(result.hasImagesWithAlt).toBe(true);
     expect(result.checks.find((c) => c.id === "kw_in_title")?.passed).toBe(true);
     expect(result.checks.find((c) => c.id === "kw_in_slug")?.passed).toBe(true);
     expect(result.checks.find((c) => c.id === "kw_in_desc")?.passed).toBe(true);
@@ -38,7 +44,7 @@ describe("Content Analyzer", () => {
     `;
 
     const result = analyzeContent({
-      content: html,
+      contentHtml: html,
       focusKeywords: ["carpet cleaning london"],
       title: "About Us",
       description: "Just a regular page.",
@@ -46,6 +52,12 @@ describe("Content Analyzer", () => {
     });
 
     expect(result.score).toBeLessThan(60);
+    expect(result.keywordInTitle).toBe(false);
+    expect(result.keywordInSlug).toBe(false);
+    expect(result.keywordInDescription).toBe(false);
+    expect(result.keywordInFirstParagraph).toBe(false);
+    expect(result.hasImagesWithAlt).toBe(false);
+    expect(result.recommendations.length).toBeGreaterThan(0);
     expect(result.checks.find((c) => c.id === "kw_in_title")?.passed).toBe(false);
     expect(result.checks.find((c) => c.id === "kw_in_slug")?.passed).toBe(false);
     expect(result.checks.find((c) => c.id === "kw_in_desc")?.passed).toBe(false);

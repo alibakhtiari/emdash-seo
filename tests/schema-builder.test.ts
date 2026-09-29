@@ -12,8 +12,8 @@ describe("Connected JSON-LD Schema Builder", () => {
       description: "Professional web development and design services.",
       business: DEFAULT_LOCAL_BUSINESS,
       breadcrumbs: [
-        { name: "Home", url: "https://example.com/" },
-        { name: "Services", url: "https://example.com/services/" },
+        { name: "Home", item: "https://example.com/" },
+        { name: "Services", item: "https://example.com/services/" },
         { name: "Web Development", url: "https://example.com/services/web-development/" },
       ],
       faqs: [

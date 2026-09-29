@@ -14,8 +14,10 @@ describe("Breadcrumbs and Table of Contents", () => {
       expect(trail.length).toBe(4);
       expect(trail[0].name).toBe("Home");
       expect(trail[0].url).toBe("https://example.com/");
+      expect(trail[0].item).toBe("https://example.com/");
       expect(trail[1].name).toBe("Services");
       expect(trail[1].url).toBe("https://example.com/services/");
+      expect(trail[1].item).toBe("https://example.com/services/");
       expect(trail[2].name).toBe("Web Development");
       expect(trail[2].url).toBe("https://example.com/services/web-development/");
       expect(trail[3].name).toBe("Frontend Engineering");
