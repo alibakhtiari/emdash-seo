@@ -1,14 +1,44 @@
-node_modules
-dist
-.astro
+# Build and runtime outputs
+node_modules/
+dist/
+.astro/
 .emdash/migrations.json
-uploads
-data.db
-.wrangler
+.wrangler/
+data.db*
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+uploads/
+tmp/
 
-# Environment / Wrangler secrets
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment and secrets
 .env
 .env.*
 !.env.example
 .dev.vars
 .dev.vars.*
+
+# Operating System files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE & Editor files
+.idea/
+*.sublime-project
+*.sublime-workspace
+.vscode/*
+!.vscode/extensions.json
