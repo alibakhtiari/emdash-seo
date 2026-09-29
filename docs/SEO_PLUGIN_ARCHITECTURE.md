@@ -11,7 +11,8 @@ The **EmDash SEO Suite** is built with three core design tenets:
    * Pure TypeScript compiled to modern ES modules.
    * Utilizes standard Web APIs: `URL`, `crypto`, `ReadableStream`, `Headers`, `Response`.
    * Minimal bundle footprint (< 35 KB minified), keeping the total worker bundle far below Cloudflare's 1 MB compressed limit.
-3. **Best-of-WordPress SEO Parity:**
+3. **Best-of-WordPress SEO Parity & Native Interoperability:**
+   * Complements EmDash's built-in SEO features (see [`docs/references/EMDASH_BUILTIN_SEO.md`](references/EMDASH_BUILTIN_SEO.md)).
    * Native equivalents for Rank Math Pro and Yoast SEO Premium features: variable templating, real-time on-page content scoring, dynamic XML sitemaps, robots.txt, connected JSON-LD `@graph`, redirect engine, 404 monitoring, and internal link graph.
 
 ---
@@ -106,6 +107,21 @@ Constructs an interconnected `@graph` avoiding fragmented or conflicting schema 
 * Middleware evaluates incoming paths against D1 redirect rules.
 * Supports exact match (`/old-service/` $\rightarrow$ `/services/new-service/`), prefix matching, and regex rules.
 * 404 hit tracking aggregates frequency and referrers to prevent broken backlinks.
+
+### 3.6 Edge AI Search Protocols (`src/routes/llms-txt.ts`)
+* Dynamic edge rendering of `/llms.txt` (summary) and `/llms-full.txt` (full knowledge base) for LLM crawlers (Perplexity, ChatGPT, Claude, Gemini).
+* Automatically resolves business details, core services, system architecture, and API documentation with zero disk file dependencies.
+* Dynamic cache headers (`public, max-age=3600, s-maxage=86400`) and standard `text/markdown; charset=utf-8` MIME type.
+
+### 3.7 Automated Breadcrumbs & Table of Contents (`src/engine/breadcrumbs.ts`, `src/engine/toc.ts`)
+* **Breadcrumbs:** Computes hierarchical navigation trails from URL pathname, emits accessible microdata via `<Breadcrumbs.astro>` and Google `BreadcrumbList` schema.
+* **Table of Contents:** Parses `<h2>` and `<h3>` headings from post content, auto-injects slugified anchor IDs, and emits Google `ItemList` jump-link schema via `<TableOfContents.astro>`.
+
+### 3.8 WordPress Ingestion & Lifecycle Interception (`src/importers/rankmath-importer.ts`, `src/index.ts`)
+* Intercepts EmDash's native `content:beforeSave` lifecycle hook during `emdash site import` or Admin UI Transfer.
+* Elevates raw `meta._rankmath` and `meta._yoast` into first-class `data.seo` metadata (keywords, canonicals, robots directives, social cards).
+* Automatically detects and extracts Gutenberg / Kadence FAQ blocks into `data.seo.faqs` for `<FaqBlock.astro>` rendering with `FAQPage` schema.
+* Detects and strips static Gutenberg Table of Contents blocks (`stripRankMathTocBlock`), enabling responsive dynamic TOC rendering without duplicate headings.
 
 ---
 

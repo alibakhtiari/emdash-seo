@@ -140,46 +140,43 @@ The migration engine supports importing metadata from:
 3. **All in One SEO (AIOSEO) & SEOPress:**
    * Auto-mapping from `_aioseo_*` and `_seopress_*` equivalents.
 
-### 4.2 Two-Pronged Migration Pipeline
+### 4.2 Native Migration Pipeline & Plugin Interception
 
 ```mermaid
 graph TD
-    A[WordPress Source Site] --> B{Authentication Method}
-    B -->|Option 1: Direct REST API| C[WP REST API + Application Password in .env]
-    B -->|Option 2: Helper Plugin / WXR| D[emdash-export-helper.php / WXR XML]
-    C --> E[Migration Script: scripts/migrate-wordpress.ts]
-    D --> E
-    E --> F[Content & Block Parser]
-    E --> G[Rank Math / Yoast Meta Normalizer]
-    E --> H[Redirects & Schema Extractor]
-    F --> I[Emdash Collections / D1 Database]
-    G --> I
-    H --> I
-    I --> J[Astro + Emdash Edge Application]
+    A[WordPress Source Site] --> B{Migration Ingestion}
+    B -->|Native REST / Admin UI Transfer| C[EmDash Native Migrator: emdash site import]
+    B -->|Optional Custom Tables / Redirects| D[Companion Helper: emdash-export-helper.php]
+    C --> E[EmDash Ingestion Engine]
+    E --> F[Plugin Hook: content:beforeSave]
+    F --> G[Rank Math & Yoast Meta Parser]
+    F --> H[FAQ Block Extractor: data.seo.faqs]
+    F --> I[TOC Cleaner: Strip static blocks for dynamic TOC]
+    G --> J[Cloudflare D1 / Local SQLite]
+    H --> J
+    I --> J
+    D -->|Export wp_rank_math_redirections| K[Edge Redirect Engine: src/routes/redirects.ts]
+    K --> J
+    J --> L[Astro + EmDash Edge Application]
 ```
 
-#### Dual Connection Options:
-1. **Direct REST API with Application Password:**
-   * Configured in `.env`:
-     ```env
-     WP_URL="https://my-wordpress-site.com"
-     WP_USER="<wordpress_username>"
-     WP_APP_PASSWORD="<application_password>"
-     ```
-   * Queries `/wp-json/wp/v2/posts`, `/wp-json/wp/v2/pages`, `/wp-json/wp/v2/media`, `/wp-json/wp/v2/categories` with HTTP Basic Authentication.
-   * Accesses protected meta fields without modifying WordPress files.
-2. **Helper WordPress Export Plugin (`scripts/emdash-export-helper.php`):**
-   * Single-file drop-in plugin for WordPress.
-   * Exposes authenticated endpoint `/wp-json/emdash-export/v1/all`.
-   * Directly exports custom tables like `wp_rank_math_redirections`, global Rank Math settings (`rank_math_options_*`), and rich custom schemas in a single payload.
+#### Dual Connection Architecture:
+1. **EmDash Native Migrator (`emdash site import` or Admin UI Transfer):**
+   * Uses EmDash's official migration engine to ingest posts, pages, categories, tags, and media directly via the standard WordPress REST API.
+   * As each entry is processed, `@emdash/plugin-seo`'s `content:beforeSave` lifecycle hook intercepts the entry, extracts SEO metadata from `meta._rankmath` and `meta._yoast`, parses FAQ blocks into structured `data.seo.faqs`, and cleans static TOC blocks so dynamic sitelink jump schemas can be generated.
+2. **Companion Helper WordPress Export Plugin (`scripts/emdash-export-helper.php`):**
+   * Lightweight companion plugin for the WordPress source site.
+   * Exposes authenticated endpoint `/wp-json/emdash-export/v1/redirections` to export custom database tables (`wp_rank_math_redirections` or `redirection_items`) that standard WP REST API endpoints omit.
+   * Completely standalone and does not modify upstream plugins (e.g. `wp-emdash`), preserving modularity.
 
-### 4.3 EmDash Native Migrator: Evaluation & Extension Strategy
-* **Native Capability:** EmDash includes a native import engine (`#import/*`) with WXR XML ingestion and a WordPress REST/plugin probe (`wordpress-plugin.ts`).
-* **The Gap in Core EmDash:** Core EmDash preserves `post.rankmath` and `post.yoast` only as raw unparsed objects in `meta._rankmath` and `meta._yoast`. It does not parse focus keywords, robots directives, canonicals, rich schemas (`CleaningService`, `LocalBusiness`, `FAQPage`), breadcrumbs, or the `wp_rank_math_redirections` database table.
-* **Our Recommendation & Architecture:** **Yes, we extend EmDash's native importer** to provide seamless interoperability:
-  1. **Lifecycle Interception:** Our `@emdash/plugin-seo` hook (`content:beforeSave`) automatically detects any entry imported by EmDash with `meta._rankmath` or `meta._yoast`, parsing and elevating it into first-class `data.seo` schema.
-  2. **Headless & CLI Speed:** For automated deployments and local development, our CLI script `scripts/migrate-wordpress.ts` directly consumes WP REST API or helper exports, populating `seed/seed.json` so you do not have to navigate manual UI wizards.
-  3. **Table & Redirect Ingestion:** The helper export plugin (`scripts/emdash-export-helper.php`) bridges the gap for custom tables that standard WP REST API omits (such as 301 redirects from `wp_rank_math_redirections`).
+### 4.3 EmDash Native Migrator: Lifecycle Interception Strategy
+* **Native Ingestion Foundation:** Rather than maintaining duplicate standalone migration scripts, the architecture leverages EmDash's official migrator (`emdash site import` CLI command or the Admin UI Site Transfer tool).
+* **The Gap in Core EmDash:** Core EmDash preserves `post.rankmath` and `post.yoast` only as raw unparsed objects in `meta._rankmath` and `meta._yoast`. It does not parse focus keywords, robots directives, canonicals, rich schemas (`CleaningService`, `LocalBusiness`, `FAQPage`), FAQ blocks, or TOC jump links.
+* **Seamless Extension via Lifecycle Hooks:** `@emdash/plugin-seo` bridges this gap natively:
+  1. **Lifecycle Interception:** The plugin registers a `content:beforeSave` hook in `src/index.ts`. Any entry imported with `meta._rankmath` or `meta._yoast` is automatically parsed and elevated into first-class `data.seo` attributes.
+  2. **FAQ Block Extraction:** Automatically identifies Rank Math FAQ blocks (`<!-- wp:rank-math/faq-block -->` or `div#rank-math-faq`) in Gutenberg content, extracts questions and answers into `data.seo.faqs`, and outputs Google-compliant `FAQPage` schema.
+  3. **Table of Contents Modernization:** Detects static Rank Math TOC blocks (`<!-- wp:rank-math/toc-block -->` or `#rank-math-toc`) and strips them from post content so the dynamic `<TableOfContents />` component can render responsive navigation with Google `ItemList` jump link schema.
+  4. **Custom Table Ingestion:** The companion helper plugin (`scripts/emdash-export-helper.php`) provides an export for `wp_rank_math_redirections` for Cloudflare D1 edge redirect tables.
 
 ---
 
@@ -337,12 +334,12 @@ packages/emdash-seo/
    * Build `SeoHead.astro` for instant drop-in to Astro layouts.
 3. **Step 3: Protocol & Edge Routes:**
    * Dynamic `/sitemap.xml` and `/sitemap-index.xml` with image extensions.
-   * Dynamic `/robots.txt` and AI crawler `/llms.txt`.
+   * Dynamic `/robots.txt` and AI search `/llms.txt` & `/llms-full.txt`.
    * Edge redirect processor and 404 logging route.
 4. **Step 4: WordPress Migration Pipeline:**
-   * Build `scripts/migrate-wordpress.ts` with direct WP REST API authentication and Rank Math meta extractor.
-   * Create optional helper plugin `scripts/emdash-export-helper.php`.
-   * Run extraction for pages, posts, services, locations, reviews, and 301 redirects.
+   * Native EmDash migration (`emdash site import` and Admin UI Transfer) integrated with `@emdash/plugin-seo`'s `content:beforeSave` hook.
+   * Auto-detection and parsing of Rank Math / Yoast SEO metadata, FAQ blocks (`data.seo.faqs`), and TOC block modernization.
+   * Companion export helper plugin `scripts/emdash-export-helper.php` for migrating `wp_rank_math_redirections` directly to Cloudflare D1.
 5. **Step 5: Frontend Assembly & Verification:**
    * Assemble Astro templates with modern, accessible UI components (hero, service cards, testimonials, FAQ accordion, quote booking CTA).
    * Test build and edge execution on Cloudflare Free Worker profile (<10ms CPU, <1MB bundle size).

@@ -19,10 +19,7 @@
     "lint:fix": "eslint . --fix",
     "typecheck": "astro check && tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "test:seo": "tsx scripts/test-seo-plugin.ts",
-    "migrate:wp": "emdash site import",
-    "seed:d1": "emdash seed seed/seed.json"
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.1",

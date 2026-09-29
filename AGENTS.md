@@ -46,12 +46,10 @@ pnpm run typecheck        # Run Astro diagnostic checks and TypeScript --noEmit
 pnpm run dev              # Start Astro & EmDash dev server (http://localhost:4321)
 pnpm run build            # Compile production Cloudflare Workers bundle to dist/
 pnpm run preview          # Preview local production build
-
-# WordPress Migration
-pnpm run migrate:wp       # Ingest posts, pages, services, FAQs, and Rank Math metadata
-pnpm run migrate:helper   # Pull custom wp_rank_math_redirections from helper plugin
-pnpm run seed:d1          # Apply seed/seed.json into Cloudflare D1 / local SQLite
 ```
+
+> **WordPress Migration:** Use the native EmDash Admin GUI at `http://localhost:4321/_emdash/admin` $\rightarrow$ **Settings** $\rightarrow$ **Transfer / Import** to import posts, pages, and media directly from your WordPress site.
+
 
 ---
 
@@ -62,7 +60,10 @@ pnpm run seed:d1          # Apply seed/seed.json into Cloudflare D1 / local SQLi
 │   ├── PRD.md                   # Product Requirements Document
 │   ├── MIGRATION_PLAN.md        # Site inventory, Kadence mappings, and redirect map
 │   ├── SEO_PLUGIN_ARCHITECTURE.md # Technical design of @emdash/plugin-seo
-│   └── WP_IMPORT_GUIDE.md       # WordPress REST API auth & meta mappings
+│   ├── WP_IMPORT_GUIDE.md       # WordPress REST API auth & meta mappings
+│   ├── EMDASH_ASTRO_NATIVE_COMPARISON.md # Native vs Plugin audit & extension guide
+│   └── references/
+│       └── EMDASH_BUILTIN_SEO.md # Official EmDash built-in SEO reference guide
 ├── packages/
 │   └── emdash-seo/              # Standalone SEO Suite (@emdash/plugin-seo)
 │       ├── package.json
@@ -71,15 +72,11 @@ pnpm run seed:d1          # Apply seed/seed.json into Cloudflare D1 / local SQLi
 │       │   ├── types.ts         # Strict TypeScript definitions
 │       │   ├── config.ts        # Templating & default business entity
 │       │   ├── engine/          # Content analyzer, schema builder, breadcrumbs, TOC
-│       │   ├── routes/          # Sitemaps, robots.txt, llms.txt, redirects
+│       │   ├── routes/          # Sitemaps, robots.txt, dynamic llms.txt & llms-full.txt, redirects
 │       │   ├── head/            # SeoHead.astro, SchemaGraph.astro, OpenGraph.astro
 │       │   └── components/      # Breadcrumbs.astro, TableOfContents.astro, FaqBlock.astro
-├── public/                      # Static assets
-│   ├── llms.txt                 # AI search summary
-│   └── llms-full.txt            # Deep knowledge base for LLM search engines
 ├── scripts/
-│   ├── migrate-wordpress.ts     # Direct WordPress REST API migration CLI
-│   ├── emdash-export-helper.php # 1-file helper WordPress export plugin
+│   ├── emdash-export-helper.php # 1-file companion helper plugin for custom table redirects
 │   └── test-seo-plugin.ts       # Comprehensive SEO verification runner
 ├── seed/
 │   └── seed.json                # Seed database with sample services & blog posts
@@ -100,6 +97,23 @@ pnpm run seed:d1          # Apply seed/seed.json into Cloudflare D1 / local SQLi
 ├── vitest.config.ts             # Vitest test runner configuration
 └── wrangler.jsonc               # Cloudflare Workers bindings (D1 & R2)
 ```
+
+---
+
+## 🌐 EmDash Built-in SEO & Suite Interoperability
+
+EmDash provides baseline SEO out-of-the-box:
+1. **Collection Level:** Collections define `supports: ["seo"]`, enabling the **SEO Panel** in the admin entry editor (SEO Title, Meta Description, OG Image, Canonical URL, No-Index).
+2. **Head Rendering:** `<EmDashHead page={page} />` consumes `createPublicPageContext()` to render basic OpenGraph, Twitter card, robots, and article publication tags.
+3. **Core Protocols:** EmDash automatically serves `/sitemap.xml`, `/sitemap-{collection}.xml`, and `/robots.txt`.
+4. **Edge Redirects & 404 Logging:** EmDash handles path redirects (301, 302, 307, 308, 410) and tracks 404 errors in SQLite / D1.
+
+👉 **Complete Built-in SEO Guide:** See [`docs/references/EMDASH_BUILTIN_SEO.md`](docs/references/EMDASH_BUILTIN_SEO.md) for full official documentation.
+
+### How `@emdash/plugin-seo` Extends Built-in SEO:
+- **Dual Head Architecture:** In `src/layouts/Base.astro`, `<SeoHead />` runs alongside `<EmDashHead />`. `<EmDashHead />` handles core page context & verification tags, while `<SeoHead />` injects the complete connected JSON-LD `@graph` (`LocalBusiness`, `Organization`, `Service`, `AggregateRating`, `FAQPage`, `BreadcrumbList`, and `ItemList`).
+- **Gutenberg & Rank Math Ingestion:** During EmDash Native Site Transfer (`/_emdash/admin` $\rightarrow$ Settings $\rightarrow$ Transfer / Import), the plugin's `content:beforeSave` lifecycle hook intercepts entries, maps Rank Math / Yoast metadata into `data.seo`, auto-extracts FAQ blocks into `data.seo.faqs`, and strips static TOC blocks for dynamic Astro component rendering.
+- **AI Search Optimization:** Adds edge-rendered `/llms.txt` and `/llms-full.txt` markdown endpoints for LLM crawlers without filesystem dependencies.
 
 ---
 

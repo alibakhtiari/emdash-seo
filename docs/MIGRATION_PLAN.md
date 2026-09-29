@@ -107,8 +107,9 @@ WordPress block elements are parsed and transformed during migration:
 
 | WordPress / Block Element | Transformation in EmDash & Astro |
 | :--- | :--- |
+| `<!-- wp:rank-math/faq-block -->` / `div#rank-math-faq` / Kadence Accordions | Auto-extracted into structured `data.seo.faqs` by the `content:beforeSave` hook and rendered via `<FaqBlock.astro>` with Google `FAQPage` schema |
+| `<!-- wp:rank-math/toc-block -->` / `#rank-math-toc` | Detected and cleanly stripped from post body by `content:beforeSave`, dynamically rendered via `<TableOfContents.astro>` with heading slug anchors and Google `ItemList` jump links |
 | `wp:kadence/rowlayout` / Gutenberg columns | Responsive CSS Grid / Flexbox Astro container (`Container.astro`) |
-| `div#rank-math-faq` / Yoast FAQ blocks | Native Accessible Astro Accordion component (`FaqAccordion.astro` / `FaqBlock.astro`) |
 | `wp:image` | Astro `<Image />` component with automated WebP/AVIF format and responsive `srcset` |
 | Info Box & Icons | Modern SVG feature badges with zero runtime CSS overhead |
 | Form Plugins | Modern Astro server endpoint `/api/contact` posting directly to email / CRM |
@@ -122,15 +123,19 @@ sequenceDiagram
     autonumber
     actor Admin as Developer / Migration Engineer
     participant WP as WordPress Source Site
-    participant Script as scripts/migrate-wordpress.ts
+    participant Helper as Helper Plugin (emdash-export-helper.php)
+    participant Migrator as EmDash Native Migrator (emdash site import)
+    participant Hook as SEO Plugin Hook (content:beforeSave)
     participant D1 as Cloudflare D1 / Local SQLite
     participant Astro as Astro + EmDash Frontend
 
-    Admin->>WP: Configure Application Password or install helper plugin
-    Admin->>Script: Run pnpm run migrate:wp
-    Script->>WP: Fetch all Posts, Pages, Media & SEO Plugin Meta
-    Script->>Script: Transform HTML & blocks to PortableText & JSON-LD
-    Script->>D1: Seed D1 with entries, categories, tags, and redirects
+    Admin->>WP: (Optional) Install helper plugin for custom tables/redirects
+    Admin->>Migrator: Launch Import via Admin GUI (Settings -> Transfer / Import)
+    Migrator->>WP: Ingest Posts, Pages, Categories, Tags & Media via WP REST API
+    Migrator->>Hook: Trigger content:beforeSave for each entry
+    Hook->>Hook: Parse Rank Math/Yoast SEO meta, extract FAQs, and strip static TOC
+    Hook->>D1: Save normalized entries to D1 with data.seo
+    Admin->>Helper: Export wp_rank_math_redirections into edge redirects table
     Admin->>Astro: Run pnpm dev to verify preview & SEO audit
     Astro->>Admin: 100/100 Health Score & SERP Previews verified
 ```
