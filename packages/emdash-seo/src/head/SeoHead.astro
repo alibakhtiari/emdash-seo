@@ -1,0 +1,136 @@
+---
+import OpenGraph from './OpenGraph.astro';
+import SchemaGraph from './SchemaGraph.astro';
+import { resolveSeoVariables, DEFAULT_OPTIONS, DEFAULT_4SEASONS_BUSINESS } from '../config.js';
+import type { EntrySeoMetadata, LocalBusinessInfo, FaqItem } from '../types.js';
+import { generateAutoBreadcrumbs, type BreadcrumbItem } from '../engine/breadcrumbs.js';
+import { extractTableOfContents, type TocItem } from '../engine/toc-extractor.js';
+import { extractFaqsFromContent } from '../importers/rankmath-importer.js';
+
+interface Props {
+  entry?: any;
+  title?: string;
+  description?: string;
+  image?: string;
+  canonicalUrl?: string;
+  type?: 'website' | 'article' | 'service';
+  siteUrl?: string;
+  siteName?: string;
+  business?: LocalBusinessInfo;
+  breadcrumbs?: BreadcrumbItem[];
+  toc?: TocItem[];
+  content?: string;
+  category?: string;
+  publishedTime?: string;
+  modifiedTime?: string;
+  author?: string;
+}
+
+const {
+  entry,
+  title: propTitle,
+  description: propDescription,
+  image: propImage,
+  canonicalUrl: propCanonical,
+  type = 'website',
+  siteUrl = DEFAULT_OPTIONS.siteUrl,
+  siteName = DEFAULT_OPTIONS.siteName,
+  business = DEFAULT_4SEASONS_BUSINESS,
+  breadcrumbs: propBreadcrumbs,
+  toc: propToc,
+  content = '',
+  category,
+  publishedTime,
+  modifiedTime,
+  author,
+} = Astro.props;
+
+const seo: EntrySeoMetadata = entry?.data?.seo || entry?.seo || {
+  focusKeywords: [],
+  noIndex: false,
+  noFollow: false,
+};
+
+const rawTitle = seo.metaTitle || propTitle || entry?.data?.title || siteName;
+const fullTitle = rawTitle.includes(siteName)
+  ? rawTitle
+  : `${rawTitle} | ${siteName}`;
+
+const resolvedDescription = seo.metaDescription || propDescription || entry?.data?.excerpt || '';
+
+const currentPath = Astro.url.pathname;
+const cleanSiteUrl = siteUrl.replace(/\/+$/, '');
+const computedCanonical = `${cleanSiteUrl}${currentPath.endsWith('/') ? currentPath : `${currentPath}/`}`;
+const finalCanonical = seo.canonicalUrl || propCanonical || computedCanonical;
+
+const finalImage = seo.ogImage || propImage || entry?.data?.featured_image || DEFAULT_OPTIONS.defaultOgImage;
+
+// Robots directive
+let robotsDirective: string | null = null;
+if (seo.noIndex) {
+  robotsDirective = 'noindex, nofollow';
+} else {
+  const directives = ['index', 'follow'];
+  if (seo.noArchive) directives.push('noarchive');
+  if (seo.noSnippet) directives.push('nosnippet');
+  if (seo.maxImagePreview) directives.push(`max-image-preview:${seo.maxImagePreview}`);
+  robotsDirective = directives.join(', ');
+}
+
+// 1. Automatic Breadcrumbs
+const breadcrumbs: BreadcrumbItem[] =
+  propBreadcrumbs && propBreadcrumbs.length > 0
+    ? propBreadcrumbs
+    : generateAutoBreadcrumbs(currentPath, siteUrl, rawTitle, category || entry?.data?.category);
+
+// 2. Automatic Table of Contents
+let toc: TocItem[] = propToc || [];
+if (toc.length === 0 && content) {
+  const tocResult = extractTableOfContents(content);
+  toc = tocResult.toc;
+}
+
+// 3. Automatic FAQs
+if ((!seo.faqs || seo.faqs.length === 0) && content) {
+  const extractedFaqs = extractFaqsFromContent(content);
+  if (extractedFaqs.length > 0) {
+    seo.faqs = extractedFaqs;
+  }
+}
+---
+
+<!-- Core Primary Meta Tags -->
+<title>{fullTitle}</title>
+{resolvedDescription && <meta name="description" content={resolvedDescription} />}
+<link rel="canonical" href={finalCanonical} />
+{robotsDirective && <meta name="robots" content={robotsDirective} />}
+
+<!-- OpenGraph & Twitter Cards -->
+<OpenGraph
+  title={seo.ogTitle || fullTitle}
+  description={seo.ogDescription || resolvedDescription}
+  url={finalCanonical}
+  image={finalImage}
+  type={seo.ogType || type}
+  siteName={siteName}
+  twitterCard={seo.twitterCard || 'summary_large_image'}
+/>
+
+<!-- Connected JSON-LD Schema Graph -->
+<SchemaGraph
+  siteUrl={cleanSiteUrl}
+  siteName={siteName}
+  canonicalUrl={finalCanonical}
+  title={fullTitle}
+  description={resolvedDescription}
+  imageUrl={finalImage}
+  datePublished={publishedTime || entry?.createdAt}
+  dateModified={modifiedTime || entry?.updatedAt}
+  authorName={author}
+  breadcrumbs={breadcrumbs}
+  pathname={currentPath}
+  category={category || entry?.data?.category}
+  toc={toc}
+  seo={seo}
+  business={business}
+/>

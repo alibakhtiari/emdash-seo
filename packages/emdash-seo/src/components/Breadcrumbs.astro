@@ -1,0 +1,101 @@
+---
+import { generateAutoBreadcrumbs, type BreadcrumbItem } from '../engine/breadcrumbs.js';
+import { DEFAULT_OPTIONS } from '../config.js';
+
+interface Props {
+  items?: BreadcrumbItem[];
+  siteUrl?: string;
+  currentTitle?: string;
+  category?: string;
+  class?: string;
+}
+
+const {
+  items,
+  siteUrl = DEFAULT_OPTIONS.siteUrl,
+  currentTitle,
+  category,
+  class: className = '',
+} = Astro.props;
+
+const currentPath = Astro.url.pathname;
+const breadcrumbs: BreadcrumbItem[] =
+  items && items.length > 0
+    ? items
+    : generateAutoBreadcrumbs(currentPath, siteUrl, currentTitle, category);
+---
+
+{breadcrumbs.length > 1 && (
+  <nav class={`breadcrumbs-nav ${className}`} aria-label="Breadcrumb">
+    <ol class="breadcrumbs-list" itemscope itemtype="https://schema.org/BreadcrumbList">
+      {breadcrumbs.map((crumb, index) => {
+        const isLast = index === breadcrumbs.length - 1;
+        return (
+          <li
+            class="breadcrumb-item"
+            itemprop="itemListElement"
+            itemscope
+            itemtype="https://schema.org/ListItem"
+          >
+            {isLast ? (
+              <span class="breadcrumb-current" itemprop="name" aria-current="page">
+                {crumb.name}
+              </span>
+            ) : (
+              <a href={crumb.url} class="breadcrumb-link" itemprop="item">
+                <span itemprop="name">{crumb.name}</span>
+              </a>
+            )}
+            <meta itemprop="position" content={String(index + 1)} />
+            {!isLast && <span class="breadcrumb-separator" aria-hidden="true">/</span>}
+          </li>
+        );
+      })}
+    </ol>
+  </nav>
+)}
+
+<style>
+  .breadcrumbs-nav {
+    padding: var(--spacing-3, 0.75rem) 0;
+    font-size: var(--font-size-sm, 0.875rem);
+    color: var(--color-muted, #6b7280);
+  }
+
+  .breadcrumbs-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    gap: 0.35rem;
+  }
+
+  .breadcrumb-item {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .breadcrumb-link {
+    color: var(--color-text-secondary, #4b5563);
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+
+  .breadcrumb-link:hover {
+    color: var(--color-brand, #0284c7);
+    text-decoration: underline;
+  }
+
+  .breadcrumb-current {
+    color: var(--color-text, #111827);
+    font-weight: 500;
+  }
+
+  .breadcrumb-separator {
+    margin: 0 0.35rem;
+    color: var(--color-border, #d1d5db);
+    user-select: none;
+  }
+</style>

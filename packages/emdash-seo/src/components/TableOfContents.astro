@@ -1,0 +1,132 @@
+---
+import { extractTableOfContents, type TocItem } from '../engine/toc-extractor.js';
+
+interface Props {
+  content?: string;
+  items?: TocItem[];
+  title?: string;
+  collapsible?: boolean;
+  class?: string;
+}
+
+const {
+  content = '',
+  items,
+  title = "In this article",
+  collapsible = false,
+  class: className = '',
+} = Astro.props;
+
+let tocList: TocItem[] = [];
+if (items && items.length > 0) {
+  tocList = items;
+} else if (content) {
+  const result = extractTableOfContents(content);
+  tocList = result.toc;
+}
+---
+
+{tocList.length > 0 && (
+  <nav class={`toc-container ${className}`} aria-label="Table of Contents" itemscope itemtype="https://schema.org/SiteNavigationElement">
+    <div class="toc-header">
+      <span class="toc-icon" aria-hidden="true">≡</span>
+      <h3 class="toc-title">{title}</h3>
+    </div>
+    <ul class="toc-list">
+      {tocList.map((item) => (
+        <li class={`toc-item toc-level-${item.level}`}>
+          <a href={`#${item.id}`} class="toc-link" itemprop="url">
+            <span itemprop="name">{item.text}</span>
+          </a>
+          {item.children && item.children.length > 0 && (
+            <ul class="toc-sublist">
+              {item.children.map((sub) => (
+                <li class="toc-subitem">
+                  <a href={`#${sub.id}`} class="toc-sublink" itemprop="url">
+                    <span itemprop="name">{sub.text}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+        </li>
+      ))}
+    </ul>
+  </nav>
+)}
+
+<style>
+  .toc-container {
+    background: var(--color-surface, #f9fafb);
+    border: 1px solid var(--color-border, #e5e7eb);
+    border-radius: var(--radius-xl, 1rem);
+    padding: var(--spacing-5, 1.25rem) var(--spacing-6, 1.5rem);
+    margin: var(--spacing-6, 1.5rem) 0;
+  }
+
+  .toc-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: var(--spacing-3, 0.75rem);
+  }
+
+  .toc-icon {
+    font-size: 1.2rem;
+    color: var(--color-brand, #0284c7);
+  }
+
+  .toc-title {
+    font-size: var(--font-size-base, 1rem);
+    font-weight: 700;
+    color: var(--color-text, #111827);
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .toc-list, .toc-sublist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .toc-item {
+    margin-bottom: 0.4rem;
+    line-height: 1.45;
+  }
+
+  .toc-link {
+    color: var(--color-text-secondary, #4b5563);
+    text-decoration: none;
+    font-size: var(--font-size-sm, 0.875rem);
+    transition: color 0.15s ease;
+    display: inline-block;
+  }
+
+  .toc-link:hover {
+    color: var(--color-brand, #0284c7);
+    text-decoration: underline;
+  }
+
+  .toc-sublist {
+    padding-left: 1rem;
+    margin-top: 0.25rem;
+    border-left: 1px solid var(--color-border-subtle, #e5e7eb);
+  }
+
+  .toc-subitem {
+    margin-bottom: 0.3rem;
+  }
+
+  .toc-sublink {
+    color: var(--color-muted, #6b7280);
+    text-decoration: none;
+    font-size: var(--font-size-xs, 0.8125rem);
+  }
+
+  .toc-sublink:hover {
+    color: var(--color-brand, #0284c7);
+    text-decoration: underline;
+  }
+</style>

@@ -1,0 +1,53 @@
+---
+import { buildConnectedSchemaGraph } from '../engine/schema-builder.js';
+import type { EntrySeoMetadata, LocalBusinessInfo } from '../types.js';
+
+interface Props {
+  siteUrl: string;
+  siteName: string;
+  canonicalUrl: string;
+  title: string;
+  description: string;
+  imageUrl?: string;
+  datePublished?: string;
+  dateModified?: string;
+  authorName?: string;
+  breadcrumbs?: Array<{ name: string; url: string }>;
+  seo?: EntrySeoMetadata;
+  business?: LocalBusinessInfo;
+}
+
+const {
+  siteUrl,
+  siteName,
+  canonicalUrl,
+  title,
+  description,
+  imageUrl,
+  datePublished,
+  dateModified,
+  authorName,
+  breadcrumbs,
+  seo,
+  business,
+} = Astro.props;
+
+const schemaData = buildConnectedSchemaGraph({
+  siteUrl,
+  siteName,
+  canonicalUrl,
+  title,
+  description,
+  imageUrl,
+  datePublished,
+  dateModified,
+  authorName,
+  breadcrumbs,
+  seo,
+  business,
+});
+
+const jsonLd = JSON.stringify(schemaData);
+---
+
+<script type="application/ld+json" set:html={jsonLd} />
