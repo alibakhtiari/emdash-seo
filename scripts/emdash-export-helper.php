@@ -45,27 +45,49 @@ function emdash_export_permission_check($request) {
 }
 
 /**
- * Export all Rank Math redirections
+ * Export all Rank Math & Redirection plugin redirections
  */
 function emdash_export_redirects($request) {
     global $wpdb;
-    $table_name = $wpdb->prefix . 'rank_math_redirections';
-
     $redirects = [];
-    if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") == $table_name) {
-        $rows = $wpdb->get_results("SELECT id, sources, url_to, header_code, status FROM $table_name WHERE status = 'active'", ARRAY_A);
-        foreach ($rows as $row) {
-            $sources = maybe_unserialize($row['sources']);
-            if (is_array($sources)) {
-                foreach ($sources as $source) {
-                    $redirects[] = [
-                        'id' => $row['id'],
-                        'pattern' => $source['pattern'] ?? '',
-                        'comparison' => $source['comparison'] ?? 'exact',
-                        'destination' => $row['url_to'],
-                        'status_code' => intval($row['header_code']),
-                    ];
+
+    // 1. Rank Math Redirections table
+    $rm_table = $wpdb->prefix . 'rank_math_redirections';
+    if ($wpdb->get_var("SHOW TABLES LIKE '$rm_table'") == $rm_table) {
+        $rows = $wpdb->get_results("SELECT id, sources, url_to, header_code, status FROM $rm_table WHERE status = 'active'", ARRAY_A);
+        if ($rows) {
+            foreach ($rows as $row) {
+                $sources = maybe_unserialize($row['sources']);
+                if (is_array($sources)) {
+                    foreach ($sources as $source) {
+                        $redirects[] = [
+                            'id' => 'rm-' . $row['id'],
+                            'pattern' => $source['pattern'] ?? '',
+                            'comparison' => $source['comparison'] ?? 'exact',
+                            'destination' => $row['url_to'],
+                            'status_code' => intval($row['header_code'] ?: 301),
+                            'source' => 'rank_math',
+                        ];
+                    }
                 }
+            }
+        }
+    }
+
+    // 2. Redirection plugin (by John Godley) table if present
+    $redirection_table = $wpdb->prefix . 'redirection_items';
+    if ($wpdb->get_var("SHOW TABLES LIKE '$redirection_table'") == $redirection_table) {
+        $rows = $wpdb->get_results("SELECT id, url, action_data, action_code, match_type, status FROM $redirection_table WHERE status = 'enabled'", ARRAY_A);
+        if ($rows) {
+            foreach ($rows as $row) {
+                $redirects[] = [
+                    'id' => 'redirection-' . $row['id'],
+                    'pattern' => $row['url'],
+                    'comparison' => ($row['match_type'] ?? '') === 'regex' ? 'regex' : 'exact',
+                    'destination' => $row['action_data'],
+                    'status_code' => intval($row['action_code'] ?: 301),
+                    'source' => 'redirection_plugin',
+                ];
             }
         }
     }
