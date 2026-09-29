@@ -1,6 +1,8 @@
 ---
 import { buildConnectedSchemaGraph } from '../engine/schema-builder.js';
 import type { EntrySeoMetadata, LocalBusinessInfo } from '../types.js';
+import type { BreadcrumbItem } from '../engine/breadcrumbs.js';
+import type { TocItem } from '../engine/toc-extractor.js';
 
 interface Props {
   siteUrl: string;
@@ -12,9 +14,13 @@ interface Props {
   datePublished?: string;
   dateModified?: string;
   authorName?: string;
-  breadcrumbs?: Array<{ name: string; url: string }>;
+  breadcrumbs?: BreadcrumbItem[];
+  pathname?: string;
+  category?: string;
+  toc?: TocItem[];
   seo?: EntrySeoMetadata;
   business?: LocalBusinessInfo;
+  customGraphNodes?: Record<string, any>[];
 }
 
 const {
@@ -28,8 +34,12 @@ const {
   dateModified,
   authorName,
   breadcrumbs,
+  pathname,
+  category,
+  toc,
   seo,
   business,
+  customGraphNodes,
 } = Astro.props;
 
 const schemaData = buildConnectedSchemaGraph({
@@ -43,8 +53,12 @@ const schemaData = buildConnectedSchemaGraph({
   dateModified,
   authorName,
   breadcrumbs,
+  pathname,
+  category,
+  toc,
   seo,
   business,
+  customGraphNodes,
 });
 
 const jsonLd = JSON.stringify(schemaData);
