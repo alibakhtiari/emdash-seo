@@ -44,45 +44,65 @@ export function createPlugin(userOptions: Partial<SeoPluginOptions> = {}) {
   return {
     id: 'emdash-seo',
     version: '1.0.0',
+    capabilities: ['content:read', 'content:write'],
+    allowedHosts: [],
+    storage: { collections: [] },
+    admin: {},
     hooks: {
-      'content:beforeSave': async (event: any, _ctx?: any) => {
-        const content = event.content;
-        if (!content || !content.data) return content;
+      'content:beforeSave': {
+        priority: 100,
+        timeout: 5000,
+        dependencies: [],
+        errorPolicy: 'abort' as const,
+        exclusive: false,
+        pluginId: 'emdash-seo',
+        handler: async (event: any, _ctx?: any) => {
+          const content = event.content;
+          if (!content || !content.data) return content;
 
-        // Auto-sanitize and resolve template variables if metaTitle contains % tokens
-        if (content.data.seo && content.data.seo.metaTitle) {
-          content.data.seo.metaTitle = resolveSeoVariables(
-            content.data.seo.metaTitle,
-            {
-              title: content.data.title,
-              excerpt: content.data.excerpt,
-              date: content.createdAt,
-            },
-            options
-          );
-        }
+          // Auto-sanitize and resolve template variables if metaTitle contains % tokens
+          if (content.data.seo && content.data.seo.metaTitle) {
+            content.data.seo.metaTitle = resolveSeoVariables(
+              content.data.seo.metaTitle,
+              {
+                title: content.data.title,
+                excerpt: content.data.excerpt,
+                date: content.createdAt,
+              },
+              options
+            );
+          }
 
-        // Auto-extract FAQs if present in content and not yet structured in data.seo.faqs
-        if (content.data.content) {
-          const rawHtml = typeof content.data.content === 'string'
-            ? content.data.content
-            : JSON.stringify(content.data.content);
+          // Auto-extract FAQs if present in content and not yet structured in data.seo.faqs
+          if (content.data.content) {
+            const rawHtml = typeof content.data.content === 'string'
+              ? content.data.content
+              : JSON.stringify(content.data.content);
 
-          const faqs = extractFaqsFromContent(rawHtml);
-          if (faqs.length > 0) {
-            content.data.seo = content.data.seo || { focusKeywords: [], noIndex: false, noFollow: false };
-            if (!content.data.seo.faqs || content.data.seo.faqs.length === 0) {
-              content.data.seo.faqs = faqs;
+            const faqs = extractFaqsFromContent(rawHtml);
+            if (faqs.length > 0) {
+              content.data.seo = content.data.seo || { focusKeywords: [], noIndex: false, noFollow: false };
+              if (!content.data.seo.faqs || content.data.seo.faqs.length === 0) {
+                content.data.seo.faqs = faqs;
+              }
             }
           }
-        }
 
-        return content;
+          return content;
+        },
       },
-      'content:afterPublish': async (event: any, ctx: any) => {
-        if (ctx?.log?.info) {
-          ctx.log.info('SEO Suite: Indexed published entry', { id: event.id, collection: event.collection });
-        }
+      'content:afterPublish': {
+        priority: 100,
+        timeout: 5000,
+        dependencies: [],
+        errorPolicy: 'abort' as const,
+        exclusive: false,
+        pluginId: 'emdash-seo',
+        handler: async (event: any, ctx: any) => {
+          if (ctx?.log?.info) {
+            ctx.log.info('SEO Suite: Indexed published entry', { id: event.id, collection: event.collection });
+          }
+        },
       },
     },
     routes: {
@@ -110,6 +130,7 @@ export function seoPlugin(userOptions: Partial<SeoPluginOptions> = {}) {
     version: '1.0.0',
     entrypoint: '@emdash/plugin-seo',
     format: 'native' as const,
+    capabilities: ['content:read', 'content:write'],
     options,
   };
 }
