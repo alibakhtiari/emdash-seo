@@ -1,54 +1,51 @@
 import type { SeoPluginOptions, LocalBusinessInfo } from './types.js';
 
-export const DEFAULT_4SEASONS_BUSINESS: LocalBusinessInfo = {
-  name: "4 Seasons Carpet Clean",
-  legalName: "4SEASONSCLEAN LTD",
-  url: "https://4seasonscarpetclean.co.uk",
-  logo: "https://4seasonscarpetclean.co.uk/wp-content/uploads/2023/10/4-seasons-carpet-clean.png",
-  image: "https://4seasonscarpetclean.co.uk/wp-content/uploads/2024/11/4-Seasons-Carpet-Clean.jpg",
-  telephone: "+442034881970",
-  email: "info@4seasonscarpetclean.co.uk",
+export const DEFAULT_LOCAL_BUSINESS: LocalBusinessInfo = {
+  name: "Local Service Business",
+  legalName: "Local Business Ltd",
+  url: "https://example.com",
+  logo: "https://example.com/logo.png",
+  image: "https://example.com/og-image.jpg",
+  telephone: "+442080000000",
+  email: "info@example.com",
   priceRange: "££",
   address: {
-    streetAddress: "47 Westbourne Terrace",
+    streetAddress: "123 High Street",
     addressLocality: "London",
-    postalCode: "W2 3UY",
+    postalCode: "SW1A 1AA",
     addressCountry: "GB",
   },
   geoCoordinates: {
-    latitude: "51.5150421",
-    longitude: "-0.177878",
+    latitude: "51.5074",
+    longitude: "-0.1278",
   },
   geoRadiusMeters: "30000",
   openingHours: [
-    "Mo,Tu,We,Th,Fr,Sa 07:00-21:00",
-    "Su 10:00-16:00",
+    "Mo,Tu,We,Th,Fr 08:00-18:00",
+    "Sa 09:00-17:00",
   ],
   sameAs: [
-    "https://www.facebook.com/4seasonscarpetclean",
-    "https://www.instagram.com/4seasons_clean",
-    "https://www.linkedin.com/company/4-seasons-carpet-clean",
-    "https://uk.trustpilot.com/review/www.4seasonscarpetclean.co.uk",
-    "https://x.com/4seasonclean",
-    "https://wa.me/447572895134",
+    "https://facebook.com/example",
+    "https://instagram.com/example",
+    "https://linkedin.com/company/example",
   ],
   aggregateRating: {
     ratingValue: "5.0",
-    reviewCount: "343",
+    reviewCount: "150",
   },
 };
 
 export const DEFAULT_OPTIONS: SeoPluginOptions = {
-  siteUrl: "https://4seasonscarpetclean.co.uk",
-  siteName: "4 Seasons Carpet Clean",
+  siteUrl: "https://example.com",
+  siteName: "EmDash CMS Site",
   defaultTitleTemplate: "%title% %separator% %siteName%",
   defaultSeparator: " | ",
-  defaultOgImage: "https://4seasonscarpetclean.co.uk/wp-content/uploads/2024/11/4-Seasons-Carpet-Clean.jpg",
+  defaultOgImage: "/og-image.jpg",
   enableLlmsTxt: true,
   enableSitemap: true,
   enableRobots: true,
   enableRedirects: true,
-  business: DEFAULT_4SEASONS_BUSINESS,
+  business: DEFAULT_LOCAL_BUSINESS,
 };
 
 export interface ResolveVariablesContext {
@@ -71,7 +68,7 @@ export function resolveSeoVariables(
 
   const opts = { ...DEFAULT_OPTIONS, ...options };
   const separator = opts.defaultSeparator || ' | ';
-  const siteName = opts.siteName || '4 Seasons Carpet Clean';
+  const siteName = opts.siteName || 'EmDash CMS Site';
 
   let result = template
     .replace(/%title%/gi, ctx.title || '')

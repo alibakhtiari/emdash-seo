@@ -1,5 +1,5 @@
 import type { EntrySeoMetadata, LocalBusinessInfo, FaqItem } from '../types.js';
-import { DEFAULT_4SEASONS_BUSINESS } from '../config.js';
+import { DEFAULT_LOCAL_BUSINESS } from '../config.js';
 import { generateAutoBreadcrumbs, type BreadcrumbItem } from './breadcrumbs.js';
 import type { TocItem } from './toc-extractor.js';
 
@@ -25,7 +25,7 @@ export interface BuildSchemaGraphOptions {
 
 /**
  * Builds a connected JSON-LD @graph matching Google Search and Rank Math Pro standards
- * Includes WebSite, Organization/CleaningService, WebPage, BreadcrumbList, FAQPage, and TableOfContents
+ * Includes WebSite, Organization/LocalBusiness, WebPage, BreadcrumbList, FAQPage, and TableOfContents
  */
 export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Record<string, any> {
   const {
@@ -37,12 +37,12 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
     imageUrl,
     datePublished,
     dateModified,
-    authorName = "Ali Bakhtiari",
+    authorName = "Editorial Team",
     pathname = "",
     category,
     toc = [],
     seo = { focusKeywords: [], noIndex: false, noFollow: false },
-    business = DEFAULT_4SEASONS_BUSINESS,
+    business = DEFAULT_LOCAL_BUSINESS,
     faqs: explicitFaqs,
     customGraphNodes = [],
   } = options;
@@ -66,9 +66,9 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
     }
   };
 
-  // 2. Organization / CleaningService / LocalBusiness Node
+  // 2. Organization / LocalBusiness Node
   const organizationNode: Record<string, any> = {
-    "@type": ["CleaningService", "LocalBusiness", "Organization"],
+    "@type": ["LocalBusiness", "Organization"],
     "@id": `${cleanSiteUrl}/#organization`,
     "name": business.name,
     "legalName": business.legalName,
@@ -182,8 +182,8 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
     });
   }
 
-  // 6. Contextual Entity Node (Service, Article, CleaningService)
-  const schemaType = seo.schemaType || 'CleaningService';
+  // 6. Contextual Entity Node (Service, Article, LocalBusiness)
+  const schemaType = seo.schemaType || 'Service';
 
   if (schemaType === 'CleaningService' || schemaType === 'Service') {
     graph.push({
@@ -191,7 +191,7 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
       "@id": `${cleanCanonical}#service`,
       "name": title,
       "description": description,
-      "serviceType": "Cleaning services",
+      "serviceType": category || "Professional Service",
       "provider": { "@id": `${cleanSiteUrl}/#organization` },
       "mainEntityOfPage": { "@id": `${cleanCanonical}#webpage` },
       "offers": {
@@ -215,7 +215,7 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
       "author": {
         "@type": "Person",
         "name": authorName,
-        "url": `${cleanSiteUrl}/author/alib/`
+        "url": `${cleanSiteUrl}/author/${encodeURIComponent(authorName.toLowerCase().replace(/\s+/g, '-'))}/`
       },
       ...(datePublished ? { "datePublished": datePublished } : {}),
       ...(dateModified ? { "dateModified": dateModified } : {}),

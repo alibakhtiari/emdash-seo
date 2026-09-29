@@ -4,26 +4,17 @@ export interface BreadcrumbItem {
 }
 
 const COMMON_SLUG_LABELS: Record<string, string> = {
-  'carpet-cleaning-service-london': 'Carpet Cleaning',
-  'commercial-carpet-cleaning-london': 'Commercial Carpet Cleaning',
-  'rug-cleaning-near-me-london': 'Rug Cleaning',
-  'persian-rug-cleaning-london': 'Persian Rug Cleaning',
-  'sofa-cleaning-london': 'Upholstery & Sofa Cleaning',
-  'mattress-cleaning-london': 'Mattress Cleaning',
-  'curtain-cleaning-london': 'Curtain Cleaning',
-  'end-of-tenancy-cleaning-london': 'End of Tenancy Cleaning',
-  'stain-removal-london': 'Stain Removal',
-  'steam-cleaning-london': 'Steam Cleaning',
-  'carpet-cleaning-prices-london': 'Prices',
-  'expert-cleaning-services-london-gallery': 'Gallery',
-  'booking-carpet-cleaning-services-london': 'Book Online',
   'contact-us': 'Contact Us',
+  'about-us': 'About Us',
   'faq': 'FAQ',
-  'blog': 'Blog Guides',
-  'posts': 'Blog',
+  'blog': 'Blog',
+  'posts': 'Articles',
   'services': 'Services',
-  'pages': 'Pages',
-  'tips': 'Cleaning Tips',
+  'products': 'Products',
+  'pricing': 'Pricing',
+  'gallery': 'Gallery',
+  'terms': 'Terms & Conditions',
+  'privacy-policy': 'Privacy Policy',
 };
 
 function formatSlugToLabel(slug: string): string {

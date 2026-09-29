@@ -7,6 +7,7 @@ export interface ContentAnalyzeOptions {
   focusKeywords: string[];
   metaDescription?: string;
   description?: string;
+  siteUrl?: string;
   minWordCount?: number;
 }
 
@@ -43,15 +44,20 @@ export function analyzeContent(options: ContentAnalyzeOptions): AnalysisReport {
   const linkMatches = content.match(/<a\s+[^>]*href=["']([^"']+)["'][^>]*>/gi) || [];
   let internalLinks = 0;
   let externalLinks = 0;
+  const siteHostname = options.siteUrl ? new URL(options.siteUrl).hostname : '';
+
   for (const link of linkMatches) {
-    if (link.includes('http://') || link.includes('https://')) {
-      if (link.includes('4seasonscarpetclean.co.uk') || link.startsWith('href="/"')) {
-        internalLinks++;
-      } else {
-        externalLinks++;
-      }
-    } else if (link.includes('href="/') || link.includes('href="#')) {
+    const hrefMatch = link.match(/href=["']([^"']+)["']/i);
+    const href = hrefMatch ? hrefMatch[1] : '';
+    if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) {
+      continue;
+    }
+    if (href.startsWith('/') || !href.includes('://')) {
       internalLinks++;
+    } else if (siteHostname && href.includes(siteHostname)) {
+      internalLinks++;
+    } else {
+      externalLinks++;
     }
   }
 

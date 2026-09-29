@@ -1,10 +1,10 @@
 {
-  "name": "4seasons-carpet-clean",
+  "name": "emdash-seo-suite",
   "version": "1.0.0",
   "private": true,
   "type": "module",
   "emdash": {
-    "label": "4 Seasons Carpet Clean",
+    "label": "EmDash SEO Suite",
     "seed": "seed/seed.json"
   },
   "scripts": {

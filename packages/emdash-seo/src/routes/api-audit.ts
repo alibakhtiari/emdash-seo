@@ -9,20 +9,20 @@ export async function handleRunAudit(_ctx: any): Promise<Response> {
     {
       id: "home",
       slug: "",
-      title: "5.0★ Carpet Cleaning in London | Rug & Upholstery Cleaning",
-      content: "Professional 5.0★ Carpet Cleaning services in London. Trust 4 Seasons Carpet Clean for deep cleaning, stain removal, and more.",
-      metaTitle: "5.0★ Carpet Cleaning in London | Rug & Upholstery Cleaning",
-      metaDescription: "Professional 5.0★ Carpet Cleaning services in London. Trust 4 Seasons Carpet Clean for deep cleaning, stain removal, and more.",
-      focusKeywords: ["carpet cleaning london"],
+      title: "Home | Professional Local Services & Solutions",
+      content: "Welcome to our website. We provide top-tier professional services with unmatched quality and customer satisfaction.",
+      metaTitle: "Home | Professional Local Services & Solutions",
+      metaDescription: "Top-tier professional services and modern solutions. Explore our offerings, read customer reviews, and get in touch today.",
+      focusKeywords: ["professional services"],
     },
     {
-      id: "carpet-clean",
-      slug: "carpet-cleaning-service-london",
-      title: "Carpet Cleaning Service London | 4 Seasons",
-      content: "Residential and domestic deep carpet cleaning using advanced hot water extraction in Paddington, Kensington, Knightsbridge, and London.",
-      metaTitle: "Carpet Cleaning Service London | 4 Seasons",
-      metaDescription: "Fast-drying, child- and pet-safe carpet cleaning in London. Eco-friendly stain removal and steam cleaning.",
-      focusKeywords: ["carpet cleaning service london"],
+      id: "sample-service",
+      slug: "services/sample-service",
+      title: "Expert Service Solutions | Local Specialists",
+      content: "High quality professional services for residential and commercial clients with comprehensive guarantees.",
+      metaTitle: "Expert Service Solutions | Local Specialists",
+      metaDescription: "Reliable, accredited, and professional services tailored to your needs. Get an instant quote today.",
+      focusKeywords: ["expert service solutions"],
     }
   ];
 

@@ -1,3 +1,4 @@
+import process from "node:process";
 import cloudflare from "@astrojs/cloudflare";
 import react from "@astrojs/react";
 import { d1, r2 } from "@emdash-cms/cloudflare";
@@ -19,10 +20,10 @@ export default defineConfig({
 			storage: r2({ binding: "MEDIA" }),
 			plugins: [
 				seoPlugin({
-					siteUrl: "https://4seasonscarpetclean.co.uk",
-					siteName: "4 Seasons Carpet Clean",
+					siteUrl: process.env.SITE_URL || "https://example.com",
+					siteName: "EmDash SEO Suite",
 					defaultSeparator: " | ",
-					defaultOgImage: "https://4seasonscarpetclean.co.uk/wp-content/uploads/2024/11/4-Seasons-Carpet-Clean.jpg",
+					defaultOgImage: "https://example.com/og-image.jpg",
 					enableLlmsTxt: true,
 					enableSitemap: true,
 					enableRobots: true,

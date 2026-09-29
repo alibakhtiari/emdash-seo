@@ -61,23 +61,14 @@ function escapeXml(unsafe: string): string {
 export async function renderSitemap(_ctx: any, options: SeoPluginOptions): Promise<Response> {
   const siteUrl = options.siteUrl.replace(/\/+$/, '');
 
-  // Default entries for 4 Seasons Carpet Clean
+  // Default sitemap entries
   const defaultEntries: SitemapEntry[] = [
     { loc: `${siteUrl}/`, priority: 1.0, changefreq: 'weekly', lastmod: new Date().toISOString() },
-    { loc: `${siteUrl}/carpet-cleaning-service-london/`, priority: 0.9, changefreq: 'weekly' },
-    { loc: `${siteUrl}/commercial-carpet-cleaning-london/`, priority: 0.9, changefreq: 'weekly' },
-    { loc: `${siteUrl}/rug-cleaning-near-me-london/`, priority: 0.9, changefreq: 'weekly' },
-    { loc: `${siteUrl}/persian-rug-cleaning-london/`, priority: 0.9, changefreq: 'weekly' },
-    { loc: `${siteUrl}/sofa-cleaning-london/`, priority: 0.9, changefreq: 'weekly' },
-    { loc: `${siteUrl}/mattress-cleaning-london/`, priority: 0.8, changefreq: 'monthly' },
-    { loc: `${siteUrl}/curtain-cleaning-london/`, priority: 0.8, changefreq: 'monthly' },
-    { loc: `${siteUrl}/stain-removal-london/`, priority: 0.8, changefreq: 'monthly' },
-    { loc: `${siteUrl}/steam-cleaning-london/`, priority: 0.8, changefreq: 'monthly' },
-    { loc: `${siteUrl}/carpet-cleaning-prices-london/`, priority: 0.8, changefreq: 'monthly' },
-    { loc: `${siteUrl}/booking-carpet-cleaning-services-london/`, priority: 0.8, changefreq: 'monthly' },
-    { loc: `${siteUrl}/contact-us/`, priority: 0.7, changefreq: 'monthly' },
+    { loc: `${siteUrl}/services/`, priority: 0.9, changefreq: 'weekly' },
+    { loc: `${siteUrl}/posts/`, priority: 0.8, changefreq: 'daily' },
+    { loc: `${siteUrl}/about/`, priority: 0.7, changefreq: 'monthly' },
+    { loc: `${siteUrl}/contact/`, priority: 0.7, changefreq: 'monthly' },
     { loc: `${siteUrl}/faq/`, priority: 0.7, changefreq: 'monthly' },
-    { loc: `${siteUrl}/blog/`, priority: 0.7, changefreq: 'daily' },
   ];
 
   const xml = generateSitemapXml(defaultEntries);

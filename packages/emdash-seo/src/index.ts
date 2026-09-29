@@ -1,4 +1,4 @@
-import { DEFAULT_OPTIONS, DEFAULT_4SEASONS_BUSINESS, resolveSeoVariables } from './config.js';
+import { DEFAULT_OPTIONS, DEFAULT_LOCAL_BUSINESS, resolveSeoVariables } from './config.js';
 import type { SeoPluginOptions, FaqItem } from './types.js';
 import { renderSitemap } from './routes/sitemap.js';
 import { renderRobots } from './routes/robots.js';
@@ -30,7 +30,7 @@ export {
   extractTableOfContents,
   slugifyHeading,
   DEFAULT_OPTIONS,
-  DEFAULT_4SEASONS_BUSINESS,
+  DEFAULT_LOCAL_BUSINESS,
 };
 export type { BreadcrumbItem, TocItem, FaqItem };
 

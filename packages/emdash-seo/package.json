@@ -68,7 +68,7 @@
     "yoast",
     "cloudflare-workers"
   ],
-  "author": "4 Seasons Carpet Clean & EmDash",
+  "author": "EmDash Community",
   "license": "MIT",
   "peerDependencies": {
     "astro": ">=6.0.0",
