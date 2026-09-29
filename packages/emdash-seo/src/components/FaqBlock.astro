@@ -4,30 +4,36 @@ import type { FaqItem } from '../types.js';
 
 interface Props {
   faqs?: FaqItem[];
+  items?: FaqItem[];
   content?: string;
   title?: string;
   subtitle?: string;
   includeSchema?: boolean;
+  emitSchema?: boolean;
   class?: string;
 }
 
 const {
   faqs: propFaqs,
+  items: propItems,
   content = '',
   title = "Frequently Asked Questions",
   subtitle = "Clear, honest answers about professional cleaning services, drying times, and pricing.",
   includeSchema = false,
+  emitSchema = false,
   class: className = '',
 } = Astro.props;
 
 let faqs: FaqItem[] = [];
-if (propFaqs && propFaqs.length > 0) {
-  faqs = propFaqs;
+const incomingFaqs = propFaqs || propItems;
+if (incomingFaqs && incomingFaqs.length > 0) {
+  faqs = incomingFaqs;
 } else if (content) {
   faqs = extractFaqsFromContent(content);
 }
 
-const faqSchemaJson = includeSchema && faqs.length > 0
+const shouldEmitSchema = includeSchema || emitSchema;
+const faqSchemaJson = shouldEmitSchema && faqs.length > 0
   ? JSON.stringify({
       "@context": "https://schema.org",
       "@type": "FAQPage",

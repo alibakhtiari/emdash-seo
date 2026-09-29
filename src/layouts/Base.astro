@@ -10,6 +10,7 @@ import { createPublicPageContext } from "emdash/page";
 import LiveSearch from "emdash/ui/search";
 import { Font } from "astro:assets";
 import { resolveBlogSiteIdentity } from "../utils/site-identity";
+import SeoHead from "@emdash/plugin-seo/head";
 import "../styles/tokens.css";
 import "../styles/theme.css";
 
@@ -88,17 +89,25 @@ const isLoggedIn = !!Astro.locals.user;
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<Font cssVariable="--font-body" preload />
-		<Font cssVariable="--font-mono" />
-		<title>{fullTitle}</title>
+		<SeoHead
+			title={fullTitle}
+			description={description ?? undefined}
+			image={image ?? undefined}
+			canonicalUrl={canonical ?? Astro.url.href}
+			type={type === "article" ? "article" : "website"}
+			publishedTime={publishedTime ?? undefined}
+			modifiedTime={modifiedTime ?? undefined}
+			author={author ?? undefined}
+		/>
 		<EmDashHead page={pageCtx} />
 		<script is:inline>
 			// Apply an explicit theme choice immediately to prevent flash.
 			// With no cookie, color-scheme: light dark follows the OS.
 			(function () {
-				var row = document.cookie.split("; ").find(function (item) {
+				const row = document.cookie.split("; ").find(function (item) {
 					return item.startsWith("theme=");
 				});
-				var theme = row ? row.slice(6) : null;
+				const theme = row ? row.slice(6) : null;
 				if (theme === "dark" || theme === "light") {
 					document.documentElement.classList.add(theme);
 				}

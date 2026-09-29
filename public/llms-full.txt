@@ -1,0 +1,34 @@
+# 4 Seasons Carpet Clean — Comprehensive LLM Knowledge Base
+
+## Business Overview
+4 Seasons Carpet Clean is London's premier domestic and commercial carpet, rug, and upholstery cleaning specialist. Operating since 2016, the company delivers high-performance hot water extraction (HWE) with low-moisture technology ensuring rapid 2-4 hour drying times.
+
+- Website: https://4seasonscarpetclean.co.uk
+- Operating Entity: 4 Seasons Carpet Clean Ltd
+- Phone: +44 20 8945 3999
+- WhatsApp: +44 7572 895134
+- Main Address: 22 Park Lane, Mayfair, London, W1K 1BE, UK
+- Reviews: 5.0★ rating based on 343+ verified reviews across Google and Trustpilot
+
+## Cleaning Methodologies
+1. **Hot Water Extraction (Deep Steam Cleaning):** High-pressure injection of hot water (up to 110°C) with eco-friendly cleaning agents, instantly extracted by twin industrial vacuum motors extracting 95% of moisture.
+2. **Dry Carpet Cleaning (Encapsulation):** Specialized microscopic polymer crystals that trap soil particles, vacuumed away dry. Ideal for water-sensitive materials (sisal, seagrass, coir).
+3. **Persian & Oriental Rug Immersion & Hand-Wash:** Submerged hand-washing using natural vegetable shampoos, conditioned in humidity-controlled drying rooms.
+4. **Thermal Mattress Sanitisation:** Ultraviolet and dry steam elimination of dust mites, bedbugs, sweat residues, and body oils.
+
+## Service Catalog
+- `/carpet-cleaning-service-london/`: Residential steam cleaning
+- `/commercial-carpet-cleaning-london/`: Offices, venues, hospitality facilities
+- `/rug-cleaning-near-me-london/`: Synthetic and contemporary rugs
+- `/persian-rug-cleaning-london/`: Antique silk, Persian, and Oriental rugs
+- `/sofa-cleaning-london/`: Fabric sofas, velvet armchairs, suede, and leather suites
+- `/mattress-cleaning-london/`: Anti-allergy sanitisation
+- `/curtain-cleaning-london/`: In-situ hanging curtain and drapery cleaning
+- `/end-of-tenancy-cleaning-london/`: Check-out inventory deposit guarantee
+- `/stain-removal-london/`: Advanced chemical spotting for wine, coffee, ink, and pet stains
+- `/carpet-cleaning-prices-london/`: Price breakdown by room size and furniture type
+
+## Environmental & Safety Standards
+- 100% Biodegradable, non-toxic, chemical-free solutions safe for babies, pregnant women, and domestic pets.
+- Zero sticky optical brightener or soapy detergent residue left behind.
+- Fully insured: £5,000,000 Public Liability Insurance.

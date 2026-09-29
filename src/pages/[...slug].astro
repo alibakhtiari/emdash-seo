@@ -1,0 +1,214 @@
+---
+import {
+	getEmDashEntry,
+	getSeoMeta,
+	decodeSlug,
+	getSiteSettings,
+} from "emdash";
+import { PortableText } from "emdash/ui";
+import Base from "../layouts/Base.astro";
+import Breadcrumbs from "@emdash/plugin-seo/components/Breadcrumbs";
+import TableOfContents from "@emdash/plugin-seo/components/TableOfContents";
+import FaqBlock from "@emdash/plugin-seo/components/FaqBlock";
+import GoogleReviewsBadge from "../components/GoogleReviewsBadge.astro";
+import { resolveBlogSiteIdentity } from "../utils/site-identity";
+
+const rawSlug = Astro.params.slug;
+const slug = decodeSlug(rawSlug);
+
+if (!slug) {
+	return Astro.redirect("/404");
+}
+
+// 1. Check services collection first (cleaning service pages)
+let entryResult = await getEmDashEntry("services", slug);
+let collectionName = "services";
+
+// 2. Fall back to pages collection
+if (!entryResult.entry) {
+	entryResult = await getEmDashEntry("pages", slug);
+	collectionName = "pages";
+}
+
+const page = entryResult.entry;
+
+// 3. Fallback to 404 if not found
+if (!page) {
+	return Astro.redirect("/404");
+}
+
+if (Astro.cache?.enabled && entryResult.cacheHint) {
+	Astro.cache.set(entryResult.cacheHint);
+}
+
+const { siteTitle } = resolveBlogSiteIdentity(await getSiteSettings());
+const seo = getSeoMeta(page, {
+	siteTitle,
+	siteUrl: Astro.url.origin,
+	path: Astro.url.pathname.replace(/\/$/, ""),
+});
+
+const isService = collectionName === "services";
+const faqs = (page.data as any)?.seo?.faqs || [];
+---
+
+<Base
+	title={seo.title}
+	pageTitle={seo.ogTitle}
+	description={seo.description}
+	canonical={seo.canonical}
+	robots={seo.robots}
+	type={isService ? "website" : "website"}
+	content={{ collection: collectionName, id: page.data.id, slug }}
+>
+	<div class="service-page-container">
+		<!-- Automated Google-Compliant Breadcrumbs -->
+		<Breadcrumbs pathname={Astro.url.pathname} />
+
+		<article class="service-article">
+			<header class="service-header">
+				<h1 class="service-title" {...page.edit.title}>{page.data.title}</h1>
+				<GoogleReviewsBadge rating={5.0} reviewCount={343} />
+			</header>
+
+			<div class="service-body">
+				<!-- Optional Table of Contents for deep content pages -->
+				<TableOfContents collapsible={true} />
+
+				<!-- Rich text content -->
+				<div class="service-content" {...page.edit.content}>
+					<PortableText value={page.data.content} />
+				</div>
+
+				<!-- Automated FAQ Section with Google FAQPage Schema -->
+				{faqs && faqs.length > 0 && (
+					<section class="service-faqs">
+						<h2 class="faq-heading">Frequently Asked Questions</h2>
+						<FaqBlock items={faqs} emitSchema={false} />
+					</section>
+				)}
+
+				<!-- Call to Action Banner -->
+				<div class="service-cta">
+					<h3>Need Professional Carpet Cleaning in London?</h3>
+					<p>5.0★ Rated Specialists with Fast 2-Hour Drying Times & Eco-Friendly Detergents.</p>
+					<div class="cta-buttons">
+						<a href="/booking-carpet-cleaning-services-london/" class="btn-primary">Book Online Now</a>
+						<a href="tel:+442089453999" class="btn-secondary">Call 020 8945 3999</a>
+					</div>
+				</div>
+			</div>
+		</article>
+	</div>
+</Base>
+
+<style>
+	.service-page-container {
+		max-width: var(--max-width);
+		margin: 0 auto;
+		padding: var(--spacing-8) var(--spacing-6) var(--spacing-16);
+	}
+
+	.service-article {
+		background: var(--color-bg);
+		border-radius: var(--radius-lg);
+	}
+
+	.service-header {
+		margin-bottom: var(--spacing-8);
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-4);
+	}
+
+	.service-title {
+		font-size: var(--font-size-4xl);
+		font-weight: 800;
+		line-height: var(--leading-tight);
+		color: var(--color-text);
+		letter-spacing: -0.02em;
+	}
+
+	.service-body {
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-8);
+	}
+
+	.service-content {
+		font-size: var(--font-size-lg);
+		line-height: var(--leading-relaxed);
+		color: var(--color-text-secondary);
+	}
+
+	.service-faqs {
+		margin-top: var(--spacing-12);
+		padding-top: var(--spacing-8);
+		border-top: 1px solid var(--color-border);
+	}
+
+	.faq-heading {
+		font-size: var(--font-size-2xl);
+		font-weight: 700;
+		margin-bottom: var(--spacing-6);
+	}
+
+	.service-cta {
+		margin-top: var(--spacing-12);
+		padding: var(--spacing-8);
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-lg);
+		text-align: center;
+	}
+
+	.service-cta h3 {
+		font-size: var(--font-size-2xl);
+		font-weight: 700;
+		margin-bottom: var(--spacing-2);
+		color: var(--color-text);
+	}
+
+	.service-cta p {
+		color: var(--color-muted);
+		margin-bottom: var(--spacing-6);
+	}
+
+	.cta-buttons {
+		display: flex;
+		gap: var(--spacing-4);
+		justify-content: center;
+		flex-wrap: wrap;
+	}
+
+	.btn-primary {
+		display: inline-block;
+		background: var(--color-brand, #2563eb);
+		color: #ffffff;
+		padding: var(--spacing-3) var(--spacing-6);
+		border-radius: var(--radius-md);
+		font-weight: 600;
+		text-decoration: none;
+		transition: opacity 0.2s ease;
+	}
+
+	.btn-primary:hover {
+		opacity: 0.9;
+	}
+
+	.btn-secondary {
+		display: inline-block;
+		background: transparent;
+		color: var(--color-text);
+		border: 1px solid var(--color-border);
+		padding: var(--spacing-3) var(--spacing-6);
+		border-radius: var(--radius-md);
+		font-weight: 600;
+		text-decoration: none;
+		transition: background 0.2s ease;
+	}
+
+	.btn-secondary:hover {
+		background: var(--color-surface);
+	}
+</style>

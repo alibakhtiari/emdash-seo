@@ -39,5 +39,6 @@ declare module "emdash" {
   interface EmDashCollections {
     pages: Page;
     posts: Post;
+    services: Page;
   }
 }

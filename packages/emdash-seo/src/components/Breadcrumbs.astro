@@ -4,6 +4,7 @@ import { DEFAULT_OPTIONS } from '../config.js';
 
 interface Props {
   items?: BreadcrumbItem[];
+  pathname?: string;
   siteUrl?: string;
   currentTitle?: string;
   category?: string;
@@ -12,13 +13,14 @@ interface Props {
 
 const {
   items,
+  pathname: propPathname,
   siteUrl = DEFAULT_OPTIONS.siteUrl,
   currentTitle,
   category,
   class: className = '',
 } = Astro.props;
 
-const currentPath = Astro.url.pathname;
+const currentPath = propPathname || Astro.url.pathname;
 const breadcrumbs: BreadcrumbItem[] =
   items && items.length > 0
     ? items
