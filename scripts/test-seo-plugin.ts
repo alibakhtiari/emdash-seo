@@ -11,24 +11,24 @@ import {
 
 console.log('--- Testing Content Analyzer ---');
 const sampleArticle = `
-  <h1>Professional Carpet Cleaning in London</h1>
-  <p>Looking for the best <strong>carpet cleaning in london</strong>? We provide fast-drying steam cleaning.</p>
-  <h2>Why Choose Carpet Cleaning in London</h2>
-  <p>${'Carpet cleaning in london provides deep steam extraction. '.repeat(25)}</p>
-  <h3>Advanced Hot Water Extraction</h3>
-  <p>Our dual-vacuum equipment lifts all dirt.</p>
-  <h3>Fast 2-Hour Drying Time</h3>
-  <p>Walk on your carpets sooner.</p>
-  <img src="banner.webp" alt="Carpet cleaning technician in London" />
-  <a href="/carpet-cleaning-prices-london/">View our prices</a>
+  <h1>Professional Web Development and Design</h1>
+  <p>Looking for the best <strong>professional web development</strong> service? We build fast, modern web applications.</p>
+  <h2>Why Choose Professional Web Development</h2>
+  <p>${'Professional web development provides scalable digital infrastructure. '.repeat(25)}</p>
+  <h3>Advanced Frontend Architecture</h3>
+  <p>Modern component architecture ensures instant page loads.</p>
+  <h3>Fast Turnaround Times</h3>
+  <p>Launch your web applications sooner.</p>
+  <img src="banner.webp" alt="Professional web development architecture" />
+  <a href="/pricing/">View our pricing</a>
 `;
 
 const analysis = analyzeContent({
-  title: 'Carpet Cleaning in London | 5.0★ Service',
-  slug: 'carpet-cleaning-service-london',
+  title: 'Professional Web Development | Modern Solutions',
+  slug: 'professional-web-development',
   content: sampleArticle,
-  focusKeywords: ['carpet cleaning in london'],
-  metaDescription: 'Top-rated carpet cleaning in London. Book our professional steam extraction service today.',
+  focusKeywords: ['professional web development'],
+  metaDescription: 'Top-rated professional web development services. Build modern, edge-rendered web apps today.',
   minWordCount: 150,
 });
 
@@ -48,30 +48,30 @@ for (const item of tocResult.toc) {
 
 console.log('\n--- Testing Automated Breadcrumbs Generator ---');
 const breadcrumbs = generateAutoBreadcrumbs(
-  '/carpet-cleaning-service-london/kensington/',
-  'https://4seasonscarpetclean.co.uk',
-  'Kensington Carpet Cleaning'
+  '/services/web-development/frontend/',
+  'https://example.com',
+  'Frontend Engineering'
 );
 console.log(`Generated ${breadcrumbs.length} breadcrumb levels:`);
 breadcrumbs.forEach((b, i) => console.log(`  ${i + 1}. ${b.name} -> ${b.url}`));
 
 console.log('\n--- Testing Connected Schema Graph (with TOC, Breadcrumbs, and FAQs) ---');
 const schema = buildConnectedSchemaGraph({
-  siteUrl: 'https://4seasonscarpetclean.co.uk',
-  siteName: '4 Seasons Carpet Clean',
-  canonicalUrl: 'https://4seasonscarpetclean.co.uk/carpet-cleaning-service-london/kensington/',
-  title: 'Carpet Cleaning Kensington W8 | 5.0★ 4 Seasons',
-  description: 'Professional carpet cleaning services in Kensington London.',
+  siteUrl: 'https://example.com',
+  siteName: 'EmDash Site',
+  canonicalUrl: 'https://example.com/services/web-development/frontend/',
+  title: 'Frontend Engineering | Modern Solutions',
+  description: 'Professional web development and engineering services.',
   toc: tocResult.toc,
   breadcrumbs,
   seo: {
-    focusKeywords: ['carpet cleaning kensington'],
+    focusKeywords: ['frontend engineering'],
     noIndex: false,
     noFollow: false,
-    schemaType: 'CleaningService',
+    schemaType: 'Service',
     faqs: [
-      { question: 'Do you clean Victorian flats in Kensington?', answer: 'Yes, we specialise in residential carpet cleaning for Kensington apartments and townhouses.' },
-      { question: 'How quickly can I walk on the carpets?', answer: 'Our low-moisture hot water extraction leaves carpets dry within 2-4 hours.' }
+      { question: 'What modern frameworks do you support?', answer: 'We support modern architectures including Astro, React, and serverless edge runtimes.' },
+      { question: 'How quickly can new features be deployed?', answer: 'Our continuous integration pipelines enable instant deployment to edge workers.' }
     ],
   },
 });

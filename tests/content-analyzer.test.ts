@@ -15,8 +15,8 @@ describe("Content Analyzer", () => {
     const result = analyzeContent({
       content: html,
       focusKeywords: ["carpet cleaning london"],
-      title: "Professional Carpet Cleaning London | 4 Seasons",
-      description: "Book expert carpet cleaning london with 4 Seasons. 5.0-star rated cleaning specialists.",
+      title: "Professional Carpet Cleaning London | CleanPro",
+      description: "Book expert carpet cleaning london with CleanPro. 5.0-star rated cleaning specialists.",
       slug: "carpet-cleaning-london",
       minWordCount: 80,
     });

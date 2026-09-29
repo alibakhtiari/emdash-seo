@@ -1,5 +1,5 @@
 /**
- * WordPress Migration CLI for 4 Seasons Carpet Clean (https://4seasonscarpetclean.co.uk)
+ * WordPress Migration CLI for EmDash CMS & Astro
  *
  * Supports:
  * - Option A: WP REST API with Application Password from .env
@@ -36,7 +36,7 @@ function loadEnv() {
 
 loadEnv();
 
-const WP_URL = (process.env.WP_URL || 'https://4seasonscarpetclean.co.uk').replace(/\/+$/, '');
+const WP_URL = (process.env.WP_URL || 'https://example.com').replace(/\/+$/, '');
 const WP_USER = process.env.WP_USER || '';
 const WP_APP_PASSWORD = process.env.WP_APP_PASSWORD || '';
 const WP_EXPORT_SECRET = process.env.WP_EXPORT_SECRET || '';
@@ -79,7 +79,7 @@ async function fetchWithAuth(endpoint: string) {
 
 async function runMigration() {
   console.log('=====================================================');
-  console.log('  4 Seasons Carpet Clean -> EmDash Migration Engine  ');
+  console.log('       WordPress -> EmDash Migration Engine          ');
   console.log('=====================================================');
   console.log(`Source URL: ${WP_URL}`);
   if (WP_USER && WP_APP_PASSWORD) {
@@ -224,13 +224,13 @@ async function runMigration() {
     $schema: 'https://emdashcms.com/seed.schema.json',
     version: '1',
     meta: {
-      name: '4 Seasons Carpet Clean Site',
-      description: 'Imported from WordPress (4seasonscarpetclean.co.uk) with full Rank Math SEO suite',
-      author: 'Ali Bakhtiari',
+      name: 'EmDash WordPress Migration',
+      description: 'Imported from WordPress with full Rank Math / Yoast SEO suite',
+      author: 'EmDash Migrator',
     },
     settings: {
-      title: '4 Seasons Carpet Clean',
-      tagline: '5.0★ Carpet Cleaning in London | Rug & Upholstery Cleaning',
+      title: 'EmDash Migrated Site',
+      tagline: 'High-performance Astro + EmDash CMS',
     },
     collections: [
       {

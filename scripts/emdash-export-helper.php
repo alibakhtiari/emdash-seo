@@ -4,7 +4,7 @@
  * Plugin URI: https://github.com/alibakhtiari/emdash-seo
  * Description: Lightweight, secure exporter for migrating content, Kadence blocks, Rank Math / Yoast SEO metadata, and redirections to EmDash & Astro.
  * Version: 1.0.0
- * Author: 4 Seasons Carpet Clean & EmDash
+ * Author: EmDash SEO Contributors
  * License: MIT
  */
 
