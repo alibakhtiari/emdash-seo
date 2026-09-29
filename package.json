@@ -12,10 +12,14 @@
     "build": "astro build",
     "preview": "astro preview",
     "deploy": "astro build && wrangler deploy",
-    "typecheck": "astro check",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "astro check && tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:seo": "tsx scripts/test-seo-plugin.ts",
     "migrate:wp": "tsx scripts/migrate-wordpress.ts",
     "migrate:helper": "tsx scripts/migrate-wordpress.ts --helper",
-    "test:seo": "tsx scripts/test-seo-plugin.ts",
     "seed:d1": "npx emdash seed seed/seed.json"
   },
   "dependencies": {
@@ -31,7 +35,12 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
     "@cloudflare/workers-types": "^5.20260820.1",
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.11.0",
+    "eslint-plugin-astro": "^3.2.1",
     "tsx": "^4.23.15",
+    "typescript-eslint": "^8.70.1",
+    "vitest": "^5.0.2",
     "wrangler": "^4.125.0"
   },
   "packageManager": "pnpm@11.9.0+sha512.bd682d5d03fe525ef7c9fd6780c6884d1e756ac4c9c9fe00c538782824310dcf90e3ddc4f53835f06dfaebd5085e41855e0bcbb3b60de2ac5bbab89e5036f03b"
