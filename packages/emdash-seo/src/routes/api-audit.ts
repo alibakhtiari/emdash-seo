@@ -3,7 +3,7 @@ import type { AuditSnapshot } from '../types.js';
 
 let latestAudit: AuditSnapshot | null = null;
 
-export async function handleRunAudit(ctx: any): Promise<Response> {
+export async function handleRunAudit(_ctx: any): Promise<Response> {
   // Query all published content from DB
   const entries = [
     {
@@ -34,7 +34,7 @@ export async function handleRunAudit(ctx: any): Promise<Response> {
   });
 }
 
-export async function handleGetAudit(ctx: any): Promise<Response> {
+export async function handleGetAudit(_ctx: any): Promise<Response> {
   return new Response(JSON.stringify({ success: true, audit: latestAudit }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },

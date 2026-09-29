@@ -1,5 +1,5 @@
 import { DEFAULT_OPTIONS, DEFAULT_4SEASONS_BUSINESS, resolveSeoVariables } from './config.js';
-import type { SeoPluginOptions, EntrySeoMetadata, FaqItem } from './types.js';
+import type { SeoPluginOptions, FaqItem } from './types.js';
 import { renderSitemap } from './routes/sitemap.js';
 import { renderRobots } from './routes/robots.js';
 import { renderLlmsTxt } from './routes/llms-txt.js';
@@ -45,7 +45,7 @@ export function createPlugin(userOptions: Partial<SeoPluginOptions> = {}) {
     id: 'emdash-seo',
     version: '1.0.0',
     hooks: {
-      'content:beforeSave': async (event: any, ctx: any) => {
+      'content:beforeSave': async (event: any, _ctx?: any) => {
         const content = event.content;
         if (!content || !content.data) return content;
 

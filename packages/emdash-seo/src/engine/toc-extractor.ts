@@ -34,7 +34,7 @@ export function extractTableOfContents(contentHtml: string): TocExtractionResult
 
   let currentH2: TocItem | null = null;
 
-  const htmlWithAnchors = contentHtml.replace(headingRegex, (match, tag, attrs, innerHtml) => {
+  const htmlWithAnchors = contentHtml.replace(headingRegex, (_match, tag, attrs, innerHtml) => {
     const level = tag.toLowerCase() === 'h2' ? 2 : 3;
     const cleanText = innerHtml.replace(/<[^>]*>?/gm, '').replace(/\s+/g, ' ').trim();
 

@@ -1,6 +1,6 @@
 import type { SeoPluginOptions } from '../types.js';
 
-export function renderLlmsTxt(ctx: any, options: SeoPluginOptions): Response {
+export function renderLlmsTxt(_ctx: any, options: SeoPluginOptions): Response {
   const siteUrl = options.siteUrl.replace(/\/+$/, '');
   const siteName = options.siteName || '4 Seasons Carpet Clean';
 

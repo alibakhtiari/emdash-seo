@@ -111,7 +111,7 @@ async function runMigration() {
   } else {
     console.log('Fetching posts from WP REST API (/wp-json/wp/v2/posts)...');
     try {
-      posts = await fetchWithAuth('/wp-json/wp/v2/posts?per_page=100');
+      posts = (await fetchWithAuth('/wp-json/wp/v2/posts?per_page=100')) as WpPost[];
       console.log(`Fetched ${posts.length} blog posts.`);
     } catch (e: any) {
       console.error(`Error fetching posts: ${e.message}`);
@@ -119,7 +119,7 @@ async function runMigration() {
 
     console.log('Fetching pages from WP REST API (/wp-json/wp/v2/pages)...');
     try {
-      pages = await fetchWithAuth('/wp-json/wp/v2/pages?per_page=100');
+      pages = (await fetchWithAuth('/wp-json/wp/v2/pages?per_page=100')) as WpPost[];
       console.log(`Fetched ${pages.length} pages.`);
     } catch (e: any) {
       console.error(`Error fetching pages: ${e.message}`);
@@ -219,7 +219,6 @@ async function runMigration() {
 
   // Construct complete seed.json
   const seedPath = path.resolve(process.cwd(), 'seed/seed.json');
-  const existingSeed = fs.existsSync(seedPath) ? JSON.parse(fs.readFileSync(seedPath, 'utf-8')) : {};
 
   const fullSeed = {
     $schema: 'https://emdashcms.com/seed.schema.json',

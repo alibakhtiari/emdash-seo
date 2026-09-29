@@ -27,7 +27,7 @@ if (items && items.length > 0) {
 ---
 
 {tocList.length > 0 && (
-  <nav class={`toc-container ${className}`} aria-label="Table of Contents" itemscope itemtype="https://schema.org/SiteNavigationElement">
+  <nav class={`toc-container ${className}`} aria-label="Table of Contents" data-collapsible={collapsible ? "true" : undefined} itemscope itemtype="https://schema.org/SiteNavigationElement">
     <div class="toc-header">
       <span class="toc-icon" aria-hidden="true">≡</span>
       <h3 class="toc-title">{title}</h3>

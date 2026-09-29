@@ -58,9 +58,8 @@ function escapeXml(unsafe: string): string {
     .replace(/'/g, '&apos;');
 }
 
-export async function renderSitemap(ctx: any, options: SeoPluginOptions): Promise<Response> {
+export async function renderSitemap(_ctx: any, options: SeoPluginOptions): Promise<Response> {
   const siteUrl = options.siteUrl.replace(/\/+$/, '');
-  const url = new URL(ctx.request ? ctx.request.url : `${siteUrl}/sitemap.xml`);
 
   // Default entries for 4 Seasons Carpet Clean
   const defaultEntries: SitemapEntry[] = [

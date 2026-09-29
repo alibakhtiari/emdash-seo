@@ -1,8 +1,8 @@
 ---
 import OpenGraph from './OpenGraph.astro';
 import SchemaGraph from './SchemaGraph.astro';
-import { resolveSeoVariables, DEFAULT_OPTIONS, DEFAULT_4SEASONS_BUSINESS } from '../config.js';
-import type { EntrySeoMetadata, LocalBusinessInfo, FaqItem } from '../types.js';
+import { DEFAULT_OPTIONS, DEFAULT_4SEASONS_BUSINESS } from '../config.js';
+import type { EntrySeoMetadata, LocalBusinessInfo } from '../types.js';
 import { generateAutoBreadcrumbs, type BreadcrumbItem } from '../engine/breadcrumbs.js';
 import { extractTableOfContents, type TocItem } from '../engine/toc-extractor.js';
 import { extractFaqsFromContent } from '../importers/rankmath-importer.js';

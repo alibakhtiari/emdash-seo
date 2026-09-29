@@ -5,18 +5,9 @@
 import {
   analyzeContent,
   buildConnectedSchemaGraph,
-  extractFaqsFromContent,
-  parseRankMathMeta,
-  matchRedirect,
   generateAutoBreadcrumbs,
   extractTableOfContents,
-  DEFAULT_OPTIONS,
-  DEFAULT_4SEASONS_BUSINESS,
 } from '../packages/emdash-seo/src/index.ts';
-
-import { renderSitemap } from '../packages/emdash-seo/src/routes/sitemap.ts';
-import { renderRobots } from '../packages/emdash-seo/src/routes/robots.ts';
-import { renderLlmsTxt } from '../packages/emdash-seo/src/routes/llms-txt.ts';
 
 console.log('--- Testing Content Analyzer ---');
 const sampleArticle = `
