@@ -1,11 +1,11 @@
-# 4 Seasons Carpet Clean — EmDash CMS & Astro SEO Suite
+# EmDash SEO Suite — Native Astro & EmDash CMS Plugin
 
 [![Astro](https://img.shields.io/badge/Astro-7.3-orange?logo=astro)](https://astro.build)
 [![EmDash CMS](https://img.shields.io/badge/EmDash_CMS-1.0.1-purple)](https://emdashcms.com)
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare_Workers-Free_%26_Paid-f38020?logo=cloudflare)](https://workers.cloudflare.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-An enterprise-grade, edge-rendered web application migrating [4 Seasons Carpet Clean](https://4seasonscarpetclean.co.uk) from WordPress into **Astro** and **EmDash CMS**, powered by the **EmDash SEO Suite** (`@emdash/plugin-seo`).
+An enterprise-grade, edge-rendered SEO suite (`@emdash/plugin-seo`) for **Astro** and **EmDash CMS**, with automated WordPress migration capabilities (Rank Math Pro, Yoast SEO Premium, All in One SEO) targeting Cloudflare Workers (Free & Paid).
 
 Built as an **in-process Native Plugin**, it bypasses the requirement for Cloudflare Dynamic Worker loaders (`worker_loaders`), guaranteeing complete feature parity on **Cloudflare Workers Free Tier** (under 10 ms CPU constraints and zero subscription costs) and Paid plans.
 
@@ -14,7 +14,7 @@ Built as an **in-process Native Plugin**, it bypasses the requirement for Cloudf
 ## 🌟 Key Features
 
 ### 1. Best-of-WordPress SEO Parity
-* **Connected Schema Graph (JSON-LD):** Emits a unified `@graph` linking `CleaningService`, `LocalBusiness`, `Organization`, `WebPage`, `WebSite`, `Service`, `AggregateRating` (5.0★ / 343 reviews), and `BreadcrumbList`.
+* **Connected Schema Graph (JSON-LD):** Emits a unified `@graph` linking `LocalBusiness`, `Organization`, `WebPage`, `WebSite`, `Service`, `AggregateRating`, and `BreadcrumbList`.
 * **Automated Breadcrumbs:** Automatically computes hierarchical breadcrumb trails from URL routes, rendering accessible microdata (`Breadcrumbs.astro`) and Google-compliant schema.
 * **Automated Table of Contents (TOC):** Parses `<h2>` and `<h3>` headings, auto-injects slugified anchor IDs, and outputs Google `ItemList` jump-link schema (`TableOfContents.astro`).
 * **Automated FAQ Blocks & Schema:** Extracts Rank Math FAQ blocks, `<details>/<summary>` accordions, and outputs Google `FAQPage` schema (`FaqBlock.astro`).
@@ -26,7 +26,7 @@ Built as an **in-process Native Plugin**, it bypasses the requirement for Cloudf
 * **Direct REST API Ingestion:** Authenticates with WordPress using Application Passwords (`WP_USER` & `WP_APP_PASSWORD` in `.env`).
 * **1-File Helper Exporter:** Optional drop-in WordPress plugin ([scripts/emdash-export-helper.php](scripts/emdash-export-helper.php)) to export custom tables (`wp_rank_math_redirections`) in 1 click.
 * **EmDash Native Migrator Extension:** Intercepts EmDash native imports (`meta._rankmath` and `meta._yoast`) and normalizes them into first-class SEO schemas.
-* **Initial Migration Completed:** 16 Cleaning Services, 100 Blog Guides, 48 Pages, and 72 FAQ items converted into [seed/seed.json](seed/seed.json).
+* **Initial Migration Ready:** Ingests posts, pages, services, categories, and FAQs directly into structured EmDash collections.
 
 ---
 
@@ -70,9 +70,9 @@ Built as an **in-process Native Plugin**, it bypasses the requirement for Cloudf
 │   ├── emdash-export-helper.php    # 1-file helper WordPress export plugin
 │   └── test-seo-plugin.ts          # Plugin verification test suite
 ├── seed/
-│   └── seed.json                   # 1.6 MB initial seed data with 16 services & 100 posts
+│   └── seed.json                   # Seed database with sample services & blog posts
 ├── src/
-│   ├── components/                 # 4 Seasons UI components (Reviews badge, Service cards)
+│   ├── components/                 # Reusable UI components (Reviews badge, Service cards)
 │   ├── layouts/                    # Base layout with SeoHead integration
 │   ├── pages/                      # Astro routes (homepage, services, blog, search, 404)
 │   └── worker.ts                   # Cloudflare Workers entrypoint
@@ -108,9 +108,9 @@ Fill in your credentials:
 ```env
 EMDASH_ENCRYPTION_KEY="<32-byte-hex-key>"
 
-# WordPress Connection (4 Seasons Carpet Clean)
-WP_URL="https://4seasonscarpetclean.co.uk"
-WP_USER="alib"
+# WordPress Connection
+WP_URL="https://my-wordpress-site.com"
+WP_USER="admin"
 WP_APP_PASSWORD="xxxx xxxx xxxx xxxx xxxx xxxx"
 ```
 

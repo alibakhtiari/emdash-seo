@@ -1,74 +1,57 @@
-# WordPress to EmDash & Astro Migration Plan: `4seasonscarpetclean.co.uk`
+# WordPress to EmDash & Astro Migration Plan
 
 ## 1. Migration Overview
 
-This document outlines the systematic, zero-downtime migration strategy for **4 Seasons Carpet Clean** (`https://4seasonscarpetclean.co.uk`) from its existing WordPress / Kadence setup into a blazing-fast, edge-rendered **Astro + EmDash CMS** architecture deployed on Cloudflare Workers.
+This document outlines the systematic, zero-downtime migration strategy for transitioning any content-rich **WordPress** website into a blazing-fast, edge-rendered **Astro + EmDash CMS** architecture deployed on Cloudflare Workers, powered by the **EmDash SEO Suite** (`@emdash/plugin-seo`).
 
 ---
 
-## 2. Source Site Audit & Inventory
+## 2. Source Site Audit & Inventory Strategy
 
-### 2.1 Domain & Hosting Specifications
-* **URL:** `https://4seasonscarpetclean.co.uk`
-* **Theme:** Kadence with Kadence Blocks
-* **Current SEO Engine:** Rank Math SEO Pro (with Local SEO, FAQ blocks, and Redirections)
-* **Performance Cache:** LiteSpeed Cache + Cloudflare CDN
+### 2.1 Stack Assessment
+* **CMS:** WordPress (v5.6+)
+* **Themes & Page Builders:** Block themes, classic themes, Kadence, Elementor, or Gutenberg
+* **SEO Plugins:** Rank Math SEO (Free/Pro), Yoast SEO (Free/Premium), All in One SEO, or SEOPress
+* **Target Runtime:** Cloudflare Workers (Free & Paid tiers), D1 Database, R2 Object Storage
 
 ### 2.2 Content Classification & URL Map
-Based on live crawl and sitemap extraction:
+A thorough migration classifies the existing site inventory into structured EmDash collections:
 
 #### Core Landing Pages
-* `/` — Homepage (5.0★ Carpet Cleaning in London, hot water extraction, reviews, FAQs)
-* `/carpet-cleaning-prices-london/` — Transparent pricing table for domestic & commercial
-* `/expert-cleaning-services-london-gallery/` — Before/after job showcase
-* `/faq/` — Comprehensive cleaning FAQs
-* `/booking-carpet-cleaning-services-london/` — Online booking & quote request
-* `/contact-us/` — Contact details, map, coverage areas, phone `+442034881970`
-* `/terms-and-conditions/` — Legal terms and guarantee policies
+* `/` — Homepage (hero, value propositions, social proof, reviews, FAQs)
+* `/pricing/` — Transparent pricing tables and packages
+* `/gallery/` / `/portfolio/` — Case studies and portfolio showcase
+* `/faq/` — Comprehensive question and answer repository
+* `/contact-us/` — Contact information, location maps, inquiry forms
+* `/terms/` & `/privacy-policy/` — Legal terms and policies
 
-#### Primary Service Pages
-* `/carpet-cleaning-service-london/` — Residential Carpet Cleaning
-* `/commercial-carpet-cleaning-london/` — Commercial & Office Carpet Cleaning
-* `/rug-cleaning-near-me-london/` — Area & Oriental Rug Cleaning
-* `/persian-rug-cleaning-london/` — Specialist Persian Rug Cleaning
-* `/steam-cleaning-london/` — Steam Cleaning & Hot Water Extraction
-* `/end-of-tenancy-cleaning-london/` — Move-out / Landlord Approved Cleaning
-* `/stain-removal-london/` — Wine, pet, ink, and tough stain removal
-* `/sofa-cleaning-london/` — Upholstery & Sofa Steam Cleaning
-* `/mattress-cleaning-london/` — Deep Mattress Sanitation & Dust Mite Removal
-* `/curtain-cleaning-london/` — In-situ Steam Curtain Cleaning
-* `/emergency-carpet-cleaning-london/` — Same-day emergency response
-* `/airbnb-cleaning-services-london/` — Short-let & Airbnb turnaround
-* `/hard-floor-cleaning-services-london/` — Hard floor cleaning & sealing
-* `/hardwood-floor-cleaning-polishing-london/` — Wood floor buffing & polishing
+#### Primary Service / Product Pages
+* `/{service-slug}/` — Dedicated landing pages with schema-rich structured data (`LocalBusiness`, `Service`, `OfferCatalog`).
 
-#### London Borough & Local Service Subpages
-* `/carpet-cleaning-service-london/kensington/` — Kensington W8
-* `/carpet-cleaning-service-london/knightsbridge/` — Knightsbridge SW1X
-* `/carpet-cleaning-service-london/marylebone/` — Marylebone W1
-* *(And surrounding London locations: Paddington, Chelsea, Battersea, Clapham, Wandsworth)*
+#### Category & Taxonomy Subpages
+* `/{service-slug}/{sub-region}/` or `/{parent-category}/{child-category}/` — Hierarchical landing pages with automated breadcrumbs.
 
-#### Blog & Knowledge Base (`/blog/` & `/category/tips/`)
-* 90+ published guides and tips (e.g., `/dry-carpet-faster-after-cleaning/`, `/steam-cleaning-vs-traditional-carpet-cleaning/`, `/cleaning-most-common-carpet-stains/`).
+#### Articles & Guides (`/blog/` or `/{slug}/`)
+* Editorial content and tutorials preserved with original permalink structures and author attributions.
 
 ---
 
 ## 3. EmDash Collections Structure
 
-In EmDash (`seed/seed.json` & D1 tables), the content is structured into three clean collections:
+In EmDash (`seed/seed.json` & D1 tables), content is structured into three clean, extensible collections:
 
 ```typescript
 // 1. Services Collection ('services')
 {
   slug: "services",
-  label: "Cleaning Services",
+  label: "Services",
   urlPattern: "/{slug}",
   supports: ["drafts", "revisions", "preview", "search", "seo"],
   fields: [
     { slug: "title", label: "Service Name", type: "string", required: true },
     { slug: "short_description", label: "Short Description", type: "text" },
     { slug: "featured_image", label: "Featured Image", type: "image" },
-    { slug: "price_starting_at", label: "Starting Price (£)", type: "number" },
+    { slug: "price_starting_at", label: "Starting Price", type: "number" },
     { slug: "content", label: "Service Details", type: "portableText" },
     { slug: "faqs", label: "Frequently Asked Questions", type: "json" },
     { slug: "benefits", label: "Key Benefits", type: "json" },
@@ -80,7 +63,7 @@ In EmDash (`seed/seed.json` & D1 tables), the content is structured into three c
 {
   slug: "posts",
   label: "Blog Articles",
-  urlPattern: "/{slug}", // Preserves root WP permalink structure without /posts/ prefix!
+  urlPattern: "/{slug}", // Preserves root permalinks without forced subfolders
   supports: ["drafts", "revisions", "preview", "scheduling", "search", "seo"],
   fields: [
     { slug: "title", label: "Title", type: "string", required: true },
@@ -107,28 +90,28 @@ In EmDash (`seed/seed.json` & D1 tables), the content is structured into three c
 
 ## 4. URL Preservation & Redirection Strategy
 
-To protect 4 Seasons Carpet Clean's high Google search rankings in London:
+To protect existing search engine rankings and domain equity:
 1. **Zero URL Mutation:**
    * Every WordPress post, page, and service retains its exact slug and trailing slash behavior (handled via Astro middleware).
-2. **Redirection Matrix:**
-   * Rank Math redirections table `wp_rank_math_redirections` is extracted and loaded into Cloudflare D1.
-   * Astro middleware evaluates incoming URLs at edge ($<1\text{ms}$) before route matching:
+2. **Edge Redirection Matrix:**
+   * WordPress redirect tables (such as `wp_rank_math_redirections`) are extracted and loaded into Cloudflare D1.
+   * Astro middleware evaluates incoming URLs at the edge ($<1\text{ms}$) before route matching:
      * If matched, sends an instant `301 Moved Permanently`.
-     * If 404, increments the hit counter in `seo_404_logs` for real-time monitoring.
+     * If 404, increments the hit counter in `seo_404_logs` for real-time monitoring and 404 recovery.
 
 ---
 
-## 5. Kadence Blocks to Astro Component Transformation
+## 5. WordPress Blocks to Astro Component Transformation
 
-WordPress Kadence blocks are parsed and transformed during migration:
+WordPress block elements are parsed and transformed during migration:
 
-| WordPress / Kadence Element | Transformation in EmDash & Astro |
+| WordPress / Block Element | Transformation in EmDash & Astro |
 | :--- | :--- |
-| `wp:kadence/rowlayout` | Responsive CSS Grid / Flexbox Astro container (`Container.astro`) |
-| `div#rank-math-faq` | Native Accessible Astro Accordion component (`FaqAccordion.astro`) |
+| `wp:kadence/rowlayout` / Gutenberg columns | Responsive CSS Grid / Flexbox Astro container (`Container.astro`) |
+| `div#rank-math-faq` / Yoast FAQ blocks | Native Accessible Astro Accordion component (`FaqAccordion.astro` / `FaqBlock.astro`) |
 | `wp:image` | Astro `<Image />` component with automated WebP/AVIF format and responsive `srcset` |
-| Kadence Info Box & Icons | Modern SVG feature badges with zero CSS overhead |
-| Booking Forms | Modern Astro server endpoint `/api/booking` posting directly to email / CRM |
+| Info Box & Icons | Modern SVG feature badges with zero runtime CSS overhead |
+| Form Plugins | Modern Astro server endpoint `/api/contact` posting directly to email / CRM |
 
 ---
 
@@ -137,16 +120,16 @@ WordPress Kadence blocks are parsed and transformed during migration:
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Admin as SEO / Developer
-    participant WP as WordPress Live (4seasonscarpetclean.co.uk)
+    actor Admin as Developer / Migration Engineer
+    participant WP as WordPress Source Site
     participant Script as scripts/migrate-wordpress.ts
     participant D1 as Cloudflare D1 / Local SQLite
     participant Astro as Astro + EmDash Frontend
 
     Admin->>WP: Configure Application Password or install helper plugin
     Admin->>Script: Run pnpm run migrate:wp
-    Script->>WP: Fetch all Posts, Pages, Media & Rank Math Meta
-    Script->>Script: Transform HTML & Kadence blocks to PortableText & JSON-LD
+    Script->>WP: Fetch all Posts, Pages, Media & SEO Plugin Meta
+    Script->>Script: Transform HTML & blocks to PortableText & JSON-LD
     Script->>D1: Seed D1 with entries, categories, tags, and redirects
     Admin->>Astro: Run pnpm dev to verify preview & SEO audit
     Astro->>Admin: 100/100 Health Score & SERP Previews verified

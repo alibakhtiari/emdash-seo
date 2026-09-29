@@ -1,8 +1,8 @@
-# Product Requirement Document (PRD): EmDash SEO Suite (`@emdash/plugin-seo`) & WordPress Migration (`4seasonscarpetclean.co.uk`)
+# Product Requirement Document (PRD): EmDash SEO Suite (`@emdash/plugin-seo`) & WordPress Migration Architecture
 
 ## 1. Executive Summary & Architecture Overview
 
-The **EmDash SEO Suite** is an enterprise-grade, zero-runtime-dependency SEO plugin designed specifically for EmDash CMS and Astro, coupled with an automated migration pipeline to transition WordPress sites (specifically **4 Seasons Carpet Clean** — `https://4seasonscarpetclean.co.uk`) into modern, edge-rendered Astro + EmDash architectures.
+The **EmDash SEO Suite** is an enterprise-grade, zero-runtime-dependency SEO plugin designed specifically for EmDash CMS and Astro, coupled with an automated migration pipeline to transition WordPress sites (Rank Math Pro, Yoast SEO Premium, All in One SEO) into modern, edge-rendered Astro + EmDash architectures.
 
 Built as an **in-process Native Plugin**, it bypasses the requirement for Cloudflare Dynamic Worker loaders (`worker_loaders`), guaranteeing complete feature parity across:
 
@@ -12,27 +12,26 @@ Built as an **in-process Native Plugin**, it bypasses the requirement for Cloudf
 
 The suite combines:
 1. **Core SEO Capabilities:** Matching and exceeding the top WordPress SEO plugins (**Rank Math Pro**, **Yoast SEO Premium**, **All in One SEO**, and **SEOPress**).
-2. **Automated WP Migration Engine:** Direct extraction of WordPress content, custom fields, Kadence/Gutenberg blocks, and SEO metadata (focus keywords, canonicals, robots flags, social cards, redirects, and connected schema graphs).
-3. **Local Business & Service SEO:** Specialized structured data engine for London service areas, cleaning services, pricing, customer reviews, and FAQ accordion schema.
+2. **Automated WP Migration Engine:** Direct extraction of WordPress content, custom fields, Gutenberg / page builder blocks, and SEO metadata (focus keywords, canonicals, robots flags, social cards, redirects, and connected schema graphs).
+3. **Local Business & Service SEO:** Specialized structured data engine for business entities, services, pricing, customer reviews, and FAQ accordion schema.
 
 ---
 
-## 2. Target Site Migration Context: `4seasonscarpetclean.co.uk`
+## 2. Target Site Migration Architecture
 
-### 2.1 Site Profile
-* **Brand / Business:** 4 Seasons Carpet Clean (`4SEASONSCLEAN LTD`)
-* **Industry:** Professional carpet, rug, sofa/upholstery, mattress, curtain, hardwood floor, and end-of-tenancy cleaning.
-* **Geography:** London & Greater London (Paddington W2, Kensington W8, Knightsbridge SW1X, Marylebone W1, Chelsea, Battersea, Clapham, Wandsworth, etc.).
-* **Current Stack:** WordPress, Kadence Theme & Blocks, LiteSpeed Cache, Cloudflare CDN.
-* **Current SEO Plugin:** **Rank Math SEO Pro** (with Local SEO module, FAQ blocks, Redirections module, and custom JSON-LD schemas).
-* **Reputation & Ratings:** 5.0★ rating with 340+ verified reviews (Trustpilot, Checkatrade, Google Reviews).
+### 2.1 Archetypal Source Site Profile
+* **CMS:** WordPress (v5.6+)
+* **Themes & Page Builders:** Gutenberg, Kadence, Elementor, or Classic Block Editors
+* **Current SEO Plugins:** Rank Math SEO (Free/Pro), Yoast SEO (Free/Premium), All in One SEO, or SEOPress
+* **Typical Entities:** Local business profiles, multi-location services, editorial blog posts, and customer review schemas
+* **Stack Target:** Astro + EmDash CMS on Cloudflare Workers edge runtime
 
 ### 2.2 Critical Migration Objectives
-1. **Zero Organic Search Loss:** Preserve 100% of existing URL slugs (`/carpet-cleaning-service-london/`, `/sofa-cleaning-london/`, `/rug-cleaning-near-me-london/`, etc.).
-2. **Comprehensive Redirection Engine:** Port all existing redirects from Rank Math (`wp_rank_math_redirections`) to Cloudflare D1 with instant edge execution.
-3. **Rank Math Data Ingestion:** Extract all post meta (`rank_math_title`, `rank_math_description`, `rank_math_focus_keyword`, `rank_math_robots`, `rank_math_canonical_url`, `rank_math_schema_*`, OpenGraph, Twitter).
-4. **FAQ Block Parsing:** Extract Rank Math FAQ blocks (`div#rank-math-faq`) and convert them into native Astro interactive accordions + JSON-LD `FAQPage` schemas.
-5. **Local Business Graph:** Reconstruct the complete connected `@graph` with `CleaningService`, `LocalBusiness`, `Organization`, `WebSite`, `WebPage`, `AggregateRating`, `OfferCatalog`, and `GeoCircle` area definitions.
+1. **Zero Organic Search Loss:** Preserve 100% of existing URL slugs (`/{slug}/`) with consistent trailing slash handling.
+2. **Comprehensive Redirection Engine:** Port all existing redirects from Rank Math (`wp_rank_math_redirections`) or Yoast to Cloudflare D1 with instant edge execution.
+3. **SEO Plugin Data Ingestion:** Extract all post meta (`title`, `description`, `focus_keyword`, `robots`, `canonical_url`, schemas, OpenGraph, Twitter).
+4. **FAQ Block Parsing:** Extract FAQ blocks (`div#rank-math-faq`) and convert them into native Astro interactive accordions + JSON-LD `FAQPage` schemas.
+5. **Connected Schema Graph:** Reconstruct the complete connected `@graph` with `LocalBusiness`, `Organization`, `WebSite`, `WebPage`, `AggregateRating`, `OfferCatalog`, and `BreadcrumbList`.
 
 ---
 
@@ -58,9 +57,9 @@ The suite combines:
 ### 3.2 Advanced Schema Graph Engine (JSON-LD `@graph`)
 * **Unified Connected Graph:** Output a single `<script type="application/ld+json">` with linked `@id` references (`#website`, `#organization`, `#place`, `#webpage`, `#service`, `#breadcrumb`).
 * **Entity Types Supported:**
-  * **LocalBusiness & CleaningService:** Address (`47 Westbourne Terrace, London, W2 3UY`), telephone (`+442034881970`), GeoCoordinates, GeoCircle (`30km` radius), opening hours, price range (`££`), sameAs social profiles.
-  * **AggregateRating & Reviews:** `ratingValue: 5.0`, `reviewCount: 343`, ratings source attribution.
-  * **Service & OfferCatalog:** Structured catalog of cleaning services with price currency and availability.
+  * **LocalBusiness & Organization:** Address, telephone, GeoCoordinates, GeoCircle area definitions, opening hours, price range (`££`), sameAs social profiles.
+  * **AggregateRating & Reviews:** `ratingValue: 5.0`, `reviewCount: 150+`, ratings source attribution.
+  * **Service & OfferCatalog:** Structured catalog of services with price currency and availability.
   * **FAQPage:** Extraction of Q&A pairs from content blocks and dedicated FAQ collections.
   * **Article / BlogPosting / NewsArticle:** Author person reference, publisher organization, datePublished, dateModified.
   * **BreadcrumbList:** Hierarchical trail based on collection URL pattern and primary taxonomy.
@@ -145,12 +144,12 @@ The migration engine supports importing metadata from:
 
 ```mermaid
 graph TD
-    A[WordPress: 4seasonscarpetclean.co.uk] --> B{Authentication Method}
+    A[WordPress Source Site] --> B{Authentication Method}
     B -->|Option 1: Direct REST API| C[WP REST API + Application Password in .env]
     B -->|Option 2: Helper Plugin / WXR| D[emdash-export-helper.php / WXR XML]
     C --> E[Migration Script: scripts/migrate-wordpress.ts]
     D --> E
-    E --> F[Content & Kadence Block Parser]
+    E --> F[Content & Block Parser]
     E --> G[Rank Math / Yoast Meta Normalizer]
     E --> H[Redirects & Schema Extractor]
     F --> I[Emdash Collections / D1 Database]
@@ -163,7 +162,7 @@ graph TD
 1. **Direct REST API with Application Password:**
    * Configured in `.env`:
      ```env
-     WP_URL="https://4seasonscarpetclean.co.uk"
+     WP_URL="https://my-wordpress-site.com"
      WP_USER="<wordpress_username>"
      WP_APP_PASSWORD="<application_password>"
      ```
@@ -334,16 +333,16 @@ packages/emdash-seo/
 2. **Step 2: SEO Plugin Core Engine (`packages/emdash-seo`):**
    * Implement types, variable resolvers (`%title%`, `%siteName%`, `%separator%`).
    * Build `content-analyzer.ts` (keyword density, placement, word count, heading hierarchy).
-   * Build `schema-builder.ts` with complete `CleaningService` / `LocalBusiness` / `Service` / `FAQPage` connected `@graph`.
+   * Build `schema-builder.ts` with complete `LocalBusiness` / `Organization` / `Service` / `FAQPage` connected `@graph`.
    * Build `SeoHead.astro` for instant drop-in to Astro layouts.
 3. **Step 3: Protocol & Edge Routes:**
    * Dynamic `/sitemap.xml` and `/sitemap-index.xml` with image extensions.
    * Dynamic `/robots.txt` and AI crawler `/llms.txt`.
    * Edge redirect processor and 404 logging route.
-4. **Step 4: WordPress Migration Pipeline for `4seasonscarpetclean.co.uk`:**
+4. **Step 4: WordPress Migration Pipeline:**
    * Build `scripts/migrate-wordpress.ts` with direct WP REST API authentication and Rank Math meta extractor.
    * Create optional helper plugin `scripts/emdash-export-helper.php`.
    * Run extraction for pages, posts, services, locations, reviews, and 301 redirects.
 5. **Step 5: Frontend Assembly & Verification:**
-   * Assemble Astro templates with design matching 4 Seasons Carpet Clean (hero, service cards, testimonials, FAQ accordion, quote booking CTA).
+   * Assemble Astro templates with modern, accessible UI components (hero, service cards, testimonials, FAQ accordion, quote booking CTA).
    * Test build and edge execution on Cloudflare Free Worker profile (<10ms CPU, <1MB bundle size).

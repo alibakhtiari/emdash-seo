@@ -1,6 +1,6 @@
 # AGENTS.md — Agent & AI Pair Programming Guide
 
-This repository contains the enterprise migration of [4 Seasons Carpet Clean](https://4seasonscarpetclean.co.uk) from WordPress into **Astro** and **EmDash CMS**, powered by the native in-process **EmDash SEO Suite** (`@emdash/plugin-seo`).
+This repository contains the **EmDash SEO Suite** (`@emdash/plugin-seo`) for **Astro** and **EmDash CMS**, with automated WordPress migration capabilities (Rank Math Pro, Yoast SEO, AIOSEO) targeting Cloudflare Workers.
 
 ---
 
@@ -27,7 +27,7 @@ export default defineConfig({
 The entrypoint must export `createPlugin(options)` returning an object with `id`, `version`, `hooks`, and optional `routes`.
 
 ### 3. URL & Search Equity Preservation
-- Zero ranking loss: All URLs from the live site (`https://4seasonscarpetclean.co.uk/carpet-cleaning-service-london/`, etc.) must preserve their exact slugs with trailing slashes or execute edge 301 redirects via `src/routes/redirects.ts`.
+- Zero ranking loss: All URLs from the source WordPress site preserve their exact slugs with trailing slashes or execute edge 301 redirects via `src/routes/redirects.ts`.
 
 ---
 
@@ -69,7 +69,7 @@ pnpm run seed:d1          # Apply seed/seed.json into Cloudflare D1 / local SQLi
 │       ├── src/
 │       │   ├── index.ts         # createPlugin() and seoPlugin() entrypoints
 │       │   ├── types.ts         # Strict TypeScript definitions
-│       │   ├── config.ts        # Templating & default 4 Seasons business entity
+│       │   ├── config.ts        # Templating & default business entity
 │       │   ├── engine/          # Content analyzer, schema builder, breadcrumbs, TOC
 │       │   ├── routes/          # Sitemaps, robots.txt, llms.txt, redirects
 │       │   ├── head/            # SeoHead.astro, SchemaGraph.astro, OpenGraph.astro
@@ -82,9 +82,9 @@ pnpm run seed:d1          # Apply seed/seed.json into Cloudflare D1 / local SQLi
 │   ├── emdash-export-helper.php # 1-file helper WordPress export plugin
 │   └── test-seo-plugin.ts       # Comprehensive SEO verification runner
 ├── seed/
-│   └── seed.json                # Seed database with 16 services & 100 blog posts
+│   └── seed.json                # Seed database with sample services & blog posts
 ├── src/
-│   ├── components/              # 4 Seasons UI components (Reviews, Cards, FAQ)
+│   ├── components/              # Reusable UI components (Reviews, Cards, FAQ)
 │   ├── env.d.ts                 # Astro ambient declarations & emdash/ui typings
 │   ├── layouts/                 # Base layout with SeoHead integration
 │   ├── pages/                   # Astro routes (homepage, services, blog, search, 404)
@@ -124,7 +124,7 @@ Emits:
 - Canonical `<link>` and meta description.
 - Robots directives (`index, follow, max-image-preview:large`, etc.).
 - Complete OpenGraph and Twitter cards.
-- Connected JSON-LD `@graph` (`WebSite`, `CleaningService`, `LocalBusiness`, `Organization`, `WebPage`, `BreadcrumbList`, `ItemList`, `FAQPage`, `Service`).
+- Connected JSON-LD `@graph` (`WebSite`, `LocalBusiness`, `Organization`, `WebPage`, `BreadcrumbList`, `ItemList`, `FAQPage`, `Service`).
 
 ### `<Breadcrumbs />`
 ```astro

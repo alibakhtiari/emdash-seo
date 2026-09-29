@@ -9,7 +9,7 @@ Designed as an **in-process Native EmDash Plugin** with **zero external runtime 
 ## Features
 
 - **Rank Math & Yoast Parity:** Migrate focus keywords, custom titles, descriptions, canonical URLs, robots directives (`noindex`, `nofollow`, `noimageindex`), and custom OpenGraph/Twitter social cards.
-- **Connected JSON-LD Schema Graph:** Emits Google-compliant unified `@graph` linking `CleaningService`, `LocalBusiness`, `Organization`, `WebPage`, `WebSite`, `Service`, `AggregateRating`, `FAQPage`, `BreadcrumbList`, and `ItemList`.
+- **Connected JSON-LD Schema Graph:** Emits Google-compliant unified `@graph` linking `LocalBusiness`, `Organization`, `WebPage`, `WebSite`, `Service`, `AggregateRating`, `FAQPage`, `BreadcrumbList`, and `ItemList`.
 - **Automated Breadcrumbs:** Computes hierarchical breadcrumb trails from URL routes, rendering accessible microdata (`Breadcrumbs.astro`) and Google `BreadcrumbList` schema.
 - **Automated Table of Contents (TOC):** Parses `<h2>` and `<h3>` headings, auto-injects slugified anchor IDs, and outputs Google `ItemList` jump-link schema (`TableOfContents.astro`).
 - **Automated FAQ Blocks & Schema:** Extracts Rank Math FAQ blocks, `<details>/<summary>` accordions, and outputs Google `FAQPage` schema (`FaqBlock.astro`).
@@ -39,28 +39,28 @@ import emdash from "emdash";
 import { seoPlugin } from "@emdash/plugin-seo";
 
 export default defineConfig({
-  site: "https://4seasonscarpetclean.co.uk",
+  site: "https://example.com",
   integrations: [
     emdash({
       plugins: [
         seoPlugin({
-          defaultTitle: "4 Seasons Carpet Clean",
+          defaultTitle: "My Company",
           titleTemplate: "%title% | %siteName%",
-          defaultDescription: "Top-rated carpet, upholstery & rug cleaning specialists.",
-          siteUrl: "https://4seasonscarpetclean.co.uk",
+          defaultDescription: "High-performance services and modern solutions.",
+          siteUrl: "https://example.com",
           business: {
-            name: "4 Seasons Carpet Clean",
-            telephone: "+44 20 8945 3999",
+            name: "My Company Ltd",
+            telephone: "+44 20 8000 0000",
             priceRange: "££",
             address: {
-              streetAddress: "22 Park Lane",
+              streetAddress: "100 High Street",
               addressLocality: "London",
-              postalCode: "W1K 1BE",
+              postalCode: "SW1A 1AA",
               addressCountry: "GB",
             },
-            rating: {
-              ratingValue: 5.0,
-              reviewCount: 343,
+            aggregateRating: {
+              ratingValue: "5.0",
+              reviewCount: "150",
             },
           },
           sitemap: {
@@ -101,7 +101,7 @@ const { title, description, slug, image, schemaType } = Astro.props;
     description={description}
     canonical={Astro.url.href}
     ogImage={image}
-    schemaType={schemaType || "CleaningService"}
+    schemaType={schemaType || "Service"}
   />
 </head>
 ```
@@ -133,8 +133,8 @@ const { htmlContent } = Astro.props;
 import FaqBlock from "@emdash/plugin-seo/components/FaqBlock";
 
 const faqs = [
-  { question: "How long does carpet drying take?", answer: "Usually 2 to 4 hours with our low-moisture system." },
-  { question: "Are your cleaning solutions pet-safe?", answer: "Yes, 100% eco-friendly and pet-safe." },
+  { question: "How quickly can services be scheduled?", answer: "Usually same-day or within 24 hours of booking." },
+  { question: "Are services fully insured and guaranteed?", answer: "Yes, 100% comprehensive coverage and satisfaction guaranteed." },
 ];
 ---
 <FaqBlock items={faqs} emitSchema={true} />
@@ -144,4 +144,4 @@ const faqs = [
 
 ## License
 
-MIT © 4 Seasons Carpet Clean & EmDash Contributors
+MIT © EmDash SEO Contributors

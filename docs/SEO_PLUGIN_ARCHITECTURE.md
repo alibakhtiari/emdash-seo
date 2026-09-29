@@ -89,9 +89,9 @@ Executes instantaneously on typing inside the admin panel and during `beforeSave
 ### 3.3 Connected JSON-LD Schema Engine (`src/engine/schema-builder.ts`)
 Constructs an interconnected `@graph` avoiding fragmented or conflicting schema blocks:
 * `WebSite` $\rightarrow$ with `potentialAction` (SearchAction) and publisher linking to `Organization`
-* `Organization` / `LocalBusiness` / `CleaningService` $\rightarrow$ Complete address, telephone, priceRange, openingHours, geoCoordinates, geoCircle (`areaServed`), and `aggregateRating` (5.0★ / 343 reviews)
+* `Organization` / `LocalBusiness` $\rightarrow$ Complete address, telephone, priceRange, openingHours, geoCoordinates, geoCircle (`areaServed`), and `aggregateRating` (5.0★ rating)
 * `WebPage` $\rightarrow$ linking to `WebSite` and `primaryImageOfPage`
-* `Service` $\rightarrow$ linked to the current service page (`offers`, `serviceType: Cleaning services`, `provider: Organization`)
+* `Service` $\rightarrow$ linked to the current service page (`offers`, `serviceType: Professional Services`, `provider: Organization`)
 * `FAQPage` $\rightarrow$ structured `mainEntity` array with `Question` and `Answer` nodes
 * `BreadcrumbList` $\rightarrow$ structured navigation trail
 
@@ -104,7 +104,7 @@ Constructs an interconnected `@graph` avoiding fragmented or conflicting schema 
 
 ### 3.5 Edge Redirection & 404 Logging (`src/routes/redirects.ts`)
 * Middleware evaluates incoming paths against D1 redirect rules.
-* Supports exact match (`/old-carpet/` $\rightarrow$ `/carpet-cleaning-service-london/`), prefix matching, and regex rules.
+* Supports exact match (`/old-service/` $\rightarrow$ `/services/new-service/`), prefix matching, and regex rules.
 * 404 hit tracking aggregates frequency and referrers to prevent broken backlinks.
 
 ---
