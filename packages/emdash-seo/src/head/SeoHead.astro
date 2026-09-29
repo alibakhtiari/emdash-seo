@@ -6,6 +6,8 @@ import type { EntrySeoMetadata, LocalBusinessInfo } from '../types.js';
 import { generateAutoBreadcrumbs, type BreadcrumbItem } from '../engine/breadcrumbs.js';
 import { extractTableOfContents, type TocItem } from '../engine/toc-extractor.js';
 import { extractFaqsFromContent } from '../importers/rankmath-importer.js';
+import { cleanOgTitle, generateRobotsDirective, extractTaxonomyTerms } from '../engine/metadata-utils.js';
+import type { AlternateLink } from '../engine/hreflang.js';
 
 interface Props {
   entry?: any;
@@ -24,6 +26,8 @@ interface Props {
   publishedTime?: string;
   modifiedTime?: string;
   author?: string;
+  nlwebEndpoint?: string;
+  alternateLinks?: AlternateLink[];
 }
 
 const {
@@ -39,10 +43,12 @@ const {
   breadcrumbs: propBreadcrumbs,
   toc: propToc,
   content = '',
-  category,
+  category: propCategory,
   publishedTime,
   modifiedTime,
   author,
+  nlwebEndpoint = DEFAULT_OPTIONS.nlwebEndpoint,
+  alternateLinks = [],
 } = Astro.props;
 
 const seo: EntrySeoMetadata = entry?.data?.seo || entry?.seo || {
@@ -51,37 +57,46 @@ const seo: EntrySeoMetadata = entry?.data?.seo || entry?.seo || {
   noFollow: false,
 };
 
+const currentPath = Astro.url.pathname;
+const is404 = currentPath === '/404' || currentPath.endsWith('/404') || currentPath.endsWith('/404/');
+
 const rawTitle = seo.metaTitle || propTitle || entry?.data?.title || siteName;
-const fullTitle = rawTitle.includes(siteName)
-  ? rawTitle
-  : `${rawTitle} | ${siteName}`;
+const fullTitle = is404
+  ? `Page not found | ${siteName}`
+  : rawTitle.includes(siteName)
+    ? rawTitle
+    : `${rawTitle} | ${siteName}`;
 
 const resolvedDescription = seo.metaDescription || propDescription || entry?.data?.excerpt || '';
 
-const currentPath = Astro.url.pathname;
 const cleanSiteUrl = siteUrl.replace(/\/+$/, '');
 const computedCanonical = `${cleanSiteUrl}${currentPath.endsWith('/') ? currentPath : `${currentPath}/`}`;
 const finalCanonical = seo.canonicalUrl || propCanonical || computedCanonical;
 
 const finalImage = seo.ogImage || propImage || entry?.data?.featured_image || DEFAULT_OPTIONS.defaultOgImage;
 
-// Robots directive
-let robotsDirective: string;
-if (seo.noIndex) {
-  robotsDirective = 'noindex, nofollow';
-} else {
-  const directives = ['index', 'follow'];
-  if (seo.noArchive) directives.push('noarchive');
-  if (seo.noSnippet) directives.push('nosnippet');
-  if (seo.maxImagePreview) directives.push(`max-image-preview:${seo.maxImagePreview}`);
-  robotsDirective = directives.join(', ');
-}
+// Metadata Hygiene: Clean OG title without duplicate siteName suffix
+const cleanSocialTitle = seo.ogTitle || (is404 ? 'Page not found' : cleanOgTitle(rawTitle, siteName));
+
+// Metadata Hygiene: Standard Robots directive (omitted on 404, noindex on search, snippet directives)
+const robotsDirective = generateRobotsDirective({
+  noIndex: seo.noIndex,
+  noFollow: seo.noFollow,
+  noArchive: seo.noArchive,
+  noSnippet: seo.noSnippet,
+  maxImagePreview: seo.maxImagePreview || 'large',
+  path: currentPath,
+});
+
+// Taxonomy extraction
+const taxonomy = extractTaxonomyTerms(entry?.data);
+const category = propCategory || taxonomy.articleSection || entry?.data?.category;
 
 // 1. Automatic Breadcrumbs
 const breadcrumbs: BreadcrumbItem[] =
   propBreadcrumbs && propBreadcrumbs.length > 0
     ? propBreadcrumbs
-    : generateAutoBreadcrumbs(currentPath, siteUrl, rawTitle, category || entry?.data?.category);
+    : generateAutoBreadcrumbs(currentPath, siteUrl, rawTitle, category);
 
 // 2. Automatic Table of Contents
 let toc: TocItem[] = propToc || [];
@@ -101,36 +116,46 @@ if ((!seo.faqs || seo.faqs.length === 0) && content) {
 
 <!-- Core Primary Meta Tags -->
 <title>{fullTitle}</title>
-{resolvedDescription && <meta name="description" content={resolvedDescription} />}
-<link rel="canonical" href={finalCanonical} />
+{resolvedDescription && !is404 && <meta name="description" content={resolvedDescription} />}
+{!is404 && !seo.noIndex && <link rel="canonical" href={finalCanonical} />}
 {robotsDirective && <meta name="robots" content={robotsDirective} />}
+
+<!-- Multilingual Alternates & x-default -->
+{!is404 && alternateLinks && alternateLinks.map((alt) => (
+  <link rel="alternate" hreflang={alt.hreflang} href={alt.href} />
+))}
+
+<!-- NLWeb Conversational Agent Endpoint Discovery -->
+{!is404 && nlwebEndpoint && <link rel="nlweb" href={nlwebEndpoint} />}
 
 <!-- OpenGraph & Twitter Cards -->
 <OpenGraph
-  title={seo.ogTitle || fullTitle}
-  description={seo.ogDescription || resolvedDescription}
+  title={cleanSocialTitle}
+  description={is404 ? '' : (seo.ogDescription || resolvedDescription)}
   url={finalCanonical}
-  image={finalImage}
+  image={is404 ? undefined : finalImage}
   type={seo.ogType || type}
   siteName={siteName}
   twitterCard={seo.twitterCard || 'summary_large_image'}
 />
 
-<!-- Connected JSON-LD Schema Graph -->
-<SchemaGraph
-  siteUrl={cleanSiteUrl}
-  siteName={siteName}
-  canonicalUrl={finalCanonical}
-  title={fullTitle}
-  description={resolvedDescription}
-  imageUrl={finalImage}
-  datePublished={publishedTime || entry?.createdAt}
-  dateModified={modifiedTime || entry?.updatedAt}
-  authorName={author}
-  breadcrumbs={breadcrumbs}
-  pathname={currentPath}
-  category={category || entry?.data?.category}
-  toc={toc}
-  seo={seo}
-  business={business}
-/>
+<!-- Connected JSON-LD Schema Graph (Omitted on 404) -->
+{!is404 && (
+  <SchemaGraph
+    siteUrl={cleanSiteUrl}
+    siteName={siteName}
+    canonicalUrl={finalCanonical}
+    title={fullTitle}
+    description={resolvedDescription}
+    imageUrl={finalImage}
+    datePublished={publishedTime || entry?.createdAt}
+    dateModified={modifiedTime || entry?.updatedAt}
+    authorName={author}
+    breadcrumbs={breadcrumbs}
+    pathname={currentPath}
+    category={category}
+    toc={toc}
+    seo={seo}
+    business={business}
+  />
+)}

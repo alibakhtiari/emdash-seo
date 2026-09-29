@@ -20,12 +20,20 @@ export interface BuildSchemaGraphOptions {
   seo?: EntrySeoMetadata;
   business?: LocalBusinessInfo;
   faqs?: FaqItem[];
+  publishingPrinciples?: string;
+  copyrightYear?: number | null;
+  licenseUrl?: string;
+  blogUrl?: string;
+  blogName?: string;
+  navigationItems?: Array<{ name: string; url: string }>;
+  keywords?: string[];
+  articleSection?: string;
   customGraphNodes?: Record<string, any>[];
 }
 
 /**
- * Builds a connected JSON-LD @graph matching Google Search and Rank Math Pro standards
- * Includes WebSite, Organization/LocalBusiness, WebPage, BreadcrumbList, FAQPage, and TableOfContents
+ * Builds a connected JSON-LD @graph matching Google Search, Rank Math Pro, and Yoast standards
+ * Includes WebSite, Organization/LocalBusiness, WebPage, BreadcrumbList, FAQPage, TableOfContents, and Blog/Navigation
  */
 export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Record<string, any> {
   const {
@@ -44,6 +52,14 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
     seo = { focusKeywords: [], noIndex: false, noFollow: false },
     business = DEFAULT_LOCAL_BUSINESS,
     faqs: explicitFaqs,
+    publishingPrinciples,
+    copyrightYear,
+    licenseUrl,
+    blogUrl,
+    blogName,
+    navigationItems,
+    keywords = [],
+    articleSection,
     customGraphNodes = [],
   } = options;
 
@@ -110,6 +126,7 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
     } : {}),
     ...(business.openingHours ? { "openingHours": business.openingHours } : {}),
     ...(business.sameAs ? { "sameAs": business.sameAs } : {}),
+    ...(publishingPrinciples ? { "publishingPrinciples": publishingPrinciples } : {}),
     ...(business.aggregateRating ? {
       "aggregateRating": {
         "@type": "AggregateRating",
@@ -129,6 +146,8 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
     "isPartOf": { "@id": `${cleanSiteUrl}/#website` },
     "about": { "@id": `${cleanSiteUrl}/#organization` },
     "inLanguage": "en-GB",
+    ...(copyrightYear ? { "copyrightYear": copyrightYear } : {}),
+    ...(licenseUrl ? { "license": licenseUrl } : {}),
     ...(datePublished ? { "datePublished": datePublished } : {}),
     ...(dateModified ? { "dateModified": dateModified } : {}),
     ...(imageUrl ? {
@@ -146,6 +165,35 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
   };
 
   const graph: Record<string, any>[] = [websiteNode, organizationNode, webPageNode];
+
+  // Optional: SiteNavigationElement Schema
+  if (navigationItems && navigationItems.length > 0) {
+    graph.push({
+      "@type": "SiteNavigationElement",
+      "@id": `${cleanSiteUrl}/#navigation`,
+      "name": "Main Navigation",
+      "isPartOf": { "@id": `${cleanSiteUrl}/#website` },
+      "itemListElement": navigationItems.map((item, idx) => ({
+        "@type": "SiteNavigationElement",
+        "position": idx + 1,
+        "name": item.name,
+        "url": item.url
+      }))
+    });
+  }
+
+  // Optional: Blog Schema Entity
+  if (blogUrl) {
+    const cleanBlogUrl = blogUrl.replace(/\/+$/, '');
+    graph.push({
+      "@type": "Blog",
+      "@id": `${cleanBlogUrl}/#blog`,
+      "name": blogName || "Blog",
+      "url": cleanBlogUrl,
+      "publisher": { "@id": `${cleanSiteUrl}/#organization` },
+      "inLanguage": "en-GB"
+    });
+  }
 
   // 4. Automated Breadcrumbs Node
   const effectiveBreadcrumbs: BreadcrumbItem[] =
@@ -217,6 +265,8 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
         "name": authorName,
         "url": `${cleanSiteUrl}/author/${encodeURIComponent(authorName.toLowerCase().replace(/\s+/g, '-'))}/`
       },
+      ...(articleSection || category ? { "articleSection": articleSection || category } : {}),
+      ...(keywords && keywords.length > 0 ? { "keywords": keywords.join(', ') } : {}),
       ...(datePublished ? { "datePublished": datePublished } : {}),
       ...(dateModified ? { "dateModified": dateModified } : {}),
       ...(imageUrl ? { "image": imageUrl } : {}),

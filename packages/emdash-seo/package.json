@@ -1,6 +1,6 @@
 {
   "name": "@emdash/plugin-seo",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Enterprise SEO Suite for EmDash CMS & Astro: Rank Math/Yoast parity, Schema Graph, Content Analyzer, Sitemaps, Robots, LLMs.txt, Redirections, and sitewide audits.",
   "type": "module",
   "main": "./src/index.ts",
@@ -40,6 +40,26 @@
       "types": "./src/engine/toc-extractor.ts",
       "import": "./src/engine/toc-extractor.ts",
       "default": "./src/engine/toc-extractor.ts"
+    },
+    "./fuzzy": {
+      "types": "./src/engine/fuzzy-matcher.ts",
+      "import": "./src/engine/fuzzy-matcher.ts",
+      "default": "./src/engine/fuzzy-matcher.ts"
+    },
+    "./indexnow": {
+      "types": "./src/engine/indexnow.ts",
+      "import": "./src/engine/indexnow.ts",
+      "default": "./src/engine/indexnow.ts"
+    },
+    "./hreflang": {
+      "types": "./src/engine/hreflang.ts",
+      "import": "./src/engine/hreflang.ts",
+      "default": "./src/engine/hreflang.ts"
+    },
+    "./schema-map": {
+      "types": "./src/routes/schema-map.ts",
+      "import": "./src/routes/schema-map.ts",
+      "default": "./src/routes/schema-map.ts"
     },
     "./components/Breadcrumbs": {
       "types": "./src/components/Breadcrumbs.astro",

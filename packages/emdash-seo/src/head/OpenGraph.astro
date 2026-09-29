@@ -1,4 +1,6 @@
 ---
+import { normalizeOgLocale } from '../engine/metadata-utils.js';
+
 interface Props {
   title: string;
   description?: string;
@@ -20,6 +22,8 @@ const {
   locale = 'en_GB',
   twitterCard = 'summary_large_image',
 } = Astro.props;
+
+const normalizedLocale = normalizeOgLocale(locale);
 ---
 
 <!-- OpenGraph Meta Tags -->
@@ -28,7 +32,7 @@ const {
 <meta property="og:url" content={url} />
 <meta property="og:site_name" content={siteName} />
 <meta property="og:type" content={type === 'service' ? 'website' : type} />
-<meta property="og:locale" content={locale} />
+<meta property="og:locale" content={normalizedLocale} />
 {image && (
   <meta property="og:image" content={image} />
   <meta property="og:image:width" content="1200" />

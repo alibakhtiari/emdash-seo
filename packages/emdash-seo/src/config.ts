@@ -45,6 +45,8 @@ export const DEFAULT_OPTIONS: SeoPluginOptions = {
   enableSitemap: true,
   enableRobots: true,
   enableRedirects: true,
+  enableIndexNow: false,
+  enableSchemaMap: true,
   business: DEFAULT_LOCAL_BUSINESS,
 };
 

@@ -60,6 +60,11 @@ export interface LocalBusinessInfo {
   };
 }
 
+export interface NavigationItem {
+  name: string;
+  url: string;
+}
+
 export interface SeoPluginOptions {
   siteUrl: string;
   siteName: string;
@@ -70,6 +75,16 @@ export interface SeoPluginOptions {
   enableSitemap?: boolean;
   enableRobots?: boolean;
   enableRedirects?: boolean;
+  enableIndexNow?: boolean;
+  indexnowKey?: string;
+  enableSchemaMap?: boolean;
+  nlwebEndpoint?: string;
+  publishingPrinciples?: string;
+  copyrightYear?: number | null;
+  licenseUrl?: string;
+  blogUrl?: string;
+  blogName?: string;
+  navigationItems?: NavigationItem[];
   business?: LocalBusinessInfo;
 }
 
@@ -151,3 +166,42 @@ export interface AuditSnapshot {
     issues: string[];
   }[];
 }
+
+export type PageMetadataContribution =
+  | { kind: 'meta'; name: string; content: string }
+  | { kind: 'property'; property: string; content: string }
+  | { kind: 'link'; rel: string; href: string; hreflang?: string; key?: string }
+  | { kind: 'jsonld'; id: string; graph: Record<string, any> };
+
+export interface PageMetadataEvent {
+  page: {
+    url: string;
+    path?: string;
+    title?: string;
+    description?: string;
+    image?: string;
+    canonical?: string;
+    siteName?: string;
+    locale?: string;
+    kind?: 'content' | 'index' | 'archive' | 'custom';
+    seo?: {
+      metaTitle?: string;
+      ogDescription?: string;
+      robots?: string;
+      noIndex?: boolean;
+      noFollow?: boolean;
+    };
+    content?: {
+      id: string;
+      collection: string;
+      slug?: string;
+      data?: Record<string, any>;
+    };
+    articleMeta?: {
+      publishedTime?: string;
+      modifiedTime?: string;
+      author?: string;
+    };
+  };
+}
+

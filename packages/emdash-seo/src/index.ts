@@ -4,6 +4,8 @@ import { renderSitemap } from './routes/sitemap.js';
 import { renderRobots } from './routes/robots.js';
 import { renderLlmsTxt, renderLlmsFullTxt } from './routes/llms-txt.js';
 import { handleRunAudit, handleGetAudit } from './routes/api-audit.js';
+import { renderSchemaMap, listPublishedSchemaUrls } from './routes/schema-map.js';
+import { handleFuzzyRedirects } from './routes/api-fuzzy-redirects.js';
 import { analyzeContent } from './engine/content-analyzer.js';
 import { buildConnectedSchemaGraph } from './engine/schema-builder.js';
 import { extractLinksFromContent, findInternalLinkOpportunities, detectOrphanPages } from './engine/link-analyzer.js';
@@ -12,6 +14,33 @@ import { parseYoastMeta } from './importers/yoast-importer.js';
 import { matchRedirect, createRedirectResponse } from './routes/redirects.js';
 import { generateAutoBreadcrumbs, type BreadcrumbItem } from './engine/breadcrumbs.js';
 import { extractTableOfContents, slugifyHeading, type TocItem } from './engine/toc-extractor.js';
+import {
+  scoreSlugMatch,
+  rankCandidates,
+  levenshtein,
+  lastSegmentKey,
+  normalizePath,
+  type RankedMatch,
+  type FuzzyMatchOptions,
+} from './engine/fuzzy-matcher.js';
+import {
+  handleIndexNowPublished,
+  handleIndexNowTransition,
+  handleIndexNowDelete,
+  getOrCreateIndexNowKey,
+  submitToIndexNow,
+  validateIndexNowKey,
+  generateIndexNowKey,
+  INDEXNOW_ENDPOINT,
+} from './engine/indexnow.js';
+import { buildAlternateLinks, normalizeBcp47, type HreflangEntry, type AlternateLink } from './engine/hreflang.js';
+import {
+  cleanOgTitle,
+  normalizeOgLocale,
+  generateRobotsDirective,
+  extractTaxonomyTerms,
+} from './engine/metadata-utils.js';
+import { handlePageMetadata } from './engine/metadata-handler.js';
 
 export * from './types.js';
 export {
@@ -35,10 +64,32 @@ export {
   renderLlmsFullTxt,
   renderSitemap,
   renderRobots,
+  renderSchemaMap,
+  listPublishedSchemaUrls,
+  handleFuzzyRedirects,
+  scoreSlugMatch,
+  rankCandidates,
+  levenshtein,
+  lastSegmentKey,
+  normalizePath,
+  handleIndexNowPublished,
+  handleIndexNowTransition,
+  handleIndexNowDelete,
+  getOrCreateIndexNowKey,
+  submitToIndexNow,
+  validateIndexNowKey,
+  generateIndexNowKey,
+  buildAlternateLinks,
+  normalizeBcp47,
+  cleanOgTitle,
+  normalizeOgLocale,
+  generateRobotsDirective,
+  extractTaxonomyTerms,
+  handlePageMetadata,
   DEFAULT_OPTIONS,
   DEFAULT_LOCAL_BUSINESS,
 };
-export type { BreadcrumbItem, TocItem, FaqItem };
+export type { BreadcrumbItem, TocItem, FaqItem, RankedMatch, FuzzyMatchOptions, HreflangEntry, AlternateLink };
 
 /**
  * Native plugin runtime instantiator
@@ -49,12 +100,16 @@ export function createPlugin(userOptions: Partial<SeoPluginOptions> = {}) {
 
   return {
     id: 'emdash-seo',
-    version: '1.0.0',
-    capabilities: ['content:read', 'content:write'],
-    allowedHosts: [],
+    version: '1.1.0',
+    capabilities: ['content:read', 'content:write', 'page:inject', 'network:fetch'],
+    allowedHosts: ['api.indexnow.org'],
     storage: { collections: [] },
     admin: {},
     hooks: {
+      'page:metadata': {
+        priority: 10,
+        handler: async (event: any, ctx: any) => handlePageMetadata(event, ctx, options),
+      },
       'content:beforeSave': {
         priority: 100,
         timeout: 5000,
@@ -118,6 +173,33 @@ export function createPlugin(userOptions: Partial<SeoPluginOptions> = {}) {
           if (ctx?.log?.info) {
             ctx.log.info('SEO Suite: Indexed published entry', { id: event.id, collection: event.collection });
           }
+          if (options.enableIndexNow) {
+            await handleIndexNowPublished(event, ctx, options);
+          }
+        },
+      },
+      'content:afterSave': {
+        priority: 50,
+        handler: async (event: any, ctx: any) => {
+          if (options.enableIndexNow) {
+            await handleIndexNowPublished(event, ctx, options);
+          }
+        },
+      },
+      'content:afterUnpublish': {
+        priority: 50,
+        handler: async (event: any, ctx: any) => {
+          if (options.enableIndexNow) {
+            await handleIndexNowTransition(event, ctx, options);
+          }
+        },
+      },
+      'content:afterDelete': {
+        priority: 50,
+        handler: async (event: any, ctx: any) => {
+          if (options.enableIndexNow) {
+            await handleIndexNowDelete(event, ctx, options);
+          }
         },
       },
     },
@@ -129,6 +211,30 @@ export function createPlugin(userOptions: Partial<SeoPluginOptions> = {}) {
         '/llms.txt': async (ctx: any) => renderLlmsTxt(ctx, options),
         '/llms-full.txt': async (ctx: any) => renderLlmsFullTxt(ctx, options),
       } : {}),
+      ...(options.enableSchemaMap ? {
+        '/schemamap.xml': async (ctx: any) => renderSchemaMap(ctx, options),
+        '/_emdash/api/seo/schema-map': async (ctx: any) => renderSchemaMap(ctx, options),
+      } : {}),
+      '/_emdash/api/seo/fuzzy-redirects': async (ctx: any) => handleFuzzyRedirects(ctx, options),
+      '/_emdash/api/seo/indexnow/key': async (ctx: any) => {
+        const key = await getOrCreateIndexNowKey(ctx?.kv, options.indexnowKey);
+        return new Response(JSON.stringify({ key, endpoint: INDEXNOW_ENDPOINT }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      },
+      '/_emdash/api/seo/indexnow/submit': async (ctx: any) => {
+        const req = ctx?.request || ctx?.req;
+        const body = ctx?.input || (await req?.json?.().catch(() => ({}))) || {};
+        const urls = body.urls || [];
+        const host = body.host || new URL(options.siteUrl).hostname;
+        const key = await getOrCreateIndexNowKey(ctx?.kv, options.indexnowKey);
+        const res = await submitToIndexNow({ host, key, urls });
+        return new Response(JSON.stringify(res), {
+          status: res.ok ? 200 : 502,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      },
       '/_emdash/api/seo/audit': async (ctx: any) => handleRunAudit(ctx),
       '/_emdash/api/seo/audit/latest': async (ctx: any) => handleGetAudit(ctx),
     },
@@ -144,10 +250,10 @@ export function seoPlugin(userOptions: Partial<SeoPluginOptions> = {}) {
 
   return {
     id: 'emdash-seo',
-    version: '1.0.0',
+    version: '1.1.0',
     entrypoint: '@emdash/plugin-seo',
     format: 'native' as const,
-    capabilities: ['content:read', 'content:write'],
+    capabilities: ['content:read', 'content:write', 'page:inject', 'network:fetch'],
     options,
   };
 }
