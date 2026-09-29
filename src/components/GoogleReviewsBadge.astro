@@ -1,0 +1,90 @@
+---
+interface Props {
+  rating?: string;
+  reviewCount?: string | number;
+}
+
+const {
+  rating = "5.0",
+  reviewCount = "343",
+} = Astro.props;
+---
+
+<div class="reviews-badge">
+  <div class="stars" aria-label={`Rated ${rating} out of 5 stars`}>
+    ★★★★★
+  </div>
+  <div class="rating-text">
+    <strong class="rating-val">{rating}★ Rating</strong>
+    <span class="review-count">Based on {reviewCount}+ verified reviews across London</span>
+  </div>
+  <div class="platform-tags">
+    <span class="platform-tag checkatrade">Checkatrade</span>
+    <span class="platform-tag trustpilot">Trustpilot</span>
+    <span class="platform-tag google">Google</span>
+  </div>
+</div>
+
+<style>
+  .reviews-badge {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--spacing-3, 0.75rem);
+    padding: var(--spacing-2, 0.5rem) var(--spacing-4, 1rem);
+    background: rgba(2, 132, 199, 0.06);
+    border: 1px solid rgba(2, 132, 199, 0.2);
+    border-radius: 9999px;
+    font-size: var(--font-size-sm, 0.875rem);
+  }
+
+  .stars {
+    color: #f59e0b;
+    letter-spacing: 2px;
+    font-size: 1.1rem;
+  }
+
+  .rating-text {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    color: var(--color-text, #111827);
+  }
+
+  .rating-val {
+    font-weight: 700;
+  }
+
+  .review-count {
+    color: var(--color-muted, #4b5563);
+  }
+
+  .platform-tags {
+    display: flex;
+    gap: 0.35rem;
+  }
+
+  .platform-tag {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+  }
+
+  .trustpilot {
+    color: #00b67a;
+    border-color: #00b67a;
+  }
+
+  .checkatrade {
+    color: #1e3a8a;
+    border-color: #1e3a8a;
+  }
+
+  .google {
+    color: #ea4335;
+    border-color: #ea4335;
+  }
+</style>
