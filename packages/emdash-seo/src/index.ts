@@ -2,7 +2,7 @@ import { DEFAULT_OPTIONS, DEFAULT_LOCAL_BUSINESS, resolveSeoVariables } from './
 import type { SeoPluginOptions, FaqItem } from './types.js';
 import { renderSitemap } from './routes/sitemap.js';
 import { renderRobots } from './routes/robots.js';
-import { renderLlmsTxt } from './routes/llms-txt.js';
+import { renderLlmsTxt, renderLlmsFullTxt } from './routes/llms-txt.js';
 import { handleRunAudit, handleGetAudit } from './routes/api-audit.js';
 import { analyzeContent } from './engine/content-analyzer.js';
 import { buildConnectedSchemaGraph } from './engine/schema-builder.js';
@@ -31,6 +31,10 @@ export {
   generateAutoBreadcrumbs,
   extractTableOfContents,
   slugifyHeading,
+  renderLlmsTxt,
+  renderLlmsFullTxt,
+  renderSitemap,
+  renderRobots,
   DEFAULT_OPTIONS,
   DEFAULT_LOCAL_BUSINESS,
 };
@@ -123,6 +127,7 @@ export function createPlugin(userOptions: Partial<SeoPluginOptions> = {}) {
       '/robots.txt': async (ctx: any) => renderRobots(ctx, options),
       ...(options.enableLlmsTxt ? {
         '/llms.txt': async (ctx: any) => renderLlmsTxt(ctx, options),
+        '/llms-full.txt': async (ctx: any) => renderLlmsFullTxt(ctx, options),
       } : {}),
       '/_emdash/api/seo/audit': async (ctx: any) => handleRunAudit(ctx),
       '/_emdash/api/seo/audit/latest': async (ctx: any) => handleGetAudit(ctx),

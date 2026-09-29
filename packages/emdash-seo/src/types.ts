@@ -34,6 +34,7 @@ export interface EntrySeoMetadata {
 export interface LocalBusinessInfo {
   name: string;
   legalName?: string;
+  description?: string;
   url: string;
   logo: string;
   image?: string;

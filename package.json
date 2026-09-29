@@ -7,6 +7,9 @@
     "label": "EmDash SEO Suite",
     "seed": "seed/seed.json"
   },
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
@@ -18,9 +21,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:seo": "tsx scripts/test-seo-plugin.ts",
-    "migrate:wp": "tsx scripts/migrate-wordpress.ts",
-    "migrate:helper": "tsx scripts/migrate-wordpress.ts --helper",
-    "seed:d1": "npx emdash seed seed/seed.json"
+    "migrate:wp": "emdash site import",
+    "seed:d1": "emdash seed seed/seed.json"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.1",

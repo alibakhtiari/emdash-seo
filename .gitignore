@@ -11,6 +11,7 @@ data.db*
 *.db-wal
 uploads/
 tmp/
+wp-emdash-main/
 
 # Logs
 logs/

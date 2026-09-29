@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { renderSitemap } from "../packages/emdash-seo/src/routes/sitemap.js";
 import { renderRobots } from "../packages/emdash-seo/src/routes/robots.js";
-import { renderLlmsTxt } from "../packages/emdash-seo/src/routes/llms-txt.js";
+import { renderLlmsTxt, renderLlmsFullTxt } from "../packages/emdash-seo/src/routes/llms-txt.js";
 import { DEFAULT_OPTIONS } from "../packages/emdash-seo/src/config.js";
 
 describe("Edge Protocols (Sitemaps, Robots, LLMs.txt)", () => {
@@ -35,5 +35,16 @@ describe("Edge Protocols (Sitemaps, Robots, LLMs.txt)", () => {
     expect(text).toContain(`# ${DEFAULT_OPTIONS.siteName}`);
     expect(text).toContain("Main Sections & Services");
     expect(text).toContain(`${DEFAULT_OPTIONS.siteUrl}/services/`);
+  });
+
+  it("generates deep knowledge base /llms-full.txt from plugin generator", async () => {
+    const res = renderLlmsFullTxt({}, DEFAULT_OPTIONS);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Content-Type")).toContain("text/plain");
+
+    const text = await res.text();
+    expect(text).toContain(`# ${DEFAULT_OPTIONS.siteName} — Full LLM Knowledge Base`);
+    expect(text).toContain("Edge Performance & SEO Standards");
+    expect(text).toContain("Connected JSON-LD @graph");
   });
 });
