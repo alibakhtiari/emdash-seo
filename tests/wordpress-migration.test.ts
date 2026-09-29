@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseRankMathMeta, extractFaqsFromContent } from "../packages/emdash-seo/src/importers/rankmath-importer.js";
+import { parseRankMathMeta, extractFaqsFromContent, detectRankMathToc, stripRankMathTocBlock } from "../packages/emdash-seo/src/importers/rankmath-importer.js";
 import { parseYoastMeta } from "../packages/emdash-seo/src/importers/yoast-importer.js";
 import { matchRedirect } from "../packages/emdash-seo/src/routes/redirects.js";
 
@@ -47,6 +47,39 @@ describe("WordPress Migration Engine & Importers", () => {
       expect(faqs[0].question).toBe("How do you deploy the edge workers?");
       expect(faqs[0].answer).toContain("We deploy via automated CI/CD");
       expect(faqs[1].question).toBe("Are databases replicated globally?");
+    });
+
+    it("extracts FAQs from Gutenberg block comment JSON", () => {
+      const gutenbergHtml = `
+        <!-- wp:rank-math/faq-block {"questions":[{"title":"How long does steam drying take?","content":"Typically 2 to 4 hours."}]} -->
+        <div class="wp-block-rank-math-faq-block"></div>
+        <!-- /wp:rank-math/faq-block -->
+      `;
+
+      const faqs = extractFaqsFromContent(gutenbergHtml);
+      expect(faqs.length).toBe(1);
+      expect(faqs[0].question).toBe("How long does steam drying take?");
+      expect(faqs[0].answer).toBe("Typically 2 to 4 hours.");
+    });
+
+    it("detects and strips Rank Math Table of Contents blocks", () => {
+      const content = `
+        <p>Introduction paragraph.</p>
+        <!-- wp:rank-math/toc-block {"title":"Table of Contents"} -->
+        <div class="wp-block-rank-math-toc-block" id="rank-math-toc">
+          <h2>Table of Contents</h2>
+          <ul><li><a href="#section-1">Section 1</a></li></ul>
+        </div>
+        <!-- /wp:rank-math/toc-block -->
+        <h2>Section 1</h2>
+        <p>Section 1 details.</p>
+      `;
+
+      expect(detectRankMathToc(content)).toBe(true);
+      const cleaned = stripRankMathTocBlock(content);
+      expect(cleaned).not.toContain("wp-block-rank-math-toc-block");
+      expect(cleaned).toContain("<p>Introduction paragraph.</p>");
+      expect(cleaned).toContain("<h2>Section 1</h2>");
     });
   });
 

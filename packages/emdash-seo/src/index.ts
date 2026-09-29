@@ -7,7 +7,7 @@ import { handleRunAudit, handleGetAudit } from './routes/api-audit.js';
 import { analyzeContent } from './engine/content-analyzer.js';
 import { buildConnectedSchemaGraph } from './engine/schema-builder.js';
 import { extractLinksFromContent, findInternalLinkOpportunities, detectOrphanPages } from './engine/link-analyzer.js';
-import { parseRankMathMeta, extractFaqsFromContent } from './importers/rankmath-importer.js';
+import { parseRankMathMeta, extractFaqsFromContent, detectRankMathToc, stripRankMathTocBlock } from './importers/rankmath-importer.js';
 import { parseYoastMeta } from './importers/yoast-importer.js';
 import { matchRedirect, createRedirectResponse } from './routes/redirects.js';
 import { generateAutoBreadcrumbs, type BreadcrumbItem } from './engine/breadcrumbs.js';
@@ -22,6 +22,8 @@ export {
   detectOrphanPages,
   parseRankMathMeta,
   extractFaqsFromContent,
+  detectRankMathToc,
+  stripRankMathTocBlock,
   parseYoastMeta,
   matchRedirect,
   createRedirectResponse,
@@ -73,13 +75,23 @@ export function createPlugin(userOptions: Partial<SeoPluginOptions> = {}) {
             );
           }
 
-          // Auto-extract FAQs if present in content and not yet structured in data.seo.faqs
+          // Auto-migrate Rank Math TOC and FAQ blocks if present in content
           if (content.data.content) {
-            const rawHtml = typeof content.data.content === 'string'
+            const rawContent = typeof content.data.content === 'string'
               ? content.data.content
               : JSON.stringify(content.data.content);
 
-            const faqs = extractFaqsFromContent(rawHtml);
+            // 1. Auto-detect Rank Math TOC block
+            if (detectRankMathToc(rawContent)) {
+              content.data.seo = content.data.seo || { focusKeywords: [], noIndex: false, noFollow: false };
+              content.data.seo.hasToc = true;
+              if (typeof content.data.content === 'string') {
+                content.data.content = stripRankMathTocBlock(content.data.content);
+              }
+            }
+
+            // 2. Auto-extract FAQs (Rank Math & Kadence)
+            const faqs = extractFaqsFromContent(rawContent);
             if (faqs.length > 0) {
               content.data.seo = content.data.seo || { focusKeywords: [], noIndex: false, noFollow: false };
               if (!content.data.seo.faqs || content.data.seo.faqs.length === 0) {

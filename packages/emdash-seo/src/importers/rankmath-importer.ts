@@ -79,25 +79,78 @@ export function parseRankMathMeta(rawMeta: Record<string, any>, postContent = ''
 }
 
 /**
- * Extracts FAQ questions and answers from Rank Math FAQ blocks
+ * Extracts FAQ questions and answers from Rank Math FAQ blocks and Kadence accordions
  */
 export function extractFaqsFromContent(content: string): FaqItem[] {
   const faqs: FaqItem[] = [];
-  if (!content || !content.includes('rank-math')) {
-    return faqs;
+  if (!content) return faqs;
+
+  // 1. Gutenberg comment JSON attributes (<!-- wp:rank-math/faq-block {"questions":[...]} -->)
+  const blockJsonRegex = /<!--\s*wp:rank-math\/faq-block\s+(\{[\s\S]*?\})\s*-->/gi;
+  let jsonMatch: RegExpExecArray | null;
+  while ((jsonMatch = blockJsonRegex.exec(content)) !== null) {
+    try {
+      const data = JSON.parse(jsonMatch[1]);
+      if (Array.isArray(data.questions)) {
+        for (const q of data.questions) {
+          const question = (q.title || '').replace(/<[^>]*>?/gm, '').trim();
+          const answer = (q.content || '').replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
+          if (question && answer && !faqs.some((f) => f.question === question)) {
+            faqs.push({ question, answer });
+          }
+        }
+      }
+    } catch {
+      // Ignore JSON parse errors
+    }
   }
 
+  // 2. Rank Math FAQ HTML tags (<div class="rank-math-faq-item">...)
   const qRegex = /<h3[^>]*class=["'][^"']*rank-math-question[^"']*["'][^>]*>([\s\S]*?)<\/h3>\s*<div[^>]*class=["'][^"']*rank-math-answer[^"']*["'][^>]*>([\s\S]*?)<\/div>/gi;
   let match: RegExpExecArray | null;
-
   while ((match = qRegex.exec(content)) !== null) {
     const question = match[1].replace(/<[^>]*>?/gm, '').replace(/\s+/g, ' ').trim();
     const answer = match[2].replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
 
-    if (question && answer) {
+    if (question && answer && !faqs.some((f) => f.question === question)) {
+      faqs.push({ question, answer });
+    }
+  }
+
+  // 3. Kadence Accordion / FAQ blocks
+  const kadenceRegex = /<div[^>]*class=["'][^"']*kt-accordion-inner-wrap[^"']*["'][^>]*>[\s\S]*?<span[^>]*class=["'][^"']*kt-blocks-accordion-title[^"']*["'][^>]*>([\s\S]*?)<\/span>[\s\S]*?<div[^>]*class=["'][^"']*kt-accordion-panel-inner[^"']*["'][^>]*>([\s\S]*?)<\/div>/gi;
+  let kadMatch: RegExpExecArray | null;
+  while ((kadMatch = kadenceRegex.exec(content)) !== null) {
+    const question = kadMatch[1].replace(/<[^>]*>?/gm, '').replace(/\s+/g, ' ').trim();
+    const answer = kadMatch[2].replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
+    if (question && answer && !faqs.some((f) => f.question === question)) {
       faqs.push({ question, answer });
     }
   }
 
   return faqs;
+}
+
+/**
+ * Detects whether content contains a Rank Math Table of Contents block
+ */
+export function detectRankMathToc(content: string): boolean {
+  if (!content) return false;
+  return (
+    content.includes('wp:rank-math/toc-block') ||
+    content.includes('rank-math-toc') ||
+    content.includes('wp-block-rank-math-toc-block')
+  );
+}
+
+/**
+ * Removes raw static Rank Math TOC block HTML from post content
+ * so Astro's dynamic, accessible <TableOfContents /> component can render it.
+ */
+export function stripRankMathTocBlock(content: string): string {
+  if (!content) return content;
+  return content
+    .replace(/<!--\s*wp:rank-math\/toc-block[\s\S]*?-->([\s\S]*?<!--\s*\/wp:rank-math\/toc-block\s*-->)?/gi, '')
+    .replace(/<div[^>]*id=["']rank-math-toc["'][^>]*>[\s\S]*?<\/div>\s*(<\/div>)?/gi, '')
+    .trim();
 }
