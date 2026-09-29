@@ -6,6 +6,7 @@ export interface ContentAnalyzeOptions {
   content: string; // HTML or Markdown or raw text
   focusKeywords: string[];
   metaDescription?: string;
+  description?: string;
   minWordCount?: number;
 }
 
@@ -13,12 +14,14 @@ export function analyzeContent(options: ContentAnalyzeOptions): AnalysisReport {
   const {
     title,
     slug = '',
-    content,
+    content: rawContent,
     focusKeywords,
-    metaDescription = '',
+    metaDescription: rawMetaDesc = '',
     minWordCount = 600,
   } = options;
 
+  const content = rawContent || (options as any).contentHtml || '';
+  const metaDescription = rawMetaDesc || options.description || '';
   const checks: ContentCheck[] = [];
   const primaryKw = (focusKeywords[0] || '').trim().toLowerCase();
 
@@ -34,7 +37,7 @@ export function analyzeContent(options: ContentAnalyzeOptions): AnalysisReport {
 
   // Image counts
   const imgMatches = content.match(/<img[^>]*>/gi) || [];
-  const imgWithoutAlt = imgMatches.filter((img) => !img.includes('alt=') || /alt=["']\s*["']/i.test(img)).length;
+  const imgWithoutAlt = imgMatches.filter((img: string) => !img.includes('alt=') || /alt=["']\s*["']/i.test(img)).length;
 
   // Links
   const linkMatches = content.match(/<a\s+[^>]*href=["']([^"']+)["'][^>]*>/gi) || [];

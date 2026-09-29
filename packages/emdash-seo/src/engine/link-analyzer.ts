@@ -32,8 +32,6 @@ export function extractLinksFromContent(content: string, siteOrigin: string): Ex
       } catch {
         isExternal = true;
       }
-    } else {
-      isExternal = false;
     }
 
     links.push({

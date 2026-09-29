@@ -43,7 +43,7 @@ export function extractTableOfContents(contentHtml: string): TocExtractionResult
     let anchorId = idMatch ? idMatch[1] : '';
 
     if (!anchorId) {
-      let baseSlug = slugifyHeading(cleanText) || `section-${toc.length + 1}`;
+      const baseSlug = slugifyHeading(cleanText) || `section-${toc.length + 1}`;
       const count = seenSlugs.get(baseSlug) || 0;
       seenSlugs.set(baseSlug, count + 1);
       anchorId = count > 0 ? `${baseSlug}-${count}` : baseSlug;

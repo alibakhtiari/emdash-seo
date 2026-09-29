@@ -7,7 +7,7 @@ export function matchRedirect(
   const normalizedPath = pathname.endsWith('/') && pathname !== '/' ? pathname.slice(0, -1) : pathname;
 
   for (const rule of rules) {
-    if (rule.status !== 'active') continue;
+    if (rule.status && rule.status !== 'active') continue;
 
     const pattern = rule.pattern.trim();
 
@@ -17,8 +17,9 @@ export function matchRedirect(
         return { destination: rule.destination, statusCode: rule.statusCode };
       }
     } else if (rule.comparison === 'prefix') {
-      if (pathname.startsWith(pattern)) {
-        const remaining = pathname.slice(pattern.length);
+      const cleanPrefix = pattern.endsWith('/*') ? pattern.slice(0, -2) : pattern;
+      if (pathname.startsWith(cleanPrefix)) {
+        const remaining = pathname.slice(cleanPrefix.length);
         const target = rule.destination.endsWith('/')
           ? `${rule.destination}${remaining.replace(/^\//, '')}`
           : `${rule.destination}${remaining}`;

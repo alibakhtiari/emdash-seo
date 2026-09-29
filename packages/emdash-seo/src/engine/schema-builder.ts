@@ -19,6 +19,7 @@ export interface BuildSchemaGraphOptions {
   toc?: TocItem[];
   seo?: EntrySeoMetadata;
   business?: LocalBusinessInfo;
+  faqs?: FaqItem[];
   customGraphNodes?: Record<string, any>[];
 }
 
@@ -42,6 +43,7 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
     toc = [],
     seo = { focusKeywords: [], noIndex: false, noFollow: false },
     business = DEFAULT_4SEASONS_BUSINESS,
+    faqs: explicitFaqs,
     customGraphNodes = [],
   } = options;
 
@@ -223,7 +225,7 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
   }
 
   // 7. FAQPage Node (auto-extracted from seo.faqs or Rank Math FAQ blocks)
-  const faqs: FaqItem[] = seo.faqs || [];
+  const faqs: FaqItem[] = explicitFaqs || seo.faqs || [];
   if (faqs.length > 0) {
     graph.push({
       "@type": "FAQPage",
