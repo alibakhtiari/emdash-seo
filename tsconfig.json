@@ -14,5 +14,11 @@
 		"**/*",
 		"emdash-env.d.ts",
 		"worker-configuration.d.ts"
+	],
+	"exclude": [
+		"dist",
+		".astro",
+		".wrangler",
+		"node_modules"
 	]
 }
