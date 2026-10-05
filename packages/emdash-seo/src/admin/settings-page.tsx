@@ -44,6 +44,14 @@ export const FIELDS: FieldDef[] = [
   { key: 'socialBluesky', type: 'string', label: 'Bluesky URL', section: 'social' },
   { key: 'socialMastodon', type: 'string', label: 'Mastodon URL', section: 'social' },
   { key: 'socialWikipedia', type: 'string', label: 'Wikipedia URL', section: 'social' },
+  { key: 'defaultAuthorName', type: 'string', label: 'Default author name', description: 'Fallback author for articles and posts without an explicit author', section: 'author' },
+  { key: 'defaultAuthorJobTitle', type: 'string', label: 'Author job title / credentials', description: 'Job title or specialty for schema.org Person E-E-A-T (e.g. Master Cleaner, Lead Editor)', section: 'author' },
+  { key: 'defaultAuthorWorksFor', type: 'string', label: 'Author affiliated organization', description: 'Company or institution the author represents', section: 'author' },
+  { key: 'defaultAuthorImageUrl', type: 'string', label: 'Author photo / avatar URL', description: 'Square avatar photo for Person schema', section: 'author' },
+  { key: 'defaultAuthorSameAs', type: 'string', label: 'Author authority links (sameAs)', description: 'Comma-separated URLs to author\'s LinkedIn, Twitter, Wikipedia, or MuckRack profiles', multiline: true, section: 'author' },
+  { key: 'enableGeoOptimization', type: 'select', label: 'GEO (Generative Engine Optimization)', description: 'Optimize content for AI search engines (ChatGPT Search, Google Gemini AI Overviews, Perplexity)', options: [{ value: 'true', label: 'Enabled' }, { value: 'false', label: 'Disabled' }], default: 'true', section: 'geo_aeo' },
+  { key: 'enableAeoOptimization', type: 'select', label: 'AEO (Answer Engine Optimization)', description: 'Optimize for voice search & Google Featured Snippets with direct answers and speakable specs', options: [{ value: 'true', label: 'Enabled' }, { value: 'false', label: 'Disabled' }], default: 'true', section: 'geo_aeo' },
+  { key: 'defaultSpeakableSelectors', type: 'string', label: 'Speakable CSS Selectors', description: 'CSS selectors for voice assistants (comma-separated, e.g. #field-excerpt, .post-lead, .aeo-summary)', default: '#field-excerpt, .post-lead, .aeo-summary', section: 'geo_aeo' },
   { key: 'nlwebEndpoint', type: 'string', label: 'NLWeb endpoint URL', description: 'Absolute URL of conversational endpoint for agent discovery. Emits <link rel="nlweb" href="...">.', section: 'discovery' },
 ];
 
@@ -304,6 +312,8 @@ export function SettingsPage() {
   const sections = [
     { id: 'general', label: 'General' },
     ...(siteRepresents === 'person' ? [{ id: 'person', label: 'Person' }] : [{ id: 'org', label: 'Organization' }]),
+    { id: 'author', label: 'Default Author & E-E-A-T Credentials' },
+    { id: 'geo_aeo', label: 'GEO & AEO (AI Search & Voice Optimization)' },
     { id: 'social', label: 'Social Profiles' },
     { id: 'discovery', label: 'Agent Discovery & LLMs' },
   ];
