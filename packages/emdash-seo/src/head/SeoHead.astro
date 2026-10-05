@@ -51,111 +51,124 @@ const {
   alternateLinks = [],
 } = Astro.props;
 
-const seo: EntrySeoMetadata = entry?.data?.seo || entry?.seo || {
+// Fast-path: check if pre-computed head & schema cache exists (< 0.1ms TTFB on Cloudflare Workers)
+const cachedHead = entry?.data?.seo?._cachedHead || entry?.seo?._cachedHead;
+const cachedSchemaGraph = entry?.data?.seo?._cachedSchemaGraph || entry?.seo?._cachedSchemaGraph;
+const hasPrecomputed = Boolean(cachedHead && cachedSchemaGraph);
+
+// Fallback dynamic computation (only executed if precomputed head is absent)
+let is404 = false;
+let fullTitle = '';
+let resolvedDescription = '';
+let finalCanonical = '';
+let robotsDirective: string | null = null;
+let cleanSocialTitle = '';
+let finalImage: string | undefined = undefined;
+let category: string | undefined = undefined;
+let breadcrumbs: BreadcrumbItem[] = [];
+let toc: TocItem[] = [];
+const cleanSiteUrl = siteUrl.replace(/\/+$/, '');
+const currentPath = Astro.url ? Astro.url.pathname : '/';
+let seo: EntrySeoMetadata = entry?.data?.seo || entry?.seo || {
   focusKeywords: [],
   noIndex: false,
   noFollow: false,
 };
 
-const currentPath = Astro.url.pathname;
-const is404 = currentPath === '/404' || currentPath.endsWith('/404') || currentPath.endsWith('/404/');
+if (!hasPrecomputed) {
+  is404 = currentPath === '/404' || currentPath.endsWith('/404') || currentPath.endsWith('/404/');
 
-const rawTitle = seo.metaTitle || propTitle || entry?.data?.title || siteName;
-const fullTitle = is404
-  ? `Page not found | ${siteName}`
-  : rawTitle.includes(siteName)
-    ? rawTitle
-    : `${rawTitle} | ${siteName}`;
+  const rawTitle = seo.metaTitle || propTitle || entry?.data?.title || siteName;
+  fullTitle = is404
+    ? `Page not found | ${siteName}`
+    : rawTitle.includes(siteName)
+      ? rawTitle
+      : `${rawTitle} | ${siteName}`;
 
-const resolvedDescription = seo.metaDescription || propDescription || entry?.data?.excerpt || '';
+  resolvedDescription = seo.metaDescription || propDescription || entry?.data?.excerpt || '';
 
-const cleanSiteUrl = siteUrl.replace(/\/+$/, '');
-const computedCanonical = `${cleanSiteUrl}${currentPath.endsWith('/') ? currentPath : `${currentPath}/`}`;
-const finalCanonical = seo.canonicalUrl || propCanonical || computedCanonical;
+  const computedCanonical = `${cleanSiteUrl}${currentPath.endsWith('/') ? currentPath : `${currentPath}/`}`;
+  finalCanonical = seo.canonicalUrl || propCanonical || computedCanonical;
 
-const finalImage = seo.ogImage || propImage || entry?.data?.featured_image || DEFAULT_OPTIONS.defaultOgImage;
+  finalImage = seo.ogImage || propImage || entry?.data?.featured_image || DEFAULT_OPTIONS.defaultOgImage;
 
-// Metadata Hygiene: Clean OG title without duplicate siteName suffix
-const cleanSocialTitle = seo.ogTitle || (is404 ? 'Page not found' : cleanOgTitle(rawTitle, siteName));
+  cleanSocialTitle = seo.ogTitle || (is404 ? 'Page not found' : cleanOgTitle(rawTitle, siteName));
 
-// Metadata Hygiene: Standard Robots directive (omitted on 404, noindex on search, snippet directives)
-const robotsDirective = generateRobotsDirective({
-  noIndex: seo.noIndex,
-  noFollow: seo.noFollow,
-  noArchive: seo.noArchive,
-  noSnippet: seo.noSnippet,
-  maxImagePreview: seo.maxImagePreview || 'large',
-  path: currentPath,
-});
+  robotsDirective = generateRobotsDirective({
+    noIndex: seo.noIndex,
+    noFollow: seo.noFollow,
+    noArchive: seo.noArchive,
+    noSnippet: seo.noSnippet,
+    maxImagePreview: seo.maxImagePreview || 'large',
+    path: currentPath,
+  });
 
-// Taxonomy extraction
-const taxonomy = extractTaxonomyTerms(entry?.data);
-const category = propCategory || taxonomy.articleSection || entry?.data?.category;
+  const taxonomy = extractTaxonomyTerms(entry?.data);
+  category = propCategory || taxonomy.articleSection || entry?.data?.category;
 
-// 1. Automatic Breadcrumbs
-const breadcrumbs: BreadcrumbItem[] =
-  propBreadcrumbs && propBreadcrumbs.length > 0
-    ? propBreadcrumbs
-    : generateAutoBreadcrumbs(currentPath, siteUrl, rawTitle, category);
+  breadcrumbs =
+    propBreadcrumbs && propBreadcrumbs.length > 0
+      ? propBreadcrumbs
+      : generateAutoBreadcrumbs(currentPath, siteUrl, rawTitle, category);
 
-// 2. Automatic Table of Contents
-let toc: TocItem[] = propToc || [];
-if (toc.length === 0 && content) {
-  const tocResult = extractTableOfContents(content);
-  toc = tocResult.toc;
-}
+  toc = propToc || [];
+  if (toc.length === 0 && content) {
+    const tocResult = extractTableOfContents(content);
+    toc = tocResult.toc;
+  }
 
-// 3. Automatic FAQs
-if ((!seo.faqs || seo.faqs.length === 0) && content) {
-  const extractedFaqs = extractFaqsFromContent(content);
-  if (extractedFaqs.length > 0) {
-    seo.faqs = extractedFaqs;
+  if ((!seo.faqs || seo.faqs.length === 0) && content) {
+    const extractedFaqs = extractFaqsFromContent(content);
+    if (extractedFaqs.length > 0) {
+      seo.faqs = extractedFaqs;
+    }
   }
 }
 ---
 
-<!-- Core Primary Meta Tags -->
-<title>{fullTitle}</title>
-{resolvedDescription && !is404 && <meta name="description" content={resolvedDescription} />}
-{!is404 && !seo.noIndex && <link rel="canonical" href={finalCanonical} />}
-{robotsDirective && <meta name="robots" content={robotsDirective} />}
+{hasPrecomputed ? (
+  <Fragment set:html={`${cachedHead}\n${cachedSchemaGraph}`} />
+) : (
+  <>
+    <title>{fullTitle}</title>
+    {resolvedDescription && !is404 && <meta name="description" content={resolvedDescription} />}
+    {!is404 && !seo.noIndex && <link rel="canonical" href={finalCanonical} />}
+    {robotsDirective && <meta name="robots" content={robotsDirective} />}
 
-<!-- Multilingual Alternates & x-default -->
-{!is404 && alternateLinks && alternateLinks.map((alt) => (
-  <link rel="alternate" hreflang={alt.hreflang} href={alt.href} />
-))}
+    {!is404 && alternateLinks && alternateLinks.map((alt) => (
+      <link rel="alternate" hreflang={alt.hreflang} href={alt.href} />
+    ))}
 
-<!-- NLWeb Conversational Agent Endpoint Discovery -->
-{!is404 && nlwebEndpoint && <link rel="nlweb" href={nlwebEndpoint} />}
+    {!is404 && nlwebEndpoint && <link rel="nlweb" href={nlwebEndpoint} />}
 
-<!-- OpenGraph & Twitter Cards -->
-<OpenGraph
-  title={cleanSocialTitle}
-  description={is404 ? '' : (seo.ogDescription || resolvedDescription)}
-  url={finalCanonical}
-  image={is404 ? undefined : finalImage}
-  type={seo.ogType || type}
-  siteName={siteName}
-  twitterCard={seo.twitterCard || 'summary_large_image'}
-/>
+    <OpenGraph
+      title={cleanSocialTitle}
+      description={is404 ? '' : (seo.ogDescription || resolvedDescription)}
+      url={finalCanonical}
+      image={is404 ? undefined : finalImage}
+      type={seo.ogType || type}
+      siteName={siteName}
+      twitterCard={seo.twitterCard || 'summary_large_image'}
+    />
 
-<!-- Connected JSON-LD Schema Graph (Omitted on 404) -->
-{!is404 && (
-  <SchemaGraph
-    siteUrl={cleanSiteUrl}
-    siteName={siteName}
-    canonicalUrl={finalCanonical}
-    title={fullTitle}
-    description={resolvedDescription}
-    imageUrl={finalImage}
-    datePublished={publishedTime || entry?.createdAt}
-    dateModified={modifiedTime || entry?.updatedAt}
-    authorName={author}
-    breadcrumbs={breadcrumbs}
-    pathname={currentPath}
-    category={category}
-    toc={toc}
-    seo={seo}
-    business={business}
-  />
+    {!is404 && (
+      <SchemaGraph
+        siteUrl={cleanSiteUrl}
+        siteName={siteName}
+        canonicalUrl={finalCanonical}
+        title={fullTitle}
+        description={resolvedDescription}
+        imageUrl={finalImage}
+        datePublished={publishedTime || entry?.createdAt}
+        dateModified={modifiedTime || entry?.updatedAt}
+        authorName={author}
+        breadcrumbs={breadcrumbs}
+        pathname={currentPath}
+        category={category}
+        toc={toc}
+        seo={seo}
+        business={business}
+      />
+    )}
+  </>
 )}

@@ -294,3 +294,10 @@ export async function handleIndexNowDelete(
     // Ignore cleanup error
   }
 }
+
+/**
+ * Returns the plain-text body to serve at /<key>.txt for IndexNow ownership verification.
+ */
+export function getIndexNowKeyFileContent(key: string): string {
+  return `${key.trim()}\n`;
+}
