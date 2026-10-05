@@ -1,4 +1,11 @@
 import type { AnalysisReport, ContentCheck } from '../types.js';
+import {
+  calculateEntityCoverage,
+  calculateFleschReadingEase,
+  TOPIC_ENTITY_CLUSTERS,
+} from './semantic-analyzer.js';
+import { auditReadability } from './readability-auditor.js';
+import { auditImageAlts } from './alt-auditor.js';
 
 export interface ContentAnalyzeOptions {
   title: string;
@@ -10,6 +17,7 @@ export interface ContentAnalyzeOptions {
   description?: string;
   siteUrl?: string;
   minWordCount?: number;
+  expectedEntities?: string[];
 }
 
 export function analyzeContent(options: ContentAnalyzeOptions): AnalysisReport {
@@ -72,6 +80,12 @@ export function analyzeContent(options: ContentAnalyzeOptions): AnalysisReport {
       message: 'Set at least one focus keyword to calculate an accurate SEO content score.',
     });
 
+    const readability = calculateFleschReadingEase(content);
+    const detailedReadability = auditReadability(content);
+    const altAudit = auditImageAlts(content, { targetKeywords: focusKeywords });
+    const expectedEntities = options.expectedEntities || [];
+    const coverage = calculateEntityCoverage(content, expectedEntities);
+
     return {
       score: 40,
       grade: 'Needs Improvement',
@@ -95,6 +109,12 @@ export function analyzeContent(options: ContentAnalyzeOptions): AnalysisReport {
       keywordInSubheadings: false,
       hasImagesWithAlt: imgWithoutAlt === 0 && imgMatches.length > 0,
       recommendations: checks.map((c) => c.message),
+      eciScore: coverage.score,
+      detectedEntities: coverage.detected,
+      topicalGaps: coverage.missing,
+      readability,
+      detailedReadability,
+      altAudit,
     };
   }
 
@@ -253,7 +273,38 @@ export function analyzeContent(options: ContentAnalyzeOptions): AnalysisReport {
   const keywordInFirstParagraph = checks.find(c => c.id === 'kw_in_intro')?.passed ?? false;
   const keywordInSubheadings = checks.find(c => c.id === 'kw_in_headings')?.passed ?? false;
   const hasImagesWithAlt = checks.find(c => c.id === 'img_alt')?.passed ?? false;
-  const recommendations = checks.filter(c => !c.passed).map(c => c.message);
+  // Semantic analysis
+  let expectedEntities = options.expectedEntities;
+  if (!expectedEntities || expectedEntities.length === 0) {
+    const combinedContext = `${title} ${primaryKw} ${focusKeywords.join(' ')}`.toLowerCase();
+    if (combinedContext.includes('clean') || combinedContext.includes('carpet')) {
+      expectedEntities = TOPIC_ENTITY_CLUSTERS.cleaning;
+    } else if (
+      combinedContext.includes('code') ||
+      combinedContext.includes('api') ||
+      combinedContext.includes('performance') ||
+      combinedContext.includes('architecture') ||
+      combinedContext.includes('technical')
+    ) {
+      expectedEntities = TOPIC_ENTITY_CLUSTERS.technical;
+    } else if (
+      combinedContext.includes('service') ||
+      combinedContext.includes('repair') ||
+      combinedContext.includes('plumber') ||
+      combinedContext.includes('electrician') ||
+      combinedContext.includes('business')
+    ) {
+      expectedEntities = TOPIC_ENTITY_CLUSTERS.local_business;
+    } else {
+      expectedEntities = focusKeywords.filter((k) => Boolean(k?.trim()));
+    }
+  }
+
+  const coverage = calculateEntityCoverage(content, expectedEntities);
+  const readability = calculateFleschReadingEase(content);
+  const detailedReadability = auditReadability(content);
+  const altAudit = auditImageAlts(content, { targetKeywords: focusKeywords });
+  const recommendations = checks.filter((c) => !c.passed).map((c) => c.message);
 
   return {
     score: rawScore,
@@ -278,5 +329,11 @@ export function analyzeContent(options: ContentAnalyzeOptions): AnalysisReport {
     keywordInSubheadings,
     hasImagesWithAlt,
     recommendations,
+    eciScore: coverage.score,
+    detectedEntities: coverage.detected,
+    topicalGaps: coverage.missing,
+    readability,
+    detailedReadability,
+    altAudit,
   };
 }
