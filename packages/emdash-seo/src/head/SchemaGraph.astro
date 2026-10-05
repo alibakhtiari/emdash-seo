@@ -1,6 +1,6 @@
 ---
 import { buildConnectedSchemaGraph } from '../engine/schema-builder.js';
-import type { EntrySeoMetadata, LocalBusinessInfo } from '../types.js';
+import type { EntrySeoMetadata, LocalBusinessInfo, AuthorProfile, HowToStep } from '../types.js';
 import type { BreadcrumbItem } from '../engine/breadcrumbs.js';
 import type { TocItem } from '../engine/toc-extractor.js';
 
@@ -14,6 +14,10 @@ interface Props {
   datePublished?: string;
   dateModified?: string;
   authorName?: string;
+  author?: AuthorProfile;
+  reviewedBy?: AuthorProfile;
+  speakableSelectors?: string[];
+  howToSteps?: HowToStep[];
   breadcrumbs?: BreadcrumbItem[];
   pathname?: string;
   category?: string;
@@ -33,6 +37,10 @@ const {
   datePublished,
   dateModified,
   authorName,
+  author,
+  reviewedBy,
+  speakableSelectors,
+  howToSteps,
   breadcrumbs,
   pathname,
   category,
@@ -52,6 +60,10 @@ const schemaData = buildConnectedSchemaGraph({
   datePublished,
   dateModified,
   authorName,
+  author,
+  reviewedBy,
+  speakableSelectors,
+  howToSteps,
   breadcrumbs,
   pathname,
   category,

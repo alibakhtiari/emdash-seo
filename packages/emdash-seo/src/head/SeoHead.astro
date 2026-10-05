@@ -2,7 +2,7 @@
 import OpenGraph from './OpenGraph.astro';
 import SchemaGraph from './SchemaGraph.astro';
 import { DEFAULT_OPTIONS, DEFAULT_LOCAL_BUSINESS } from '../config.js';
-import type { EntrySeoMetadata, LocalBusinessInfo } from '../types.js';
+import type { EntrySeoMetadata, LocalBusinessInfo, AuthorProfile, HowToStep } from '../types.js';
 import { generateAutoBreadcrumbs, type BreadcrumbItem } from '../engine/breadcrumbs.js';
 import { extractTableOfContents, type TocItem } from '../engine/toc-extractor.js';
 import { extractFaqsFromContent } from '../importers/rankmath-importer.js';
@@ -25,7 +25,10 @@ interface Props {
   category?: string;
   publishedTime?: string;
   modifiedTime?: string;
-  author?: string;
+  author?: string | AuthorProfile;
+  reviewedBy?: AuthorProfile;
+  speakableSelectors?: string[];
+  howToSteps?: HowToStep[];
   nlwebEndpoint?: string;
   alternateLinks?: AlternateLink[];
 }
@@ -46,7 +49,10 @@ const {
   category: propCategory,
   publishedTime,
   modifiedTime,
-  author,
+  author: propAuthor,
+  reviewedBy: propReviewedBy,
+  speakableSelectors: propSpeakable,
+  howToSteps: propHowTo,
   nlwebEndpoint = DEFAULT_OPTIONS.nlwebEndpoint,
   alternateLinks = [],
 } = Astro.props;
@@ -161,7 +167,11 @@ if (!hasPrecomputed) {
         imageUrl={finalImage}
         datePublished={publishedTime || entry?.createdAt}
         dateModified={modifiedTime || entry?.updatedAt}
-        authorName={author}
+        authorName={typeof propAuthor === 'string' ? propAuthor : seo.author?.name || propAuthor?.name}
+        author={typeof propAuthor === 'object' ? propAuthor : seo.author}
+        reviewedBy={propReviewedBy || seo.reviewedBy}
+        speakableSelectors={propSpeakable || seo.speakableSelectors}
+        howToSteps={propHowTo || seo.howToSteps}
         breadcrumbs={breadcrumbs}
         pathname={currentPath}
         category={category}

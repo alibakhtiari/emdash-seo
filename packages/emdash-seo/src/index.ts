@@ -103,6 +103,17 @@ import {
   type AltAuditorOptions,
 } from './engine/alt-auditor.js';
 import {
+  auditGeoAeo,
+  extractAutoFaqs,
+  extractAutoHowTo,
+  extractSpeakableText,
+} from './engine/geo-aeo-analyzer.js';
+import {
+  buildAuthorNode,
+  buildHowToNode,
+  inferSchemaType,
+} from './engine/schema-nodes.js';
+import {
   SerpPreviewPage,
   LiveSentenceHighlighter,
   ImageAltAuditorWidget,
@@ -144,6 +155,13 @@ export {
   COMPLEX_WORD_ALTERNATIVES,
   IRREGULAR_PAST_PARTICIPLES,
   auditImageAlts,
+  auditGeoAeo,
+  extractAutoFaqs,
+  extractAutoHowTo,
+  extractSpeakableText,
+  buildAuthorNode,
+  buildHowToNode,
+  inferSchemaType,
   analyzeContent,
   buildConnectedSchemaGraph,
   extractLinksFromContent,
