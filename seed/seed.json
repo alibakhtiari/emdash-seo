@@ -50,7 +50,8 @@
         {
           "slug": "focus_keyword",
           "label": "Focus Keyword",
-          "type": "string"
+          "type": "string",
+          "widget": "emdash-seo:focus-keyword"
         },
         {
           "slug": "service_type",
@@ -99,7 +100,8 @@
         {
           "slug": "focus_keyword",
           "label": "Focus Keyword",
-          "type": "string"
+          "type": "string",
+          "widget": "emdash-seo:focus-keyword"
         },
         {
           "slug": "schema_type",
@@ -149,6 +151,12 @@
           "label": "Content",
           "type": "portableText",
           "searchable": true
+        },
+        {
+          "slug": "focus_keyword",
+          "label": "Focus Keyword",
+          "type": "string",
+          "widget": "emdash-seo:focus-keyword"
         }
       ]
     }
