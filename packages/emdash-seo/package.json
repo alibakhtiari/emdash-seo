@@ -16,10 +16,20 @@
       "import": "./src/head/SeoHead.astro",
       "default": "./src/head/SeoHead.astro"
     },
+    "./head-compiler": {
+      "types": "./src/engine/head-compiler.ts",
+      "import": "./src/engine/head-compiler.ts",
+      "default": "./src/engine/head-compiler.ts"
+    },
     "./analyzer": {
       "types": "./src/engine/content-analyzer.ts",
       "import": "./src/engine/content-analyzer.ts",
       "default": "./src/engine/content-analyzer.ts"
+    },
+    "./semantic": {
+      "types": "./src/engine/semantic-analyzer.ts",
+      "import": "./src/engine/semantic-analyzer.ts",
+      "default": "./src/engine/semantic-analyzer.ts"
     },
     "./schema": {
       "types": "./src/engine/schema-builder.ts",
@@ -61,6 +71,11 @@
       "import": "./src/routes/schema-map.ts",
       "default": "./src/routes/schema-map.ts"
     },
+    "./api-v1": {
+      "types": "./src/routes/api-v1.ts",
+      "import": "./src/routes/api-v1.ts",
+      "default": "./src/routes/api-v1.ts"
+    },
     "./components/Breadcrumbs": {
       "types": "./src/components/Breadcrumbs.astro",
       "import": "./src/components/Breadcrumbs.astro",
@@ -75,6 +90,16 @@
       "types": "./src/components/FaqBlock.astro",
       "import": "./src/components/FaqBlock.astro",
       "default": "./src/components/FaqBlock.astro"
+    },
+    "./components/LiveSentenceHighlighter": {
+      "types": "./src/components/LiveSentenceHighlighter.tsx",
+      "import": "./src/components/LiveSentenceHighlighter.tsx",
+      "default": "./src/components/LiveSentenceHighlighter.tsx"
+    },
+    "./components/ImageAltAuditorWidget": {
+      "types": "./src/components/ImageAltAuditorWidget.tsx",
+      "import": "./src/components/ImageAltAuditorWidget.tsx",
+      "default": "./src/components/ImageAltAuditorWidget.tsx"
     }
   },
   "keywords": [
