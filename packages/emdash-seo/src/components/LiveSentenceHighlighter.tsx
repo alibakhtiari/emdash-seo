@@ -2,214 +2,32 @@ import * as React from 'react';
 import type {
   DetailedReadabilityReport,
   SentenceAnalysis,
-  SentenceDifficulty,
   SentenceComplexWord,
 } from '../types.js';
+import { auditReadability } from '../engine/readability-auditor.js';
 import {
-  auditReadability,
-} from '../engine/readability-auditor.js';
+  type FilterOptions,
+  type LiveSentenceHighlighterProps,
+  getDifficultyBackgroundColor,
+  getSentenceHighlightStyle,
+  getDifficultyLabel,
+  generateSentenceSuggestion,
+  tokenizeSentence,
+} from './highlighter-utils.js';
+import { SentenceDetailCard } from './SentenceDetailCard.js';
+import { ReadabilityMetricsBar } from './ReadabilityMetricsBar.js';
 
-export interface FilterOptions {
-  hardSentences: boolean;
-  veryHardSentences: boolean;
-  passiveVoice: boolean;
-  complexWords: boolean;
-}
-
-export interface LiveSentenceHighlighterProps {
-  initialContent?: string;
-  content?: string;
-  onContentChange?: (content: string) => void;
-  report?: DetailedReadabilityReport;
-  showEditor?: boolean;
-  defaultViewMode?: 'split' | 'preview' | 'editor';
-  className?: string;
-  style?: React.CSSProperties;
-}
-
-/**
- * Returns CSS color background for sentence difficulty.
- * - 'hard': Yellow (#fef08a)
- * - 'very-hard': Soft Red/Coral (#fecaca)
- */
-export function getDifficultyBackgroundColor(difficulty: SentenceDifficulty): string | undefined {
-  if (difficulty === 'very-hard') return '#fecaca';
-  if (difficulty === 'hard') return '#fef08a';
-  return undefined;
-}
-
-/**
- * Formats CSS classes and inline style for a sentence segment based on active filters and difficulty.
- */
-export function getSentenceHighlightStyle(
-  sentence: SentenceAnalysis,
-  filters: FilterOptions,
-  isFocusMode: boolean = false,
-  isSelected: boolean = false
-): React.CSSProperties {
-  const style: React.CSSProperties = {
-    transition: 'all 0.15s ease',
-    borderRadius: 3,
-    padding: '1px 2px',
-    margin: '0 1px',
-    cursor: 'pointer',
-    display: 'inline',
-  };
-
-  const applyHard = filters.hardSentences && sentence.difficulty === 'hard';
-  const applyVeryHard = filters.veryHardSentences && sentence.difficulty === 'very-hard';
-  const applyPassive = filters.passiveVoice && sentence.isPassive;
-
-  if (applyVeryHard) {
-    style.backgroundColor = '#fecaca';
-    style.color = '#7f1d1d';
-  } else if (applyHard) {
-    style.backgroundColor = '#fef08a';
-    style.color = '#713f12';
-  }
-
-  if (applyPassive) {
-    style.textDecoration = 'underline dotted #6366f1';
-    style.textDecorationThickness = '2px';
-    style.textUnderlineOffset = '3px';
-  }
-
-  if (isFocusMode) {
-    const hasActiveHighlight = applyHard || applyVeryHard || applyPassive || (filters.complexWords && (sentence.complexWords?.length ?? 0) > 0);
-    if (!isSelected && !hasActiveHighlight) {
-      style.opacity = 0.35;
-    } else if (isSelected) {
-      style.outline = '2px solid #3b82f6';
-      style.outlineOffset = '1px';
-    }
-  } else if (isSelected) {
-    style.outline = '2px solid #3b82f6';
-    style.outlineOffset = '1px';
-  }
-
-  return style;
-}
-
-/**
- * Maps difficulty to standard human-readable label.
- */
-export function getDifficultyLabel(difficulty: SentenceDifficulty): string {
-  switch (difficulty) {
-    case 'very-hard':
-      return 'Very Hard to Read';
-    case 'hard':
-      return 'Hard to Read';
-    default:
-      return 'Standard Reading';
-  }
-}
-
-/**
- * Generates actionable advice/suggestion for a specific sentence.
- */
-export function generateSentenceSuggestion(sentence: SentenceAnalysis): string {
-  const suggestions: string[] = [];
-
-  if (sentence.difficulty === 'very-hard') {
-    suggestions.push(`Split this sentence into 2 or 3 shorter sentences (${sentence.wordCount} words detected, target: < 20).`);
-  } else if (sentence.difficulty === 'hard') {
-    suggestions.push(`Consider simplifying this sentence (${sentence.wordCount} words detected).`);
-  }
-
-  if (sentence.isPassive) {
-    const phrases = sentence.passivePhrases?.join(', ');
-    suggestions.push(`Passive voice detected${phrases ? ` ("${phrases}")` : ''}. State who or what is performing the action.`);
-  }
-
-  if (sentence.complexWords && sentence.complexWords.length > 0) {
-    const list = sentence.complexWords
-      .map((cw) => `${cw.word}${cw.alternative ? ` → "${cw.alternative}"` : ''}`)
-      .join(', ');
-    suggestions.push(`Simplify complex word(s): ${list}.`);
-  }
-
-  if (sentence.consecutiveStarterWarning && sentence.starterWord) {
-    suggestions.push(`Vary sentence openers: several consecutive sentences begin with "${sentence.starterWord}".`);
-  }
-
-  if (suggestions.length === 0) {
-    return 'Great job! This sentence is clear, active, and easy to read.';
-  }
-
-  return suggestions.join(' ');
-}
-
-/**
- * Tokenizes sentence text to wrap complex words in interactive spans.
- */
-export function tokenizeSentence(
-  sentenceText: string,
-  complexWords: SentenceComplexWord[] | undefined,
-  highlightComplex: boolean,
-  onHoverComplex?: (word: SentenceComplexWord | null) => void
-): React.ReactNode[] {
-  if (!highlightComplex || !complexWords || complexWords.length === 0) {
-    return [sentenceText];
-  }
-
-  // Create a regex matching all complex words for this sentence
-  const escapedWords = complexWords
-    .map((cw) => cw.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-    .filter(Boolean);
-
-  if (escapedWords.length === 0) {
-    return [sentenceText];
-  }
-
-  const regex = new RegExp(`\\b(${escapedWords.join('|')})\\b`, 'gi');
-  const parts: React.ReactNode[] = [];
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-
-  while ((match = regex.exec(sentenceText)) !== null) {
-    const matchIndex = match.index;
-    const matchedWord = match[0];
-
-    if (matchIndex > lastIndex) {
-      parts.push(sentenceText.slice(lastIndex, matchIndex));
-    }
-
-    const matchedInfo = complexWords.find(
-      (cw) => cw.word.toLowerCase() === matchedWord.toLowerCase()
-    );
-
-    parts.push(
-      <span
-        key={`cw-${matchIndex}`}
-        title={
-          matchedInfo?.alternative
-            ? `Complex word: "${matchedWord}". Simpler: "${matchedInfo.alternative}"`
-            : `Complex word: "${matchedWord}"`
-        }
-        onMouseEnter={() => onHoverComplex?.(matchedInfo ?? null)}
-        onMouseLeave={() => onHoverComplex?.(null)}
-        style={{
-          textDecoration: 'underline wavy #06b6d4',
-          textDecorationThickness: '2px',
-          textUnderlineOffset: '3px',
-          color: '#0e7490',
-          fontWeight: 500,
-          cursor: 'help',
-        }}
-      >
-        {matchedWord}
-      </span>
-    );
-
-    lastIndex = matchIndex + matchedWord.length;
-  }
-
-  if (lastIndex < sentenceText.length) {
-    parts.push(sentenceText.slice(lastIndex));
-  }
-
-  return parts;
-}
+export {
+  type FilterOptions,
+  type LiveSentenceHighlighterProps,
+  getDifficultyBackgroundColor,
+  getSentenceHighlightStyle,
+  getDifficultyLabel,
+  generateSentenceSuggestion,
+  tokenizeSentence,
+  SentenceDetailCard,
+  ReadabilityMetricsBar,
+};
 
 /**
  * Interactive Live Sentence Highlighter component with Hemingway-style color highlighting,
@@ -308,18 +126,6 @@ export function LiveSentenceHighlighter({
     setFilters((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // Grade badge styling
-  const gradeColor =
-    report.gradeLevel <= 8 ? '#15803d' : report.gradeLevel <= 11 ? '#a16207' : '#b91c1c';
-  const gradeBg =
-    report.gradeLevel <= 8 ? '#dcfce7' : report.gradeLevel <= 11 ? '#fef9c3' : '#fee2e2';
-
-  // Ease score styling
-  const easeColor =
-    report.readingEase >= 60 ? 'var(--text-color-kumo-success, #34d399)' : report.readingEase >= 50 ? 'var(--text-color-kumo-warning, #fbbf24)' : 'var(--text-color-kumo-danger, #f87171)';
-  const easeBg =
-    report.readingEase >= 60 ? 'var(--color-kumo-success-tint, rgba(16, 185, 129, 0.15))' : report.readingEase >= 50 ? 'var(--color-kumo-warning-tint, rgba(245, 158, 11, 0.15))' : 'var(--color-kumo-danger-tint, rgba(239, 68, 68, 0.15))';
-
   return (
     <div
       className={className}
@@ -412,103 +218,7 @@ export function LiveSentenceHighlighter({
       </div>
 
       {/* Readability Gauge & Stat Pills Bar */}
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          gap: 10,
-          marginBottom: '1.25rem',
-          padding: '0.75rem 1rem',
-          background: 'var(--color-kumo-recessed, #141414)',
-          borderRadius: 8,
-          border: '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.08))',
-        }}
-      >
-        {/* Flesch Reading Ease Badge */}
-        <div
-          title="Flesch Reading Ease: 0 (hardest) to 100 (easiest). Standard web target: 60+."
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            background: easeBg,
-            color: easeColor,
-            padding: '4px 10px',
-            borderRadius: 16,
-            fontSize: '0.8125rem',
-            fontWeight: 700,
-            border: '1px solid currentColor',
-          }}
-        >
-          <span>Ease: {report.readingEase}</span>
-          <span style={{ fontSize: '0.75rem', fontWeight: 500 }}>({report.readingEaseLevel})</span>
-        </div>
-
-        {/* Grade Level Badge */}
-        <div
-          title="Flesch-Kincaid Grade Level: Represents US school grade. Grade 7-8 is ideal for mass digital audiences."
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            background: gradeBg,
-            color: gradeColor,
-            padding: '4px 10px',
-            borderRadius: 16,
-            fontSize: '0.8125rem',
-            fontWeight: 700,
-            border: '1px solid currentColor',
-          }}
-        >
-          <span>Grade: {report.gradeLevel}</span>
-        </div>
-
-        {/* Passive Voice Pill */}
-        <div
-          title="Passive Voice percentage: Target < 10% for strong, direct web copywriting."
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            background: report.passiveVoicePercentage > 10 ? 'var(--color-kumo-danger-tint, rgba(239, 68, 68, 0.15))' : 'var(--color-kumo-tint, #262626)',
-            color: report.passiveVoicePercentage > 10 ? 'var(--text-color-kumo-danger, #f87171)' : 'var(--text-color-kumo-subtle, #a0a0a0)',
-            padding: '4px 10px',
-            borderRadius: 16,
-            fontSize: '0.8125rem',
-            fontWeight: 600,
-            border: '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.1))',
-          }}
-        >
-          <span>{report.passiveVoicePercentage}% Passive</span>
-          <span style={{ fontSize: '0.75rem', fontWeight: 400 }}>({report.passiveVoiceCount} of {report.sentenceCount})</span>
-        </div>
-
-        {/* Transition Words Pill */}
-        <div
-          title="Transition Words percentage: Connectors like 'however', 'furthermore', 'because'. Target >= 30%."
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            background: report.transitionPercentage >= 30 ? 'var(--color-kumo-success-tint, rgba(16, 185, 129, 0.15))' : 'var(--color-kumo-tint, #262626)',
-            color: report.transitionPercentage >= 30 ? 'var(--text-color-kumo-success, #34d399)' : 'var(--text-color-kumo-subtle, #a0a0a0)',
-            padding: '4px 10px',
-            borderRadius: 16,
-            fontSize: '0.8125rem',
-            fontWeight: 600,
-            border: '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.1))',
-          }}
-        >
-          <span>{report.transitionPercentage}% Transitions</span>
-          <span style={{ fontSize: '0.75rem', fontWeight: 400 }}>({report.transitionWordsCount})</span>
-        </div>
-
-        {/* Total Words & Sentence Count */}
-        <div style={{ marginLeft: 'auto', fontSize: '0.8125rem', color: 'var(--text-color-kumo-subtle, #a0a0a0)' }}>
-          <strong style={{ color: 'var(--text-color-kumo-strong, #ffffff)' }}>{report.wordCount}</strong> words · <strong style={{ color: 'var(--text-color-kumo-strong, #ffffff)' }}>{report.sentenceCount}</strong> sentences
-        </div>
-      </div>
+      <ReadabilityMetricsBar report={report} />
 
       {/* Filter Toggles & Focus Mode Bar */}
       <div
@@ -750,70 +460,11 @@ export function LiveSentenceHighlighter({
 
       {/* Interactive Sentence Inspector Card / Tooltip Display */}
       {activeSentence && (
-        <div
-          style={{
-            marginTop: '1rem',
-            padding: '0.875rem 1rem',
-            background: 'var(--color-kumo-elevated, #202020)',
-            border: '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.15))',
-            borderRadius: 6,
-            fontSize: '0.8125rem',
-            color: 'var(--text-color-kumo-default, #ededed)',
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <div style={{ fontWeight: 700, color: 'var(--text-color-kumo-strong, #ffffff)' }}>
-              Sentence Inspector · #{activeSentenceIndex! + 1}
-            </div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <span
-                style={{
-                  padding: '2px 8px',
-                  borderRadius: 10,
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  background: activeSentence.difficulty === 'very-hard' ? 'var(--color-kumo-danger-tint, rgba(239, 68, 68, 0.2))' : activeSentence.difficulty === 'hard' ? 'var(--color-kumo-warning-tint, rgba(245, 158, 11, 0.2))' : 'var(--color-kumo-success-tint, rgba(16, 185, 129, 0.2))',
-                  color: activeSentence.difficulty === 'very-hard' ? 'var(--text-color-kumo-danger, #f87171)' : activeSentence.difficulty === 'hard' ? 'var(--text-color-kumo-warning, #fbbf24)' : 'var(--text-color-kumo-success, #34d399)',
-                }}
-              >
-                {getDifficultyLabel(activeSentence.difficulty)} ({activeSentence.wordCount} words)
-              </span>
-
-              {activeSentence.isPassive && (
-                <span
-                  style={{
-                    padding: '2px 8px',
-                    borderRadius: 10,
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    background: 'var(--color-kumo-info-tint, rgba(99, 102, 241, 0.2))',
-                    color: 'var(--text-color-kumo-info, #818cf8)',
-                  }}
-                >
-                  Passive Voice
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div style={{ fontStyle: 'italic', color: 'var(--text-color-kumo-default, #ededed)', marginBottom: 8, padding: '6px 10px', background: 'var(--color-kumo-recessed, #141414)', borderRadius: 4, border: '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.08))' }}>
-            "{activeSentence.text}"
-          </div>
-
-          <div style={{ color: 'var(--text-color-kumo-default, #ededed)', lineHeight: 1.5 }}>
-            <strong style={{ color: 'var(--color-kumo-brand, #f6821f)' }}>💡 Suggestion: </strong>
-            {generateSentenceSuggestion(activeSentence)}
-          </div>
-
-          {hoveredComplexWord && (
-            <div style={{ marginTop: 6, padding: '4px 8px', background: 'var(--color-kumo-info-tint, rgba(6, 182, 212, 0.15))', borderRadius: 4, color: '#38bdf8', border: '1px solid rgba(6, 182, 212, 0.3)' }}>
-              <strong>Complex Word: </strong>"{hoveredComplexWord.word}" ({hoveredComplexWord.syllables} syllables)
-              {hoveredComplexWord.alternative && (
-                <span> — Try replacing with: <strong style={{ color: '#ffffff' }}>"{hoveredComplexWord.alternative}"</strong></span>
-              )}
-            </div>
-          )}
-        </div>
+        <SentenceDetailCard
+          sentence={activeSentence}
+          index={activeSentenceIndex!}
+          hoveredComplexWord={hoveredComplexWord}
+        />
       )}
     </div>
   );
