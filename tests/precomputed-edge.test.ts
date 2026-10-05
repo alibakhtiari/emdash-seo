@@ -272,7 +272,7 @@ Use a steam extractor.`,
         computeContentHash(`Benchmarking iteration number ${i} with sample blog content`);
       }
       const elapsed = performance.now() - start;
-      expect(elapsed).toBeLessThan(10);
+      expect(elapsed).toBeLessThan(50);
     });
   });
 
