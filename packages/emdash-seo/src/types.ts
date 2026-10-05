@@ -25,10 +25,17 @@ export interface EntrySeoMetadata {
   twitterTitle?: string;
   twitterDescription?: string;
   twitterImage?: string;
-  schemaType?: 'CleaningService' | 'LocalBusiness' | 'Service' | 'Article' | 'FAQPage' | 'None';
+  schemaType?: 'CleaningService' | 'LocalBusiness' | 'Service' | 'Article' | 'BlogPosting' | 'TechArticle' | 'NewsArticle' | 'FAQPage' | 'None' | (string & {});
   schemaOverrides?: Record<string, any>;
   faqs?: FaqItem[];
   primaryCategory?: string;
+  cornerstone?: boolean;
+
+  // Pre-rendered cache records (populated on save/publish for sub-0.1ms edge SSR)
+  _cachedHead?: string;
+  _cachedSchemaGraph?: string;
+  _cachedAt?: string;
+  _cachedHash?: string;
 }
 
 export interface LocalBusinessInfo {
@@ -65,12 +72,27 @@ export interface NavigationItem {
   url: string;
 }
 
+export interface SeoPluginModules {
+  sitemaps?: boolean;
+  robots?: boolean;
+  redirects?: boolean;
+  llmsTxt?: boolean;
+  schemaMap?: boolean;
+  auditApi?: boolean;
+  indexNow?: boolean;
+  fuzzyRedirects?: boolean;
+}
+
 export interface SeoPluginOptions {
   siteUrl: string;
   siteName: string;
   defaultTitleTemplate?: string; // e.g. "%title% %separator% %siteName%"
   defaultSeparator?: string; // e.g. " | " or " — "
   defaultOgImage?: string;
+  defaultDescription?: string;
+  llmsTxtDescription?: string;
+  breadcrumbLabels?: Record<string, string>;
+  breadcrumbRules?: Record<string, any>;
   enableLlmsTxt?: boolean;
   enableSitemap?: boolean;
   enableRobots?: boolean;
@@ -86,6 +108,7 @@ export interface SeoPluginOptions {
   blogName?: string;
   navigationItems?: NavigationItem[];
   business?: LocalBusinessInfo;
+  modules?: SeoPluginModules;
 }
 
 export interface BreadcrumbItem {
@@ -100,6 +123,98 @@ export interface ContentCheck {
   passed: boolean;
   severity: 'error' | 'warning' | 'info';
   message: string;
+}
+
+export type SentenceDifficulty = 'normal' | 'hard' | 'very-hard';
+
+export interface SentenceComplexWord {
+  word: string;
+  syllables: number;
+  alternative?: string;
+}
+
+export interface SentenceAnalysis {
+  text: string;
+  startIndex: number;
+  endIndex: number;
+  wordCount: number;
+  syllableCount: number;
+  avgSyllablesPerWord: number;
+  difficulty: SentenceDifficulty;
+  isPassive: boolean;
+  passivePhrases?: string[];
+  hasTransition: boolean;
+  transitionWords?: string[];
+  complexWords?: SentenceComplexWord[];
+  starterWord?: string;
+  consecutiveStarterWarning?: boolean;
+}
+
+export interface ConsecutiveSentenceStarter {
+  word: string;
+  count: number;
+  sentenceIndices: number[];
+}
+
+export interface ComplexWordMetric {
+  word: string;
+  count: number;
+  syllables: number;
+  alternative?: string;
+}
+
+export interface DetailedReadabilityReport {
+  score: number;
+  readingEase: number;
+  gradeLevel: number;
+  readingEaseLevel: string;
+  sentenceCount: number;
+  wordCount: number;
+  hardSentencesCount: number;
+  veryHardSentencesCount: number;
+  hardSentencesPercentage: number;
+  passiveVoiceCount: number;
+  passiveVoicePercentage: number;
+  transitionWordsCount: number;
+  transitionPercentage: number;
+  complexWordsCount: number;
+  complexWords: ComplexWordMetric[];
+  consecutiveSentenceStarters: ConsecutiveSentenceStarter[];
+  longParagraphsCount: number;
+  longSectionsCount: number;
+  sentences: SentenceAnalysis[];
+  issues: string[];
+}
+
+export type AltIssueType =
+  | 'alt_missing'
+  | 'alt_empty'
+  | 'alt_filename'
+  | 'alt_redundant'
+  | 'alt_length'
+  | 'alt_kw_stuffing';
+
+export interface ImageAltAuditItem {
+  src: string;
+  alt: string;
+  charCount: number;
+  isDecorative: boolean;
+  issues: AltIssueType[];
+  suggestions: string[];
+  status: 'good' | 'warning' | 'critical';
+}
+
+export interface AltAuditReport {
+  score: number;
+  totalImages: number;
+  missingAltCount: number;
+  emptyAltCount: number;
+  decorativeCount: number;
+  goodCount: number;
+  warningCount: number;
+  criticalCount: number;
+  images: ImageAltAuditItem[];
+  issues: string[];
 }
 
 export interface AnalysisReport {
@@ -125,6 +240,19 @@ export interface AnalysisReport {
   keywordInSubheadings: boolean;
   hasImagesWithAlt: boolean;
   recommendations: string[];
+  eciScore: number;
+  detectedEntities: string[];
+  topicalGaps: string[];
+  readability: {
+    score: number;
+    level: string;
+    fleschReadingEase?: number;
+    sentenceCount?: number;
+    avgWordsPerSentence?: number;
+    hardSentencesCount?: number;
+  };
+  detailedReadability?: DetailedReadabilityReport;
+  altAudit?: AltAuditReport;
 }
 
 export interface RedirectRule {
