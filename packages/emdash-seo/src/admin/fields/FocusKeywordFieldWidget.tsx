@@ -2,11 +2,17 @@ import * as React from 'react';
 import { auditReadability } from '../../engine/readability-auditor.js';
 import { auditImageAlts } from '../../engine/alt-auditor.js';
 import { analyzeContent } from '../../engine/content-analyzer.js';
+import { auditGeoAeo } from '../../engine/geo-aeo-analyzer.js';
+import { inferSchemaType } from '../../engine/schema-nodes.js';
+import type { AuthorProfile, FaqItem, HowToStep } from '../../types.js';
 import { extractEditorDomSnapshot, type EditorDomSnapshot } from './dom-extractor.js';
 import { WidgetReadabilityTab } from './WidgetReadabilityTab.js';
 import { WidgetAltTab } from './WidgetAltTab.js';
 import { WidgetSerpTab } from './WidgetSerpTab.js';
 import { WidgetChecklistTab } from './WidgetChecklistTab.js';
+import { WidgetGeoAeoTab } from './WidgetGeoAeoTab.js';
+import { WidgetSchemaAuthorTab } from './WidgetSchemaAuthorTab.js';
+import { WidgetMetricBar } from './WidgetMetricBar.js';
 
 export interface FocusKeywordFieldWidgetProps {
   value?: string | null;
@@ -30,7 +36,22 @@ export function FocusKeywordFieldWidget({
   const currentKeyword = typeof value === 'string' ? value : '';
   const [keyword, setKeyword] = React.useState<string>(currentKeyword);
   const [isExpanded, setIsExpanded] = React.useState<boolean>(false);
-  const [activeTab, setActiveTab] = React.useState<'readability' | 'alts' | 'serp' | 'checklist'>('readability');
+  const [activeTab, setActiveTab] = React.useState<
+    'readability' | 'geo-aeo' | 'schema-author' | 'alts' | 'serp' | 'checklist'
+  >('readability');
+
+  const [author, setAuthor] = React.useState<AuthorProfile>({ name: 'Editorial Team' });
+  const [reviewedBy, setReviewedBy] = React.useState<AuthorProfile | undefined>(undefined);
+  const [schemaType, setSchemaType] = React.useState<string>(() =>
+    inferSchemaType(typeof window !== 'undefined' ? window.location.pathname : '', 'Article')
+  );
+  const [speakableSelectors, setSpeakableSelectors] = React.useState<string[]>([
+    '#field-excerpt',
+    '.post-lead',
+    '.aeo-summary',
+  ]);
+  const [faqs, setFaqs] = React.useState<FaqItem[]>([]);
+  const [howToSteps, setHowToSteps] = React.useState<HowToStep[]>([]);
 
   const [snapshot, setSnapshot] = React.useState<EditorDomSnapshot>({
     title: '',
@@ -107,15 +128,18 @@ export function FocusKeywordFieldWidget({
     });
   }, [snapshot.title, snapshot.content, snapshot.excerpt, keyword]);
 
-  const easeScore = readability.readingEase;
-  const easeColor = easeScore >= 60 ? '#4ade80' : easeScore >= 50 ? '#fbbf24' : '#f87171';
-  const easeBg = easeScore >= 60 ? 'rgba(34, 197, 94, 0.12)' : easeScore >= 50 ? 'rgba(245, 158, 11, 0.12)' : 'rgba(239, 68, 68, 0.12)';
+  const geoAeoReport = React.useMemo(() => {
+    return auditGeoAeo(snapshot.content, {
+      title: snapshot.title,
+      focusKeyword: keyword,
+      excerpt: snapshot.excerpt,
+    });
+  }, [snapshot.content, snapshot.title, snapshot.excerpt, keyword]);
 
   const seoScore = seoReport.score;
   const seoColor = seoScore >= 80 ? '#4ade80' : seoScore >= 50 ? '#fbbf24' : '#f87171';
   const seoBg = seoScore >= 80 ? 'rgba(34, 197, 94, 0.12)' : seoScore >= 50 ? 'rgba(245, 158, 11, 0.12)' : 'rgba(239, 68, 68, 0.12)';
 
-  const hardSentences = readability.sentences?.filter((s) => s.difficulty === 'hard' || s.difficulty === 'very-hard').length || 0;
   const kwInTitle = keyword && snapshot.title ? snapshot.title.toLowerCase().includes(keyword.toLowerCase()) : false;
 
   return (
@@ -212,86 +236,14 @@ export function FocusKeywordFieldWidget({
 
       {/* Live Readability & SEO Metric Pills Bar */}
       <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap', alignItems: 'center' }}>
-        {/* Readability Pill */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.25rem',
-            padding: '0.2rem 0.5rem',
-            borderRadius: 4,
-            background: easeBg,
-            border: `1px solid ${easeColor}`,
-            fontSize: '0.6875rem',
-            color: easeColor,
-            fontWeight: 500,
-          }}
-        >
-          <span>📖</span>
-          <span>
-            {easeScore}/100 Ease ({readability.readingEaseLevel})
-          </span>
-        </div>
-
-        {/* Hemingway Sentence Difficulties */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.25rem',
-            padding: '0.2rem 0.5rem',
-            borderRadius: 4,
-            background: hardSentences > 0 ? 'rgba(234, 179, 8, 0.12)' : 'var(--color-kumo-control, #222222)',
-            border: `1px solid ${hardSentences > 0 ? '#facc15' : 'var(--color-kumo-line, rgba(255, 255, 255, 0.1))'}`,
-            fontSize: '0.6875rem',
-            color: hardSentences > 0 ? '#facc15' : 'var(--text-color-kumo-subtle, #9ca3af)',
-          }}
-        >
-          <span>✍️</span>
-          <span>{hardSentences === 0 ? 'Clear Sentences' : `${hardSentences} Hard Sentences`}</span>
-        </div>
-
-        {/* Keyword Presence */}
-        {keyword && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.25rem',
-              padding: '0.2rem 0.5rem',
-              borderRadius: 4,
-              background: kwInTitle ? 'rgba(34, 197, 94, 0.12)' : 'rgba(239, 68, 68, 0.12)',
-              border: `1px solid ${kwInTitle ? '#4ade80' : '#f87171'}`,
-              fontSize: '0.6875rem',
-              color: kwInTitle ? '#4ade80' : '#f87171',
-            }}
-          >
-            <span>{kwInTitle ? '✓' : '✗'}</span>
-            <span>{kwInTitle ? 'In Title' : 'Missing in Title'}</span>
-          </div>
-        )}
-
-        {/* Images Alt Pill */}
-        {snapshot.images.length > 0 && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.25rem',
-              padding: '0.2rem 0.5rem',
-              borderRadius: 4,
-              background: altAudit.score >= 80 ? 'rgba(34, 197, 94, 0.12)' : 'rgba(239, 68, 68, 0.12)',
-              border: `1px solid ${altAudit.score >= 80 ? '#4ade80' : '#f87171'}`,
-              fontSize: '0.6875rem',
-              color: altAudit.score >= 80 ? '#4ade80' : '#f87171',
-            }}
-          >
-            <span>🖼️</span>
-            <span>
-              {snapshot.images.length} Image{snapshot.images.length === 1 ? '' : 's'} ({altAudit.score}% Alts)
-            </span>
-          </div>
-        )}
+        <WidgetMetricBar
+          readability={readability}
+          altAudit={altAudit}
+          geoAeoReport={geoAeoReport}
+          keyword={keyword}
+          kwInTitle={kwInTitle}
+          imagesCount={snapshot.images.length}
+        />
 
         {/* Expand / Collapse Studio Button */}
         <button
@@ -328,7 +280,7 @@ export function FocusKeywordFieldWidget({
           }}
         >
           {/* Subtabs */}
-          <div style={{ display: 'flex', gap: '0.25rem', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '0.375rem' }}>
+          <div style={{ display: 'flex', gap: '0.25rem', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '0.375rem', flexWrap: 'wrap' }}>
             <button
               type="button"
               onClick={() => setActiveTab('readability')}
@@ -344,6 +296,38 @@ export function FocusKeywordFieldWidget({
               }}
             >
               📖 Hemingway Readability
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('geo-aeo')}
+              style={{
+                padding: '0.25rem 0.5rem',
+                borderRadius: 4,
+                border: 'none',
+                background: activeTab === 'geo-aeo' ? 'var(--color-kumo-control, #2a2a2a)' : 'transparent',
+                color: activeTab === 'geo-aeo' ? 'var(--text-color-kumo-strong, #ffffff)' : 'var(--text-color-kumo-subtle, #9ca3af)',
+                fontSize: '0.6875rem',
+                fontWeight: activeTab === 'geo-aeo' ? 600 : 400,
+                cursor: 'pointer',
+              }}
+            >
+              🤖 GEO & AEO AI ({geoAeoReport.overallAiScore}%)
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('schema-author')}
+              style={{
+                padding: '0.25rem 0.5rem',
+                borderRadius: 4,
+                border: 'none',
+                background: activeTab === 'schema-author' ? 'var(--color-kumo-control, #2a2a2a)' : 'transparent',
+                color: activeTab === 'schema-author' ? 'var(--text-color-kumo-strong, #ffffff)' : 'var(--text-color-kumo-subtle, #9ca3af)',
+                fontSize: '0.6875rem',
+                fontWeight: activeTab === 'schema-author' ? 600 : 400,
+                cursor: 'pointer',
+              }}
+            >
+              🏷️ Schema & Author
             </button>
             <button
               type="button"
@@ -397,6 +381,29 @@ export function FocusKeywordFieldWidget({
 
           {/* Tab Content */}
           {activeTab === 'readability' && <WidgetReadabilityTab readability={readability} />}
+          {activeTab === 'geo-aeo' && (
+            <WidgetGeoAeoTab
+              geoAeoReport={geoAeoReport}
+              onApplyFaqs={(extracted) => setFaqs(extracted)}
+              onApplyHowTo={(extracted) => setHowToSteps(extracted)}
+            />
+          )}
+          {activeTab === 'schema-author' && (
+            <WidgetSchemaAuthorTab
+              title={snapshot.title}
+              excerpt={snapshot.excerpt}
+              author={author}
+              onAuthorChange={setAuthor}
+              schemaType={schemaType}
+              onSchemaTypeChange={setSchemaType}
+              reviewedBy={reviewedBy}
+              onReviewerChange={setReviewedBy}
+              speakableSelectors={speakableSelectors}
+              onSpeakableChange={setSpeakableSelectors}
+              faqs={faqs}
+              howToSteps={howToSteps}
+            />
+          )}
           {activeTab === 'alts' && <WidgetAltTab altAudit={altAudit} onRefresh={refreshSnapshot} />}
           {activeTab === 'serp' && (
             <WidgetSerpTab

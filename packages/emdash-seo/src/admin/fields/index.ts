@@ -5,3 +5,6 @@ export * from './WidgetReadabilityTab.js';
 export * from './WidgetAltTab.js';
 export * from './WidgetSerpTab.js';
 export * from './WidgetChecklistTab.js';
+export * from './WidgetGeoAeoTab.js';
+export * from './WidgetSchemaAuthorTab.js';
+export * from './WidgetMetricBar.js';
