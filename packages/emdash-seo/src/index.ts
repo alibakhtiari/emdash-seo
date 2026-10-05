@@ -110,6 +110,9 @@ import {
 import {
   ContentEditorSeoPanel,
   contentEditorPanels,
+  FocusKeywordFieldWidget,
+  SeoSuiteFieldWidget,
+  fields,
 } from './admin.js';
 import { updateAltInContent } from './components/ImageAltAuditorWidget.js';
 import {
@@ -219,6 +222,9 @@ export {
   SerpPreviewPage,
   ContentEditorSeoPanel,
   contentEditorPanels,
+  FocusKeywordFieldWidget,
+  SeoSuiteFieldWidget,
+  fields,
   DEFAULT_OPTIONS,
   DEFAULT_LOCAL_BUSINESS,
 };

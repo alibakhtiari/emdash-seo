@@ -4,6 +4,7 @@ import { extractTextFromContent, extractAllImagesFromContent, type ContentEditor
 import { ContentEditorSeoPanel, contentEditorPanels } from './admin/content-editor-panel.js';
 import { FuzzyRedirectsPage } from './admin-redirects.js';
 import { SerpPreviewPage, LiveSentenceHighlighter, ImageAltAuditorWidget } from './admin-preview.js';
+import { FocusKeywordFieldWidget, SeoSuiteFieldWidget } from './admin/fields/index.js';
 
 export const pages = {
   '/settings': SettingsPage,
@@ -11,6 +12,11 @@ export const pages = {
   '/fuzzy-redirects': FuzzyRedirectsPage,
   '/readability': ReadabilityAdminPage,
   '/alt-auditor': ImageAltAuditorAdminPage,
+};
+
+export const fields = {
+  'focus-keyword': FocusKeywordFieldWidget,
+  'seo-suite': SeoSuiteFieldWidget,
 };
 
 export {
@@ -23,6 +29,8 @@ export {
   ImageAltAuditorWidget,
   ContentEditorSeoPanel,
   contentEditorPanels,
+  FocusKeywordFieldWidget,
+  SeoSuiteFieldWidget,
   extractTextFromContent,
   extractAllImagesFromContent,
   type ContentEditorPanelProps,
@@ -34,3 +42,4 @@ export {
 };
 
 export default pages;
+
