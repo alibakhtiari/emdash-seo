@@ -46,6 +46,16 @@
           "slug": "excerpt",
           "label": "Short Excerpt",
           "type": "text"
+        },
+        {
+          "slug": "focus_keyword",
+          "label": "Focus Keyword",
+          "type": "string"
+        },
+        {
+          "slug": "service_type",
+          "label": "Service Schema Type",
+          "type": "string"
         }
       ]
     },
@@ -85,6 +95,27 @@
           "slug": "excerpt",
           "label": "Excerpt",
           "type": "text"
+        },
+        {
+          "slug": "focus_keyword",
+          "label": "Focus Keyword",
+          "type": "string"
+        },
+        {
+          "slug": "schema_type",
+          "label": "Schema Article Type",
+          "type": "select",
+          "options": [
+            { "value": "BlogPosting", "label": "Blog Post" },
+            { "value": "Article", "label": "General Article" },
+            { "value": "TechArticle", "label": "Technical Article / How-To" },
+            { "value": "NewsArticle", "label": "News Article" }
+          ]
+        },
+        {
+          "slug": "cornerstone",
+          "label": "Cornerstone Content",
+          "type": "boolean"
         }
       ]
     },
