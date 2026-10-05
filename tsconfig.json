@@ -4,6 +4,7 @@
 		"moduleResolution": "bundler",
 		"module": "ESNext",
 		"target": "ESNext",
+		"jsx": "react-jsx",
 		"paths": {
 			"@emdash/plugin-seo": ["./packages/emdash-seo/src/index.ts"],
 			"@emdash/plugin-seo/*": ["./packages/emdash-seo/src/*"]
