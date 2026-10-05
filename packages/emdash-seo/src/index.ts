@@ -3,7 +3,6 @@ import type { SeoPluginOptions, FaqItem } from './types.js';
 import { renderSitemap } from './routes/sitemap.js';
 import { renderRobots } from './routes/robots.js';
 import { renderLlmsTxt, renderLlmsFullTxt } from './routes/llms-txt.js';
-import { handleRunAudit, handleGetAudit } from './routes/api-audit.js';
 import { renderSchemaMap, listPublishedSchemaUrls } from './routes/schema-map.js';
 import { handleFuzzyRedirects } from './routes/api-fuzzy-redirects.js';
 import { analyzeContent } from './engine/content-analyzer.js';
@@ -31,7 +30,6 @@ import {
   submitToIndexNow,
   validateIndexNowKey,
   generateIndexNowKey,
-  INDEXNOW_ENDPOINT,
 } from './engine/indexnow.js';
 import { buildAlternateLinks, normalizeBcp47, type HreflangEntry, type AlternateLink } from './engine/hreflang.js';
 import {

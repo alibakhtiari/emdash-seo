@@ -26,7 +26,6 @@ import {
 
 import {
   escapeRegex,
-  isPastParticiple,
   segmentSentences,
   detectPassiveVoice,
 } from './sentence-segmenter.js';
