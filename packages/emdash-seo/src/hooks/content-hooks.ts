@@ -15,6 +15,12 @@ import {
   handleIndexNowTransition,
   handleIndexNowDelete,
 } from '../engine/indexnow.js';
+import {
+  extractAutoFaqs,
+  extractAutoHowTo,
+  auditGeoAeo,
+} from '../engine/geo-aeo-analyzer.js';
+import { inferSchemaType } from '../engine/schema-nodes.js';
 
 /**
  * Intercepts content before saving to SQLite/D1.
@@ -45,6 +51,40 @@ export async function handleContentBeforeSave(
   }
   if (content.data.cornerstone !== undefined) {
     content.data.seo.cornerstone = Boolean(content.data.cornerstone);
+  }
+
+  // Auto-resolve Author E-E-A-T credentials
+  if (!content.data.seo.author || !content.data.seo.author.name) {
+    const rawAuthor = content.author || content.data.author || options.defaultAuthor?.name;
+    if (typeof rawAuthor === 'string' && rawAuthor.trim()) {
+      content.data.seo.author = {
+        ...(options.defaultAuthor || {}),
+        name: rawAuthor.trim(),
+      };
+    } else if (typeof rawAuthor === 'object' && rawAuthor !== null && rawAuthor.name) {
+      content.data.seo.author = {
+        ...(options.defaultAuthor || {}),
+        ...rawAuthor,
+      };
+    } else if (options.defaultAuthor) {
+      content.data.seo.author = { ...options.defaultAuthor };
+    }
+  }
+
+  // Auto-infer Schema Type per page / collection
+  const entryPath = `/${content.slug || content.data?.slug || ''}`;
+  content.data.seo.schemaType = inferSchemaType(
+    entryPath,
+    content.data.seo.schemaType || content.data.schema_type
+  ) as any;
+
+  // Auto-assign Speakable CSS Selectors for Voice & AEO
+  if (!content.data.seo.speakableSelectors || content.data.seo.speakableSelectors.length === 0) {
+    content.data.seo.speakableSelectors = options.defaultSpeakableSelectors || [
+      '#field-excerpt',
+      '.post-lead',
+      '.aeo-summary',
+    ];
   }
 
   // Auto-sanitize and resolve template variables if metaTitle contains % tokens
@@ -83,7 +123,39 @@ export async function handleContentBeforeSave(
       if (!content.data.seo.faqs || content.data.seo.faqs.length === 0) {
         content.data.seo.faqs = faqs;
       }
+    } else if (!content.data.seo.faqs || content.data.seo.faqs.length === 0) {
+      // Natural language Q&A extraction for Google FAQ rich snippet
+      const autoFaqs = extractAutoFaqs(rawContent);
+      if (autoFaqs.length > 0) {
+        content.data.seo.faqs = autoFaqs;
+      }
     }
+
+    // 3. Auto-extract HowTo Steps
+    if (!content.data.seo.howToSteps || content.data.seo.howToSteps.length === 0) {
+      const autoSteps = extractAutoHowTo(rawContent);
+      if (autoSteps.length > 0) {
+        content.data.seo.howToSteps = autoSteps;
+      }
+    }
+
+    // 4. Auto-compute GEO & AEO AI search engine metrics
+    const geoAeo = auditGeoAeo(rawContent, {
+      title: content.data.title || content.title || '',
+      focusKeyword: content.data.seo.focusKeywords?.[0] || '',
+      excerpt: content.data.excerpt || '',
+    });
+    content.data.seo.geoOptimization = {
+      score: geoAeo.geo.score,
+      quotableQuotes: geoAeo.geo.quotableQuotes,
+      hasStatistics: geoAeo.geo.statisticalEvidenceScore > 40,
+      hasAuthoritativeVoice: geoAeo.geo.firstPartyExperienceScore > 40,
+    };
+    content.data.seo.aeoOptimization = {
+      score: geoAeo.aeo.score,
+      directAnswerText: geoAeo.aeo.directAnswerCandidate,
+      speakableText: geoAeo.aeo.speakableCandidate,
+    };
   }
 
   // Pre-computed Edge Delivery Compilation (< 0.1ms TTFB on Cloudflare Workers)
