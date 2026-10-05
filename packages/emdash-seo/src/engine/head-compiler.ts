@@ -97,6 +97,12 @@ function extractNormalizedMetadata(entry: any, options: SeoPluginOptions) {
     faqs: rawSeo.faqs,
     primaryCategory: rawSeo.primaryCategory,
     cornerstone: rawSeo.cornerstone ?? (data.cornerstone !== undefined ? Boolean(data.cornerstone) : undefined),
+    author: rawSeo.author || (entry?.author ? { name: typeof entry.author === 'string' ? entry.author : entry.author.name } : options.defaultAuthor),
+    reviewedBy: rawSeo.reviewedBy,
+    speakableSelectors: rawSeo.speakableSelectors || options.defaultSpeakableSelectors,
+    howToSteps: rawSeo.howToSteps,
+    geoOptimization: rawSeo.geoOptimization,
+    aeoOptimization: rawSeo.aeoOptimization,
   };
 
   const siteName = options.siteName || DEFAULT_OPTIONS.siteName;
@@ -356,7 +362,11 @@ export function compilePrecomputedSchemaGraph(entry: any, options: SeoPluginOpti
     imageUrl: meta.finalImage,
     datePublished: meta.publishedTime,
     dateModified: meta.modifiedTime,
-    authorName: meta.author || 'Editorial Team',
+    authorName: meta.author || meta.seo.author?.name || 'Editorial Team',
+    author: meta.seo.author,
+    reviewedBy: meta.seo.reviewedBy,
+    speakableSelectors: meta.seo.speakableSelectors,
+    howToSteps: meta.seo.howToSteps,
     breadcrumbs,
     pathname: meta.pathname,
     category: meta.category,

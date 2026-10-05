@@ -1,7 +1,8 @@
-import type { EntrySeoMetadata, LocalBusinessInfo, FaqItem } from '../types.js';
+import type { EntrySeoMetadata, LocalBusinessInfo, FaqItem, AuthorProfile, HowToStep } from '../types.js';
 import { DEFAULT_LOCAL_BUSINESS } from '../config.js';
 import { generateAutoBreadcrumbs, type BreadcrumbItem } from './breadcrumbs.js';
 import type { TocItem } from './toc-extractor.js';
+import { buildAuthorNode, buildHowToNode, inferSchemaType } from './schema-nodes.js';
 
 export interface BuildSchemaGraphOptions {
   siteUrl: string;
@@ -13,6 +14,10 @@ export interface BuildSchemaGraphOptions {
   datePublished?: string;
   dateModified?: string;
   authorName?: string;
+  author?: AuthorProfile;
+  reviewedBy?: AuthorProfile;
+  speakableSelectors?: string[];
+  howToSteps?: HowToStep[];
   breadcrumbs?: BreadcrumbItem[];
   pathname?: string;
   category?: string;
@@ -46,6 +51,10 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
     datePublished,
     dateModified,
     authorName = "Editorial Team",
+    author,
+    reviewedBy,
+    speakableSelectors,
+    howToSteps,
     pathname = "",
     category,
     toc = [],
@@ -65,6 +74,27 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
 
   const cleanSiteUrl = siteUrl.replace(/\/+$/, '');
   const cleanCanonical = canonicalUrl.replace(/\/+$/, '');
+
+  // Resolve Schema Type & Author Nodes
+  const schemaType = inferSchemaType(pathname, seo.schemaType || options.seo?.schemaType);
+  const effectiveAuthor: AuthorProfile =
+    author ||
+    seo.author ||
+    (authorName ? { name: authorName } : { name: 'Editorial Team' });
+  const authorNode = buildAuthorNode(effectiveAuthor, cleanSiteUrl);
+
+  const effectiveReviewer = reviewedBy || seo.reviewedBy;
+  const reviewerNode = effectiveReviewer
+    ? buildAuthorNode(effectiveReviewer, cleanSiteUrl, 'reviewer')
+    : undefined;
+
+  const effectiveSpeakable = speakableSelectors || seo.speakableSelectors;
+  const speakableSpec = effectiveSpeakable && effectiveSpeakable.length > 0 ? {
+    "speakable": {
+      "@type": "SpeakableSpecification",
+      "cssSelector": effectiveSpeakable
+    }
+  } : {};
 
   // 1. WebSite Node
   const websiteNode: Record<string, any> = {
@@ -136,9 +166,10 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
     } : {})
   };
 
-  // 3. WebPage Node
+  // 3. WebPage Node (with optional Speakable for voice / AEO)
+  const isPageSpecific = ['AboutPage', 'ContactPage', 'ProfilePage'].includes(schemaType);
   const webPageNode: Record<string, any> = {
-    "@type": "WebPage",
+    "@type": isPageSpecific ? ["WebPage", schemaType] : "WebPage",
     "@id": `${cleanCanonical}#webpage`,
     "url": cleanCanonical,
     "name": title,
@@ -146,6 +177,7 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
     "isPartOf": { "@id": `${cleanSiteUrl}/#website` },
     "about": { "@id": `${cleanSiteUrl}/#organization` },
     "inLanguage": "en-GB",
+    ...speakableSpec,
     ...(copyrightYear ? { "copyrightYear": copyrightYear } : {}),
     ...(licenseUrl ? { "license": licenseUrl } : {}),
     ...(datePublished ? { "datePublished": datePublished } : {}),
@@ -164,7 +196,8 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
     } : {})
   };
 
-  const graph: Record<string, any>[] = [websiteNode, organizationNode, webPageNode];
+  const graph: Record<string, any>[] = [websiteNode, organizationNode, webPageNode, authorNode];
+  if (reviewerNode) graph.push(reviewerNode);
 
   // Optional: SiteNavigationElement Schema
   if (navigationItems && navigationItems.length > 0) {
@@ -230,8 +263,8 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
     });
   }
 
-  // 6. Contextual Entity Node (Service, Article, LocalBusiness)
-  const schemaType = seo.schemaType || 'Service';
+  // 6. Contextual Entity Node (Service, Article, BlogPosting, TechArticle, NewsArticle, HowTo)
+  const isArticleKind = ['Article', 'BlogPosting', 'TechArticle', 'NewsArticle', 'MedicalWebPage'].includes(schemaType);
 
   if (schemaType === 'CleaningService' || schemaType === 'Service') {
     graph.push({
@@ -251,10 +284,10 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
       ...(imageUrl ? { "image": imageUrl } : {}),
       ...(seo.schemaOverrides || {})
     });
-  } else if (schemaType === 'Article') {
+  } else if (isArticleKind) {
     graph.push({
-      "@type": "Article",
-      "@id": `${cleanCanonical}#article`,
+      "@type": schemaType,
+      "@id": `${cleanCanonical}#${schemaType.toLowerCase()}`,
       "isPartOf": { "@id": `${cleanCanonical}#webpage` },
       "headline": title,
       "description": description,
@@ -262,9 +295,19 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
       "publisher": { "@id": `${cleanSiteUrl}/#organization` },
       "author": {
         "@type": "Person",
-        "name": authorName,
-        "url": `${cleanSiteUrl}/author/${encodeURIComponent(authorName.toLowerCase().replace(/\s+/g, '-'))}/`
+        "@id": authorNode["@id"],
+        "name": effectiveAuthor.name,
+        ...(effectiveAuthor.url || authorNode.url ? { "url": effectiveAuthor.url || authorNode.url } : {})
       },
+      ...(reviewerNode ? {
+        "reviewedBy": {
+          "@type": "Person",
+          "@id": reviewerNode["@id"],
+          "name": effectiveReviewer?.name,
+          ...(effectiveReviewer?.url || reviewerNode.url ? { "url": effectiveReviewer?.url || reviewerNode.url } : {})
+        }
+      } : {}),
+      ...speakableSpec,
       ...(articleSection || category ? { "articleSection": articleSection || category } : {}),
       ...(keywords && keywords.length > 0 ? { "keywords": keywords.join(', ') } : {}),
       ...(datePublished ? { "datePublished": datePublished } : {}),
@@ -272,6 +315,12 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
       ...(imageUrl ? { "image": imageUrl } : {}),
       ...(seo.schemaOverrides || {})
     });
+  }
+
+  // HowTo Node (explicit HowTo schema or detected steps)
+  const effectiveSteps = howToSteps || seo.howToSteps || [];
+  if (schemaType === 'HowTo' || effectiveSteps.length > 0) {
+    graph.push(buildHowToNode(effectiveSteps, cleanCanonical, title, description, imageUrl));
   }
 
   // 7. FAQPage Node (auto-extracted from seo.faqs or Rank Math FAQ blocks)
