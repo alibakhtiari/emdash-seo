@@ -1,5 +1,6 @@
 import { apiFetch as baseFetch, parseApiResponse } from 'emdash/plugin-utils';
 import * as React from 'react';
+import { ContentTypesIntegrationPanel } from './editor/ContentTypesIntegrationPanel.js';
 
 const API = '/_emdash/api/plugins/emdash-seo';
 
@@ -338,6 +339,16 @@ export function SettingsPage() {
           value={settings.breadcrumbRules || ''}
           onChange={(v) => update('breadcrumbRules', v)}
         />
+      </div>
+
+      <div style={{ marginBottom: '2rem' }}>
+        <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.75rem', borderBottom: '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.1))', paddingBottom: '0.5rem', color: 'var(--text-color-kumo-strong, #ffffff)' }}>
+          Content Types & Live Editor Integration
+        </h3>
+        <p style={{ fontSize: '0.8125rem', color: 'var(--text-color-kumo-subtle, #a0a0a0)', marginBottom: '0.75rem' }}>
+          Enable the real-time Focus Keyword, Hemingway Readability Checker, Alt Auditor, and SERP Preview widgets directly inside the content editor for new posts, pages, and custom content types.
+        </p>
+        <ContentTypesIntegrationPanel />
       </div>
 
       <button
