@@ -7,6 +7,83 @@ export interface FaqItem {
   answer: string;
 }
 
+export interface AuthorProfile {
+  name: string;
+  jobTitle?: string;
+  worksFor?: string;
+  url?: string;
+  image?: string;
+  sameAs?: string[];
+  knowsAbout?: string[];
+  alumniOf?: string;
+  description?: string;
+  email?: string;
+}
+
+export interface HowToStep {
+  position?: number;
+  name: string;
+  text: string;
+  image?: string;
+  url?: string;
+}
+
+export interface GeoMetrics {
+  geoScore: number;
+  quotableSnippetsCount: number;
+  statisticsCount: number;
+  experienceSignalsCount: number;
+  comparativeTablesCount: number;
+  quotableSnippets: string[];
+  statistics: string[];
+  experienceSignals: string[];
+}
+
+export interface AeoMetrics {
+  aeoScore: number;
+  questionHeadingsCount: number;
+  directAnswersCount: number;
+  howToStepsCount: number;
+  faqCandidatesCount: number;
+  questionHeadings: string[];
+  directAnswers: Array<{ question: string; answer: string }>;
+  howToSteps: HowToStep[];
+  speakableCandidate?: string;
+}
+
+export interface GeoAeoRecommendation {
+  category: 'GEO' | 'AEO';
+  dimension: 'GEO' | 'AEO';
+  type: 'critical' | 'improvement' | 'good';
+  title: string;
+  message: string;
+}
+
+export interface GeoAeoReport {
+  geoScore: number;
+  aeoScore: number;
+  overallAiScore: number;
+  geo: {
+    score: number;
+    quotableQuotes: string[];
+    hasQuotableDefinitions: boolean;
+    statisticalEvidenceScore: number;
+    firstPartyExperienceScore: number;
+  };
+  aeo: {
+    score: number;
+    questionHeadingsCount: number;
+    directAnswersCount: number;
+    directAnswerCandidate?: string;
+    speakableCandidate?: string;
+    hasVoiceSearchReadiness: boolean;
+  };
+  geoMetrics: GeoMetrics;
+  aeoMetrics: AeoMetrics;
+  faqCandidates: FaqItem[];
+  recommendations: GeoAeoRecommendation[];
+}
+
 export interface EntrySeoMetadata {
   metaTitle?: string;
   metaDescription?: string;
@@ -25,11 +102,17 @@ export interface EntrySeoMetadata {
   twitterTitle?: string;
   twitterDescription?: string;
   twitterImage?: string;
-  schemaType?: 'CleaningService' | 'LocalBusiness' | 'Service' | 'Article' | 'BlogPosting' | 'TechArticle' | 'NewsArticle' | 'FAQPage' | 'None' | (string & {});
+  schemaType?: 'CleaningService' | 'LocalBusiness' | 'Service' | 'Article' | 'BlogPosting' | 'TechArticle' | 'NewsArticle' | 'FAQPage' | 'HowTo' | 'AboutPage' | 'ContactPage' | 'ProfilePage' | 'Product' | 'Review' | 'MedicalWebPage' | 'None' | (string & {});
   schemaOverrides?: Record<string, any>;
   faqs?: FaqItem[];
+  author?: AuthorProfile;
+  reviewedBy?: AuthorProfile;
+  speakableSelectors?: string[];
+  howToSteps?: HowToStep[];
   primaryCategory?: string;
   cornerstone?: boolean;
+  geoOptimization?: Partial<GeoMetrics>;
+  aeoOptimization?: Partial<AeoMetrics>;
 
   // Pre-rendered cache records (populated on save/publish for sub-0.1ms edge SSR)
   _cachedHead?: string;
@@ -108,6 +191,10 @@ export interface SeoPluginOptions {
   blogName?: string;
   navigationItems?: NavigationItem[];
   business?: LocalBusinessInfo;
+  defaultAuthor?: AuthorProfile;
+  defaultSpeakableSelectors?: string[];
+  enableGeoOptimization?: boolean;
+  enableAeoOptimization?: boolean;
   modules?: SeoPluginModules;
 }
 
