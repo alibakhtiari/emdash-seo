@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { IconSearch, IconGlobe, IconMobile, IconDesktop } from '../icons.js';
 
 export interface WidgetSerpTabProps {
   title: string;
@@ -25,6 +26,9 @@ export function WidgetSerpTab({ title, excerpt, featuredImage, slug }: WidgetSer
             type="button"
             onClick={() => setMode('google')}
             style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.3rem',
               padding: '0.25rem 0.5rem',
               borderRadius: 4,
               fontSize: '0.6875rem',
@@ -34,12 +38,16 @@ export function WidgetSerpTab({ title, excerpt, featuredImage, slug }: WidgetSer
               cursor: 'pointer',
             }}
           >
-            🔍 Google SERP
+            <IconSearch size={12} />
+            <span>Google SERP</span>
           </button>
           <button
             type="button"
             onClick={() => setMode('social')}
             style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.3rem',
               padding: '0.25rem 0.5rem',
               borderRadius: 4,
               fontSize: '0.6875rem',
@@ -49,7 +57,8 @@ export function WidgetSerpTab({ title, excerpt, featuredImage, slug }: WidgetSer
               cursor: 'pointer',
             }}
           >
-            📱 Social Card
+            <IconGlobe size={12} />
+            <span>Social Card</span>
           </button>
         </div>
 
@@ -59,6 +68,9 @@ export function WidgetSerpTab({ title, excerpt, featuredImage, slug }: WidgetSer
               type="button"
               onClick={() => setDevice('mobile')}
               style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.25rem',
                 padding: '0.2rem 0.375rem',
                 borderRadius: 4,
                 fontSize: '0.625rem',
@@ -68,12 +80,16 @@ export function WidgetSerpTab({ title, excerpt, featuredImage, slug }: WidgetSer
                 cursor: 'pointer',
               }}
             >
-              📱 Mobile
+              <IconMobile size={11} />
+              <span>Mobile</span>
             </button>
             <button
               type="button"
               onClick={() => setDevice('desktop')}
               style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.25rem',
                 padding: '0.2rem 0.375rem',
                 borderRadius: 4,
                 fontSize: '0.625rem',
@@ -83,7 +99,8 @@ export function WidgetSerpTab({ title, excerpt, featuredImage, slug }: WidgetSer
                 cursor: 'pointer',
               }}
             >
-              💻 Desktop
+              <IconDesktop size={11} />
+              <span>Desktop</span>
             </button>
           </div>
         )}

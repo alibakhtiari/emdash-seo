@@ -1,5 +1,6 @@
 import * as React from 'react';
 import type { AnalysisReport } from '../../types.js';
+import { IconTarget, IconStar, IconCheck, IconAlertCircle, IconAlertTriangle, IconLightbulb } from '../icons.js';
 
 export interface EditorKeywordTabProps {
   focusKeyword: string;
@@ -28,8 +29,16 @@ export function EditorKeywordTab({
             alignItems: 'center',
           }}
         >
-          <span>🎯 Target Focus Keyword</span>
-          {isCornerstone && <span style={{ fontSize: '0.6875rem', color: '#facc15' }}>⭐ Pillar: 1,200+ words</span>}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+            <IconTarget size={13} />
+            <span>Target Focus Keyword</span>
+          </span>
+          {isCornerstone && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.6875rem', color: '#facc15' }}>
+              <IconStar size={11} color="#facc15" />
+              <span>Pillar: 1,200+ words</span>
+            </span>
+          )}
         </label>
         <input
           type="text"
@@ -124,7 +133,6 @@ export function EditorKeywordTab({
           Content SEO Checklist ({seoReport.checks.filter((c) => c.passed).length}/{seoReport.checks.length})
         </div>
         {seoReport.checks.map((chk) => {
-          const icon = chk.passed ? '🟢' : chk.severity === 'error' ? '🔴' : '🟡';
           const textColor = chk.passed
             ? 'var(--text-color-kumo-default, #ededed)'
             : chk.severity === 'error'
@@ -150,7 +158,15 @@ export function EditorKeywordTab({
                 fontSize: '0.75rem',
               }}
             >
-              <span style={{ fontSize: '0.6875rem', marginTop: 1 }}>{icon}</span>
+              <span style={{ display: 'flex', alignItems: 'center', marginTop: 2 }}>
+                {chk.passed ? (
+                  <IconCheck size={12} color="#4ade80" />
+                ) : chk.severity === 'error' ? (
+                  <IconAlertCircle size={12} color="#f87171" />
+                ) : (
+                  <IconAlertTriangle size={12} color="#fbbf24" />
+                )}
+              </span>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
                 <div style={{ fontWeight: 600, color: 'var(--text-color-kumo-strong, #ffffff)' }}>
                   {chk.label}
@@ -177,8 +193,9 @@ export function EditorKeywordTab({
             gap: '0.25rem',
           }}
         >
-          <div style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-color-kumo-subtle, #a0a0a0)', textTransform: 'uppercase' }}>
-            💡 Optimization Opportunities
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-color-kumo-subtle, #a0a0a0)', textTransform: 'uppercase' }}>
+            <IconLightbulb size={12} color="#fbbf24" />
+            <span>Optimization Opportunities</span>
           </div>
           <ul style={{ margin: 0, paddingLeft: '1rem', fontSize: '0.6875rem', color: 'var(--text-color-kumo-default, #ededed)', lineHeight: 1.4 }}>
             {seoReport.recommendations.map((rec, i) => (

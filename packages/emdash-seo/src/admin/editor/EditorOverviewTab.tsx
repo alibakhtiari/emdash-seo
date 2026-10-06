@@ -1,5 +1,6 @@
 import * as React from 'react';
 import type { AnalysisReport, DetailedReadabilityReport, AltAuditReport } from '../../types.js';
+import { IconTarget, IconAlertTriangle, IconImage, IconLightbulb } from '../icons.js';
 
 export interface EditorOverviewTabProps {
   seoReport: AnalysisReport;
@@ -212,9 +213,13 @@ export function EditorOverviewTab({
             fontSize: '0.75rem',
             color: 'var(--text-color-kumo-warning, #fbbf24)',
             cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.375rem',
           }}
         >
-          🎯 <strong>No Focus Keyword Set:</strong> Click here to define a target keyword and evaluate ranking criteria.
+          <IconTarget size={14} color="#fbbf24" />
+          <span><strong>No Focus Keyword Set:</strong> Click here to define a target keyword and evaluate ranking criteria.</span>
         </div>
       )}
 
@@ -229,9 +234,13 @@ export function EditorOverviewTab({
             fontSize: '0.75rem',
             color: 'var(--text-color-kumo-danger, #f87171)',
             cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.375rem',
           }}
         >
-          ⚠️ <strong>{readability.veryHardSentencesCount} sentence(s) are very hard to read.</strong> Click to inspect in Sentences highlighter.
+          <IconAlertTriangle size={14} color="#f87171" />
+          <span><strong>{readability.veryHardSentencesCount} sentence(s) are very hard to read.</strong> Click to inspect in Sentences highlighter.</span>
         </div>
       )}
 
@@ -246,16 +255,21 @@ export function EditorOverviewTab({
             fontSize: '0.75rem',
             color: 'var(--text-color-kumo-danger, #f87171)',
             cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.375rem',
           }}
         >
-          🖼️ <strong>{altAudit.missingAltCount} image(s) missing alt text.</strong> Click to inspect and edit inline in Images tab.
+          <IconImage size={14} color="#f87171" />
+          <span><strong>{altAudit.missingAltCount} image(s) missing alt text.</strong> Click to inspect and edit inline in Images tab.</span>
         </div>
       )}
 
       {seoReport.recommendations.length > 0 && (
         <div style={{ padding: '0.5rem', borderRadius: 6, background: 'var(--color-kumo-recessed, #141414)', border: '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.1))', fontSize: '0.75rem' }}>
-          <div style={{ fontWeight: 600, color: 'var(--text-color-kumo-strong, #ffffff)', marginBottom: '0.25rem' }}>
-            💡 Top Recommendation
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: 600, color: 'var(--text-color-kumo-strong, #ffffff)', marginBottom: '0.25rem' }}>
+            <IconLightbulb size={12} color="#fbbf24" />
+            <span>Top Recommendation</span>
           </div>
           <div style={{ color: 'var(--text-color-kumo-default, #ededed)', fontSize: '0.6875rem', lineHeight: 1.4 }}>
             {seoReport.recommendations[0]}

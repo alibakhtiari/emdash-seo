@@ -1,5 +1,6 @@
 import * as React from 'react';
 import type { AltAuditReport } from '../types.js';
+import { IconAlertCircle, IconAlertTriangle, IconCheck } from '../admin/icons.js';
 
 export interface AltAuditorHeaderProps {
   report: AltAuditReport;
@@ -140,6 +141,9 @@ export function AltAuditorHeader({
           type="button"
           onClick={() => onFilterChange('critical')}
           style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.35rem',
             border: '1px solid var(--color-kumo-danger-tint, rgba(239, 68, 68, 0.3))',
             background:
               filter === 'critical'
@@ -153,13 +157,17 @@ export function AltAuditorHeader({
             cursor: 'pointer',
           }}
         >
-          🔴 Missing / Critical ({report.criticalCount})
+          <IconAlertCircle size={12} color="#f87171" />
+          <span>Missing / Critical ({report.criticalCount})</span>
         </button>
 
         <button
           type="button"
           onClick={() => onFilterChange('warning')}
           style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.35rem',
             border: '1px solid var(--color-kumo-warning-tint, rgba(245, 158, 11, 0.3))',
             background:
               filter === 'warning'
@@ -173,13 +181,17 @@ export function AltAuditorHeader({
             cursor: 'pointer',
           }}
         >
-          🟡 Warnings ({report.warningCount})
+          <IconAlertTriangle size={12} color="#fbbf24" />
+          <span>Warnings ({report.warningCount})</span>
         </button>
 
         <button
           type="button"
           onClick={() => onFilterChange('good')}
           style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.35rem',
             border: '1px solid var(--color-kumo-success-tint, rgba(34, 197, 94, 0.3))',
             background:
               filter === 'good'
@@ -193,7 +205,8 @@ export function AltAuditorHeader({
             cursor: 'pointer',
           }}
         >
-          🟢 Good ({report.goodCount})
+          <IconCheck size={12} color="#4ade80" />
+          <span>Good ({report.goodCount})</span>
         </button>
       </div>
 

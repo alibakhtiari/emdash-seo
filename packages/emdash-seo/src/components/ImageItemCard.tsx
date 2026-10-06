@@ -5,6 +5,13 @@ import {
   getAltProgressColor,
   formatAltIssueLabel,
 } from './alt-auditor-utils.js';
+import {
+  IconImage,
+  IconCheck,
+  IconAlertCircle,
+  IconAlertTriangle,
+  IconLightbulb,
+} from '../admin/icons.js';
 
 export interface ImageItemCardProps {
   image: ImageAltAuditItem;
@@ -76,7 +83,7 @@ export function ImageItemCard({
               }}
             />
           ) : (
-            <span style={{ fontSize: '1.25rem' }}>🖼️</span>
+            <IconImage size={20} color="var(--text-color-kumo-subtle, #a0a0a0)" />
           )}
         </div>
 
@@ -121,7 +128,13 @@ export function ImageItemCard({
                 flexShrink: 0,
               }}
             >
-              <span>{badge.icon}</span>
+              {img.status === 'good' ? (
+                <IconCheck size={11} color="#4ade80" />
+              ) : img.status === 'warning' ? (
+                <IconAlertTriangle size={11} color="#fbbf24" />
+              ) : (
+                <IconAlertCircle size={11} color="#f87171" />
+              )}
               <span>{badge.label}</span>
             </span>
           </div>
@@ -154,9 +167,13 @@ export function ImageItemCard({
                     borderRadius: 4,
                     fontSize: '0.6875rem',
                     fontWeight: 600,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.25rem',
                   }}
                 >
-                  ⚠️ {formatAltIssueLabel(iss)}
+                  <IconAlertTriangle size={11} color="#f87171" />
+                  <span>{formatAltIssueLabel(iss)}</span>
                 </span>
               ))}
             </div>
@@ -243,9 +260,12 @@ export function ImageItemCard({
 
       {/* Suggestions List */}
       {img.suggestions.length > 0 && (
-        <div style={{ fontSize: '0.75rem', color: 'var(--text-color-kumo-subtle, #a0a0a0)', lineHeight: 1.4 }}>
+        <div style={{ fontSize: '0.75rem', color: 'var(--text-color-kumo-subtle, #a0a0a0)', lineHeight: 1.4, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           {img.suggestions.map((sug, sIdx) => (
-            <div key={`sug-${sIdx}`}>💡 {sug}</div>
+            <div key={`sug-${sIdx}`} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <IconLightbulb size={12} color="#fbbf24" />
+              <span>{sug}</span>
+            </div>
           ))}
         </div>
       )}

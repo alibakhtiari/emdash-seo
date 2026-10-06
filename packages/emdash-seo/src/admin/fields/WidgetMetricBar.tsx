@@ -1,5 +1,13 @@
 import * as React from 'react';
 import type { DetailedReadabilityReport, AltAuditReport, GeoAeoReport } from '../../types.js';
+import {
+  IconBook,
+  IconEdit,
+  IconCheck,
+  IconAlertCircle,
+  IconImage,
+  IconBot,
+} from '../icons.js';
 
 export interface WidgetMetricBarProps {
   readability: DetailedReadabilityReport;
@@ -46,13 +54,13 @@ export function WidgetMetricBar({
           fontWeight: 500,
         }}
       >
-        <span>📖</span>
+        <IconBook size={13} color={easeColor} />
         <span>
           {easeScore}/100 Ease ({readability.readingEaseLevel})
         </span>
       </div>
 
-      {/* Hemingway Sentence Difficulties */}
+      {/* Sentence Difficulty Pill */}
       <div
         style={{
           display: 'flex',
@@ -66,7 +74,7 @@ export function WidgetMetricBar({
           color: hardSentences > 0 ? '#facc15' : 'var(--text-color-kumo-subtle, #9ca3af)',
         }}
       >
-        <span>✍️</span>
+        <IconEdit size={13} color={hardSentences > 0 ? '#facc15' : 'var(--text-color-kumo-subtle, #9ca3af)'} />
         <span>{hardSentences === 0 ? 'Clear Sentences' : `${hardSentences} Hard Sentences`}</span>
       </div>
 
@@ -85,7 +93,7 @@ export function WidgetMetricBar({
             color: kwInTitle ? '#4ade80' : '#f87171',
           }}
         >
-          <span>{kwInTitle ? '✓' : '✗'}</span>
+          {kwInTitle ? <IconCheck size={12} color="#4ade80" /> : <IconAlertCircle size={12} color="#f87171" />}
           <span>{kwInTitle ? 'In Title' : 'Missing in Title'}</span>
         </div>
       )}
@@ -105,7 +113,7 @@ export function WidgetMetricBar({
             color: altAudit.score >= 80 ? '#4ade80' : '#f87171',
           }}
         >
-          <span>🖼️</span>
+          <IconImage size={13} color={altAudit.score >= 80 ? '#4ade80' : '#f87171'} />
           <span>
             {imagesCount} Image{imagesCount === 1 ? '' : 's'} ({altAudit.score}% Alts)
           </span>
@@ -130,7 +138,7 @@ export function WidgetMetricBar({
           fontWeight: 500,
         }}
       >
-        <span>🤖</span>
+        <IconBot size={13} color="#c084fc" />
         <span>{geoAeoReport.overallAiScore}/100 AI Citability</span>
       </div>
     </div>

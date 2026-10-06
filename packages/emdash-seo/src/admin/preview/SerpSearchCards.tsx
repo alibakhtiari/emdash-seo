@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { IconGlobe } from '../icons.js';
 
 export interface SerpDesktopPreviewProps {
   siteUrl: string;
@@ -79,7 +80,7 @@ export function SerpMobilePreview({
             color: '#555',
           }}
         >
-          ★
+          <IconGlobe size={12} color="#555" />
         </div>
         <div style={{ fontSize: '0.75rem', color: '#202124', lineHeight: 1.2 }}>
           <strong>{siteName}</strong>

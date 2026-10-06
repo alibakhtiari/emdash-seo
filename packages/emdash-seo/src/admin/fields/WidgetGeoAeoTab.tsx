@@ -1,5 +1,6 @@
 import * as React from 'react';
 import type { GeoAeoReport, FaqItem, HowToStep } from '../../types.js';
+import { IconMic, IconCheck, IconAlertTriangle, IconLightbulb } from '../icons.js';
 
 export interface WidgetGeoAeoTabProps {
   geoAeoReport: GeoAeoReport;
@@ -135,6 +136,9 @@ export function WidgetGeoAeoTab({ geoAeoReport, onApplyFaqs, onApplyHowTo }: Wid
               type="button"
               onClick={handleApplyFaqs}
               style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.25rem',
                 padding: '0.25rem 0.5rem',
                 fontSize: '0.6875rem',
                 borderRadius: 4,
@@ -144,7 +148,14 @@ export function WidgetGeoAeoTab({ geoAeoReport, onApplyFaqs, onApplyHowTo }: Wid
                 cursor: 'pointer',
               }}
             >
-              {faqsApplied ? '✓ FAQs Applied' : `+ Add ${geoAeoReport.faqCandidates.length} FAQs to Schema`}
+              {faqsApplied ? (
+                <>
+                  <IconCheck size={12} />
+                  <span>FAQs Applied</span>
+                </>
+              ) : (
+                `+ Add ${geoAeoReport.faqCandidates.length} FAQs to Schema`
+              )}
             </button>
           )}
 
@@ -153,6 +164,9 @@ export function WidgetGeoAeoTab({ geoAeoReport, onApplyFaqs, onApplyHowTo }: Wid
               type="button"
               onClick={handleApplyHowTo}
               style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.25rem',
                 padding: '0.25rem 0.5rem',
                 fontSize: '0.6875rem',
                 borderRadius: 4,
@@ -162,7 +176,14 @@ export function WidgetGeoAeoTab({ geoAeoReport, onApplyFaqs, onApplyHowTo }: Wid
                 cursor: 'pointer',
               }}
             >
-              {howToApplied ? '✓ HowTo Applied' : `+ Add ${aeoMetrics.howToSteps.length} Steps to Schema`}
+              {howToApplied ? (
+                <>
+                  <IconCheck size={12} />
+                  <span>HowTo Applied</span>
+                </>
+              ) : (
+                `+ Add ${aeoMetrics.howToSteps.length} Steps to Schema`
+              )}
             </button>
           )}
         </div>
@@ -180,7 +201,7 @@ export function WidgetGeoAeoTab({ geoAeoReport, onApplyFaqs, onApplyHowTo }: Wid
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', color: '#818cf8', fontWeight: 600, marginBottom: '0.25rem' }}>
-            <span>🎙️</span>
+            <IconMic size={14} color="#818cf8" />
             <span>AEO Voice Search Summary (SpeakableSpecification):</span>
           </div>
           <div style={{ color: 'var(--text-color-kumo-strong, #ffffff)', fontStyle: 'italic', lineHeight: 1.4 }}>
@@ -215,8 +236,23 @@ export function WidgetGeoAeoTab({ geoAeoReport, onApplyFaqs, onApplyHowTo }: Wid
                 <span style={{ fontWeight: 600, color: 'var(--text-color-kumo-strong, #ffffff)' }}>
                   [{rec.category}] {rec.title}
                 </span>
-                <span style={{ color: badgeColor, fontSize: '0.625rem', fontWeight: 600 }}>
-                  {isGood ? '✓ GOOD' : isCrit ? '⚠️ CRITICAL' : '⚡ TIP'}
+                <span style={{ color: badgeColor, fontSize: '0.625rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
+                  {isGood ? (
+                    <>
+                      <IconCheck size={11} color="#4ade80" />
+                      <span>GOOD</span>
+                    </>
+                  ) : isCrit ? (
+                    <>
+                      <IconAlertTriangle size={11} color="#f87171" />
+                      <span>CRITICAL</span>
+                    </>
+                  ) : (
+                    <>
+                      <IconLightbulb size={11} color="#fbbf24" />
+                      <span>TIP</span>
+                    </>
+                  )}
                 </span>
               </div>
               <div style={{ color: 'var(--text-color-kumo-subtle, #a0a0a0)', lineHeight: 1.35 }}>

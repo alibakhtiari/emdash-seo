@@ -1,5 +1,6 @@
 import { apiFetch as baseFetch, parseApiResponse } from 'emdash/plugin-utils';
 import * as React from 'react';
+import { IconCheck } from '../icons.js';
 
 export interface CollectionItem {
   id: string;
@@ -210,7 +211,8 @@ export function ContentTypesIntegrationPanel() {
                     border: '1px solid rgba(34, 197, 94, 0.3)',
                   }}
                 >
-                  <span>✓</span> Live Suite Active
+                  <IconCheck size={11} color="#4ade80" />
+                  <span>Live Suite Active</span>
                 </span>
               ) : (
                 <button

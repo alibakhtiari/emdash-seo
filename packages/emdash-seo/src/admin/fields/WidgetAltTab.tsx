@@ -1,6 +1,7 @@
 import * as React from 'react';
 import type { AltAuditReport } from '../../types.js';
 import { updateDomImageAlt } from './dom-extractor.js';
+import { IconImage, IconCheck, IconAlertCircle, IconAlertTriangle } from '../icons.js';
 
 export interface WidgetAltTabProps {
   altAudit: AltAuditReport;
@@ -92,7 +93,7 @@ export function WidgetAltTab({ altAudit, onRefresh }: WidgetAltTabProps) {
                 {img.src ? (
                   <img src={img.src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
-                  <span style={{ fontSize: '1.25rem' }}>🖼️</span>
+                  <IconImage size={18} color="var(--text-color-kumo-subtle, #a0a0a0)" />
                 )}
               </div>
 
@@ -101,12 +102,30 @@ export function WidgetAltTab({ altAudit, onRefresh }: WidgetAltTabProps) {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span
                     style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.25rem',
                       fontSize: '0.6875rem',
                       fontWeight: 600,
                       color: isCritical ? '#f87171' : isWarning ? '#fbbf24' : '#4ade80',
                     }}
                   >
-                    {isCritical ? '🔴 Missing Alt' : isWarning ? '🟡 Needs Improvement' : '🟢 Good Alt'}
+                    {isCritical ? (
+                      <>
+                        <IconAlertCircle size={12} color="#f87171" />
+                        <span>Missing Alt</span>
+                      </>
+                    ) : isWarning ? (
+                      <>
+                        <IconAlertTriangle size={12} color="#fbbf24" />
+                        <span>Needs Improvement</span>
+                      </>
+                    ) : (
+                      <>
+                        <IconCheck size={12} color="#4ade80" />
+                        <span>Good Alt</span>
+                      </>
+                    )}
                   </span>
                   {img.charCount > 0 && (
                     <span style={{ fontSize: '0.625rem', color: 'var(--text-color-kumo-subtle, #a0a0a0)' }}>
@@ -142,6 +161,9 @@ export function WidgetAltTab({ altAudit, onRefresh }: WidgetAltTabProps) {
                     type="button"
                     onClick={() => handleSave(img.src)}
                     style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.25rem',
                       padding: '0.25rem 0.5rem',
                       fontSize: '0.6875rem',
                       borderRadius: 4,
@@ -152,7 +174,14 @@ export function WidgetAltTab({ altAudit, onRefresh }: WidgetAltTabProps) {
                       flexShrink: 0,
                     }}
                   >
-                    {hasSaved ? '✓ Saved' : 'Apply'}
+                    {hasSaved ? (
+                      <>
+                        <IconCheck size={11} />
+                        <span>Saved</span>
+                      </>
+                    ) : (
+                      'Apply'
+                    )}
                   </button>
                 </div>
               </div>

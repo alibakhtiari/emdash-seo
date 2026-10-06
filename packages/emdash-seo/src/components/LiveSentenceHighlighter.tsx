@@ -16,6 +16,7 @@ import {
 } from './highlighter-utils.js';
 import { SentenceDetailCard } from './SentenceDetailCard.js';
 import { ReadabilityMetricsBar } from './ReadabilityMetricsBar.js';
+import { IconTarget, IconEye } from '../admin/icons.js';
 
 export {
   type FilterOptions,
@@ -239,6 +240,9 @@ export function LiveSentenceHighlighter({
           type="button"
           onClick={toggleAllHighlights}
           style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.35rem',
             background: focusMode ? 'var(--color-kumo-brand, #f6821f)' : 'var(--color-kumo-tint, #262626)',
             color: focusMode ? '#ffffff' : 'var(--text-color-kumo-default, #ededed)',
             border: '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.12))',
@@ -249,7 +253,17 @@ export function LiveSentenceHighlighter({
             fontWeight: 600,
           }}
         >
-          {focusMode ? '🎯 Focus Mode (On)' : '👁️ All Highlights'}
+          {focusMode ? (
+            <>
+              <IconTarget size={12} color="#ffffff" />
+              <span>Focus Mode (On)</span>
+            </>
+          ) : (
+            <>
+              <IconEye size={12} color="currentColor" />
+              <span>All Highlights</span>
+            </>
+          )}
         </button>
 
         <span style={{ color: 'var(--color-kumo-line, rgba(255, 255, 255, 0.2))' }}>|</span>

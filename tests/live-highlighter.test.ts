@@ -221,14 +221,14 @@ describe('Image Alt Auditor & Quick-Edit Utilities', () => {
 
     it('returns status badges and progress colors properly', () => {
       const goodBadge = getAltStatusBadge('good');
-      expect(goodBadge.icon).toBe('🟢');
+      expect(goodBadge.icon).toBe('check');
       expect(goodBadge.label).toBe('Good');
 
       const warnBadge = getAltStatusBadge('warning');
-      expect(warnBadge.icon).toBe('🟡');
+      expect(warnBadge.icon).toBe('warning');
 
       const critBadge = getAltStatusBadge('critical');
-      expect(critBadge.icon).toBe('🔴');
+      expect(critBadge.icon).toBe('critical');
 
       expect(getAltProgressColor(0)).toBe('#ef4444');
       expect(getAltProgressColor(50)).toBe('#10b981');

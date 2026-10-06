@@ -1,5 +1,6 @@
 import * as React from 'react';
 import type { AnalysisReport, DetailedReadabilityReport, AltAuditReport } from '../../types.js';
+import { IconCheck, IconAlertTriangle, IconCross } from '../icons.js';
 
 export interface WidgetChecklistTabProps {
   seoReport: AnalysisReport;
@@ -87,7 +88,6 @@ export function WidgetChecklistTab({
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem', maxHeight: '280px', overflowY: 'auto' }}>
         {checks.map((c, idx) => {
-          const icon = c.status === 'pass' ? '✅' : c.status === 'warn' ? '⚠️' : '❌';
           const color = c.status === 'pass' ? '#4ade80' : c.status === 'warn' ? '#fbbf24' : '#f87171';
 
           return (
@@ -105,7 +105,15 @@ export function WidgetChecklistTab({
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span>{icon}</span>
+                <span style={{ display: 'flex', alignItems: 'center' }}>
+                  {c.status === 'pass' ? (
+                    <IconCheck size={13} color="#4ade80" />
+                  ) : c.status === 'warn' ? (
+                    <IconAlertTriangle size={13} color="#fbbf24" />
+                  ) : (
+                    <IconCross size={13} color="#f87171" />
+                  )}
+                </span>
                 <span style={{ color: 'var(--text-color-kumo-strong, #ffffff)', fontWeight: 500 }}>{c.label}</span>
               </div>
               <span style={{ fontSize: '0.6875rem', color }}>{c.detail}</span>

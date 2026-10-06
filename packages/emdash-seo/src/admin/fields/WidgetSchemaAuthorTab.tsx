@@ -1,6 +1,7 @@
 import * as React from 'react';
 import type { AuthorProfile, FaqItem, HowToStep } from '../../types.js';
 import { buildConnectedSchemaGraph } from '../../engine/schema-builder.js';
+import { IconTag, IconUser, IconShield, IconMic } from '../icons.js';
 
 export interface WidgetSchemaAuthorTabProps {
   title: string;
@@ -85,8 +86,9 @@ export function WidgetSchemaAuthorTab({
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
       {/* Schema Type Selector */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-        <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-color-kumo-strong, #ffffff)' }}>
-          🏷️ Structured Data Schema Type
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-color-kumo-strong, #ffffff)' }}>
+          <IconTag size={13} />
+          <span>Structured Data Schema Type</span>
         </label>
         <select
           value={schemaType}
@@ -121,8 +123,9 @@ export function WidgetSchemaAuthorTab({
           border: '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.1))',
         }}
       >
-        <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-color-kumo-strong, #ffffff)' }}>
-          👤 Author & E-E-A-T Entity Profile
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-color-kumo-strong, #ffffff)' }}>
+          <IconUser size={13} />
+          <span>Author & E-E-A-T Entity Profile</span>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.375rem' }}>
           <div>
@@ -187,7 +190,10 @@ export function WidgetSchemaAuthorTab({
               if (!e.target.checked) onReviewerChange(undefined);
             }}
           />
-          <span>🔬 Fact-Checked / Reviewed by Specialist (E-E-A-T)</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+            <IconShield size={13} />
+            <span>Fact-Checked / Reviewed by Specialist (E-E-A-T)</span>
+          </span>
         </label>
 
         {hasReviewer && (
@@ -226,8 +232,9 @@ export function WidgetSchemaAuthorTab({
 
       {/* Speakable Voice Search Selectors */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-        <label style={{ fontSize: '0.75rem', color: 'var(--text-color-kumo-subtle, #a0a0a0)' }}>
-          🎙️ AEO Speakable CSS Selectors (comma-separated)
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: 'var(--text-color-kumo-subtle, #a0a0a0)' }}>
+          <IconMic size={13} />
+          <span>AEO Speakable CSS Selectors (comma-separated)</span>
         </label>
         <input
           type="text"

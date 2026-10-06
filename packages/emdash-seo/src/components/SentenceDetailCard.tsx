@@ -1,6 +1,7 @@
 import * as React from 'react';
 import type { SentenceAnalysis, SentenceComplexWord } from '../types.js';
 import { getDifficultyLabel, generateSentenceSuggestion } from './highlighter-utils.js';
+import { IconLightbulb } from '../admin/icons.js';
 
 export interface SentenceDetailCardProps {
   sentence: SentenceAnalysis;
@@ -85,7 +86,10 @@ export function SentenceDetailCard({
       </div>
 
       <div style={{ color: 'var(--text-color-kumo-default, #ededed)', lineHeight: 1.5 }}>
-        <strong style={{ color: 'var(--color-kumo-brand, #f6821f)' }}>💡 Suggestion: </strong>
+        <strong style={{ color: 'var(--color-kumo-brand, #f6821f)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', marginRight: '0.25rem' }}>
+          <IconLightbulb size={12} color="var(--color-kumo-brand, #f6821f)" />
+          <span>Suggestion:</span>
+        </strong>
         {generateSentenceSuggestion(sentence)}
       </div>
 

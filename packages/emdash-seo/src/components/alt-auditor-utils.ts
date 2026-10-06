@@ -66,7 +66,7 @@ export function getAltStatusBadge(status: 'good' | 'warning' | 'critical'): {
         color: 'var(--text-color-kumo-success, #4ade80)',
         bg: 'var(--color-kumo-success-tint, rgba(34, 197, 94, 0.12))',
         border: 'var(--color-kumo-success-tint, rgba(34, 197, 94, 0.3))',
-        icon: '🟢',
+        icon: 'check',
       };
     case 'warning':
       return {
@@ -74,7 +74,7 @@ export function getAltStatusBadge(status: 'good' | 'warning' | 'critical'): {
         color: 'var(--text-color-kumo-warning, #fbbf24)',
         bg: 'var(--color-kumo-warning-tint, rgba(245, 158, 11, 0.12))',
         border: 'var(--color-kumo-warning-tint, rgba(245, 158, 11, 0.3))',
-        icon: '🟡',
+        icon: 'warning',
       };
     case 'critical':
       return {
@@ -82,7 +82,7 @@ export function getAltStatusBadge(status: 'good' | 'warning' | 'critical'): {
         color: 'var(--text-color-kumo-danger, #f87171)',
         bg: 'var(--color-kumo-danger-tint, rgba(239, 68, 68, 0.12))',
         border: 'var(--color-kumo-danger-tint, rgba(239, 68, 68, 0.3))',
-        icon: '🔴',
+        icon: 'critical',
       };
   }
 }

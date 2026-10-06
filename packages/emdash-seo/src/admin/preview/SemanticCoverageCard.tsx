@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { IconCheck } from '../icons.js';
 
 export interface SemanticCoverageCardProps {
   coverage: {
@@ -88,9 +89,13 @@ export function SemanticCoverageCard({
                 borderRadius: 12,
                 fontSize: '0.75rem',
                 fontWeight: 500,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.25rem',
               }}
             >
-              ✓ {e}
+              <IconCheck size={11} color="#4ade80" />
+              <span>{e}</span>
             </span>
           ))}
           {coverage.detected.length === 0 && (
