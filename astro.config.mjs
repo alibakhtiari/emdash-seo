@@ -21,7 +21,7 @@ export default defineConfig({
 			plugins: [
 				seoPlugin({
 					siteUrl: process.env.SITE_URL || "https://example.com",
-					siteName: "EmDash SEO Suite",
+					siteName: "WebABC SEO",
 					defaultSeparator: " | ",
 					defaultOgImage: "https://example.com/og-image.jpg",
 					enableLlmsTxt: true,
