@@ -1,8 +1,8 @@
-# SEO Plugin Architecture: `@emdash/plugin-seo` (`packages/emdash-seo`)
+# WebABC SEO Suite Architecture: `@emdash/plugin-seo` (`packages/emdash-seo`)
 
 ## 1. Architectural Philosophy
 
-The **EmDash SEO Suite** is built with three core design tenets:
+The **WebABC SEO Suite** (`webabcSeoPlugin`) is built with four core design tenets:
 
 1. **Native In-Process Execution (Zero Dynamic Loaders):**
    * Sandboxed plugins on Cloudflare require dynamic `worker_loaders`, which are restricted to Cloudflare Workers Paid tiers ($5/month minimum).
@@ -11,9 +11,13 @@ The **EmDash SEO Suite** is built with three core design tenets:
    * Pure TypeScript compiled to modern ES modules.
    * Utilizes standard Web APIs: `URL`, `crypto`, `ReadableStream`, `Headers`, `Response`.
    * Minimal bundle footprint (< 35 KB minified), keeping the total worker bundle far below Cloudflare's 1 MB compressed limit.
-3. **Best-of-WordPress SEO Parity & Native Interoperability:**
+3. **Strict Modularity & Zero Emoji UI Standards:**
+   * Maximum file size limit: strictly $\le 500$ lines per file. Complex components are decomposed into focused subcomponents.
+   * Zero Unicode emojis: UI elements use typed SVG icons exclusively (`src/admin/icons.tsx`).
+   * Clean unified admin hub: registers a single `WebABC SEO` item in the EmDash navigation menu, providing top tabs for Settings, SERP/Social Preview, Hemingway Readability, Image Alt Auditor, and Fuzzy 301 Redirects.
+4. **Best-of-WordPress SEO Parity & Native Interoperability:**
    * Complements EmDash's built-in SEO features (see [`docs/references/EMDASH_BUILTIN_SEO.md`](references/EMDASH_BUILTIN_SEO.md)).
-   * Native equivalents for Rank Math Pro and Yoast SEO Premium features: variable templating, real-time on-page content scoring, dynamic XML sitemaps, robots.txt, connected JSON-LD `@graph`, redirect engine, 404 monitoring, and internal link graph.
+   * Native equivalents for Rank Math Pro and Yoast SEO Premium features: variable templating, real-time on-page content scoring, dynamic XML sitemaps, robots.txt, connected JSON-LD `@graph`, redirect engine, 404 monitoring, internal link graph, and GEO/AEO optimization.
 
 ---
 
@@ -122,6 +126,31 @@ Constructs an interconnected `@graph` avoiding fragmented or conflicting schema 
 * Elevates raw `meta._rankmath` and `meta._yoast` into first-class `data.seo` metadata (keywords, canonicals, robots directives, social cards).
 * Automatically detects and extracts Gutenberg / Kadence FAQ blocks into `data.seo.faqs` for `<FaqBlock.astro>` rendering with `FAQPage` schema.
 * Detects and strips static Gutenberg Table of Contents blocks (`stripRankMathTocBlock`), enabling responsive dynamic TOC rendering without duplicate headings.
+
+### 3.9 Readability & Hemingway Linter Engine (`src/engine/readability-auditor.ts`)
+* High-accuracy sentence tokenizer with character offset tracking preserving original source text.
+* Flesch Reading Ease (0-100) and Flesch-Kincaid Grade Level calculations.
+* Classification of sentences: `normal` ($\le 20$ words), `hard` (21-28 words or $> 2.0$ syllables/word), and `very-hard` ($> 28$ words).
+* Passive voice detection (auxiliary verbs + past participles) with highlighted flags.
+* Detection of ~100 common transition words/phrases with percentage benchmarks.
+* Complex word identification ($\ge 3$ syllables) paired with plain-language suggestions.
+* Live interactive visual highlighter with filter controls (`Hard`, `Very Hard`, `Passive Voice`, `Complex Words`).
+
+### 3.10 Image Alt Text Auditor Engine (`src/engine/alt-auditor.ts`)
+* Real-time auditing of all HTML `<img>` and Markdown `![]()` image assets in content.
+* Checks for missing alt attributes, empty alts, filename patterns (e.g. `.jpg`, `IMG_`), redundant prefixing (`image of`, `photo of`), optimal length boundaries (5-125 chars), and keyword stuffing.
+* Distinguishes decorative images (`role="presentation"`, `aria-hidden="true"`).
+* Interactive inline quick-editor allowing authors to rectify alt text instantly.
+
+### 3.11 Generative & Answer Engine Optimization (`src/engine/geo-aeo-analyzer.ts`)
+* **GEO Readiness:** Evaluates content for extraction by AI systems (Perplexity, ChatGPT Search, Claude, Google Gemini / AI Overviews).
+* **AEO Structure:** Assesses Q&A structure, direct answer placement in opening sentences, structured bullet points, and authoritative source references.
+* Scored 0-100 with actionable feedback and optimization suggestions.
+
+### 3.12 Semi-Automatic Schema Inference & Admin Hub (`src/admin/content-helpers.ts`, `src/admin/settings-page.tsx`)
+* **Dynamic Type Inference:** `inferSchemaType()` intelligently chooses the optimal Schema.org type (`BlogPosting`, `Service`, `HowTo`, `AboutPage`, `ContactPage`, `TechArticle`, `Article`, etc.) from titles, slugs, and text content.
+* **Auto Indicator & Manual Override:** Visual `IconSparkles` indicator for auto mode, with the ability for authors to lock in any explicit schema type.
+* **Unified Admin Hub:** Dedicated single left navigation item hosting an interactive top tab bar (`Settings`, `SERP Preview`, `Readability`, `Alt Auditor`, `Redirects`).
 
 ---
 

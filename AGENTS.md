@@ -1,6 +1,6 @@
 # AGENTS.md — Agent & AI Pair Programming Guide
 
-This repository contains the **EmDash SEO Suite** (`@emdash/plugin-seo`) for **Astro** and **EmDash CMS**, with automated WordPress migration capabilities (Rank Math Pro, Yoast SEO, AIOSEO) targeting Cloudflare Workers.
+This repository contains the **WebABC SEO Suite** (`@emdash/plugin-seo` / `webabcSeoPlugin`) for **Astro** and **EmDash CMS**, with automated WordPress migration capabilities (Rank Math Pro, Yoast SEO, AIOSEO) and Generative Engine / Answer Engine Optimization (GEO & AEO) targeting Cloudflare Workers.
 
 ---
 
@@ -18,15 +18,20 @@ export default defineConfig({
   integrations: [
     emdash({
       plugins: [
-        seoPlugin({ ...options }) // Returns { format: "native", entrypoint: "@emdash/plugin-seo", options }
+        seoPlugin({ ...options }) // Or webabcSeoPlugin({ ...options }), returns { format: "native", entrypoint: "@emdash/plugin-seo", options }
       ]
     })
   ]
 });
 ```
-The entrypoint must export `createPlugin(options)` returning an object with `id`, `version`, `hooks`, and optional `routes`.
+The entrypoint must export `createPlugin(options)` (and `seoPlugin` / `webabcSeoPlugin`) returning an object with `id`, `version`, `hooks`, and optional `routes`.
 
-### 3. URL & Search Equity Preservation
+### 3. Modularity and Clean UI Standards
+- **File Length Constraint:** Every source file in `packages/emdash-seo/src/` must remain strictly $\le 500$ lines. Decompose UI cards, drawers, and helpers into dedicated subcomponents.
+- **Zero Emojis Policy:** Do not use Unicode emojis anywhere in UI components, badges, or editor widgets. Always use clean, typed SVG icons from `packages/emdash-seo/src/admin/icons.tsx`.
+- **Unified Admin Hub:** The EmDash admin left sidebar registers only a single **WebABC SEO** item, exposing all suite tools (`SEO Settings`, `SERP & Social Preview`, `Readability Checker`, `Alt Image Auditor`, `Fuzzy 301 Redirects`) as integrated top tabs.
+
+### 4. URL & Search Equity Preservation
 - Zero ranking loss: All URLs from the source WordPress site preserve their exact slugs with trailing slashes or execute edge 301 redirects via `src/routes/redirects.ts`.
 
 ---
@@ -166,6 +171,16 @@ import FaqBlock from "@emdash/plugin-seo/components/FaqBlock";
 <FaqBlock items={faqs} emitSchema={true} />
 ```
 Renders accessible accordions and outputs Google `FAQPage` schema.
+
+### Semi-Automatic Schema Selector & Per-Page Schema
+The editor automatically infers the most relevant Schema.org entity (`BlogPosting`, `Service`, `HowTo`, `AboutPage`, `ContactPage`, `TechArticle`, `Article`, etc.) based on title keywords, route slug, content structure, and collection type.
+- **Auto Mode:** Dynamically re-evaluates in real time as the editor types (indicated by the `IconSparkles` badge).
+- **Manual Override:** Authors can choose any schema type from the dropdown, locking their custom choice.
+- **Author & Reviewer EEAT:** Full support for `author` and `reviewed_by` person/organization profiles in JSON-LD.
+
+### GEO & AEO (Generative & Answer Engine Optimization)
+- **Answer Readiness Score:** Scans for Q&A structures, direct answers in lead paragraphs, clear headings, bulleted lists, and structured summary tables.
+- **AI Citation Clarity:** Evaluates factual precision, attribution clarity, and structured definitions to maximize LLM and AI Overview citation likelihood.
 
 ---
 
