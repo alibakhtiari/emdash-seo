@@ -1,6 +1,16 @@
 import { apiFetch as baseFetch, parseApiResponse } from 'emdash/plugin-utils';
 import * as React from 'react';
 import { ContentTypesIntegrationPanel } from './editor/ContentTypesIntegrationPanel.js';
+import { SerpPreviewPage } from '../admin-preview.js';
+import { ReadabilityAdminPage, ImageAltAuditorAdminPage } from './standalone-pages.js';
+import { FuzzyRedirectsPage } from '../admin-redirects.js';
+import {
+  IconSettings,
+  IconSearch,
+  IconBook,
+  IconImage,
+  IconArrowRight,
+} from './icons.js';
 
 const API = '/_emdash/api/plugins/emdash-seo';
 
@@ -67,17 +77,6 @@ const inputStyle: React.CSSProperties = {
   boxSizing: 'border-box',
 };
 
-const buttonStyle: React.CSSProperties = {
-  padding: '0.375rem 0.75rem',
-  borderRadius: 6,
-  background: 'var(--color-kumo-control, #1a1a1a)',
-  color: 'var(--text-color-kumo-default, #ededed)',
-  border: '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.15))',
-  cursor: 'pointer',
-  fontSize: '0.75rem',
-  fontFamily: 'inherit',
-};
-
 export function Field({ field, value, onChange }: { field: FieldDef; value: string; onChange: (v: string) => void }) {
   return (
     <div style={{ marginBottom: '1rem' }}>
@@ -107,162 +106,30 @@ export function Field({ field, value, onChange }: { field: FieldDef; value: stri
   );
 }
 
-export function BreadcrumbLabelsEditor({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  const parsed = React.useMemo<Array<{ segment: string; label: string }>>(() => {
-    if (!value) return [];
-    try {
-      const obj = JSON.parse(value) as unknown;
-      if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
-        return Object.entries(obj as Record<string, unknown>).map(([segment, label]) => ({
-          segment,
-          label: String(label ?? ''),
-        }));
-      }
-    } catch {
-      // Ignore
-    }
-    return [];
-  }, [value]);
+import {
+  BreadcrumbLabelsEditor,
+  BreadcrumbRulesEditor,
+} from './settings/BreadcrumbsSettingsEditor.js';
 
-  const commit = (rows: Array<{ segment: string; label: string }>) => {
-    const obj: Record<string, string> = {};
-    for (const row of rows) {
-      const key = row.segment.trim();
-      if (key) obj[key] = row.label;
-    }
-    onChange(Object.keys(obj).length > 0 ? JSON.stringify(obj) : '');
-  };
+export { BreadcrumbLabelsEditor, BreadcrumbRulesEditor };
 
-  const updateRow = (index: number, patch: Partial<{ segment: string; label: string }>) => {
-    const next = parsed.map((r, i) => (i === index ? { ...r, ...patch } : r));
-    commit(next);
-  };
-
-  const addRow = () => commit([...parsed, { segment: '', label: '' }]);
-  const removeRow = (index: number) => commit(parsed.filter((_, i) => i !== index));
-
-  return (
-    <div style={{ marginBottom: '1rem' }}>
-      <label style={{ display: 'block', fontWeight: 500, marginBottom: 4, fontSize: '0.875rem', color: 'var(--text-color-kumo-strong, #ffffff)' }}>
-        Segment labels
-      </label>
-      <div style={{ fontSize: '0.75rem', color: 'var(--text-color-kumo-subtle, #a0a0a0)', marginBottom: 8 }}>
-        Override the default title-cased segment name for breadcrumbs. E.g. <code>blog</code> → <code>Blog</code>.
-      </div>
-      {parsed.length === 0 && (
-        <div style={{ fontSize: '0.75rem', color: 'var(--text-color-kumo-placeholder, #666)', fontStyle: 'italic', marginBottom: 8 }}>
-          No overrides — breadcrumbs will use cleaned-up segment names.
-        </div>
-      )}
-      {parsed.map((row, i) => (
-        <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
-          <input
-            type="text"
-            placeholder="segment"
-            value={row.segment}
-            onChange={(e) => updateRow(i, { segment: e.target.value })}
-            style={{ ...inputStyle, flex: '1 1 40%' }}
-          />
-          <input
-            type="text"
-            placeholder="Display label"
-            value={row.label}
-            onChange={(e) => updateRow(i, { label: e.target.value })}
-            style={{ ...inputStyle, flex: '1 1 60%' }}
-          />
-          <button type="button" onClick={() => removeRow(i)} style={buttonStyle} aria-label="Remove">
-            ×
-          </button>
-        </div>
-      ))}
-      <button type="button" onClick={addRow} style={buttonStyle}>
-        + Add label
-      </button>
-    </div>
-  );
-}
-
-export function BreadcrumbRulesEditor({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  const [draft, setDraft] = React.useState(value);
-  const [error, setError] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    setDraft(value);
-  }, [value]);
-
-  const handleChange = (next: string) => {
-    setDraft(next);
-    if (!next.trim()) {
-      setError(null);
-      onChange('');
-      return;
-    }
-    try {
-      JSON.parse(next);
-      setError(null);
-      onChange(next);
-    } catch (err) {
-      setError((err as Error).message);
-    }
-  };
-
-  return (
-    <div style={{ marginBottom: '1rem' }}>
-      <label style={{ display: 'block', fontWeight: 500, marginBottom: 4, fontSize: '0.875rem', color: 'var(--text-color-kumo-strong, #ffffff)' }}>
-        Page type rules (advanced)
-      </label>
-      <div style={{ fontSize: '0.75rem', color: 'var(--text-color-kumo-subtle, #a0a0a0)', marginBottom: 4 }}>
-        JSON map from <code>pageType</code> to an ordered list of crumbs.
-      </div>
-      <pre style={{ fontSize: '0.7rem', color: 'var(--text-color-kumo-subtle, #a0a0a0)', background: 'var(--color-kumo-recessed, #141414)', border: '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.1))', padding: 8, borderRadius: 4, marginBottom: 6, overflowX: 'auto' }}>
-{`{
-  "blogPost": [
-    { "label": "Home", "href": "/" },
-    { "label": "Blog", "href": "/blog/" },
-    { "label": "{title}" }
-  ]
-}`}
-      </pre>
-      <textarea
-        value={draft}
-        onChange={(e) => handleChange(e.target.value)}
-        rows={6}
-        style={{
-          ...inputStyle,
-          resize: 'vertical',
-          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-          fontSize: '0.75rem',
-          borderColor: error ? 'var(--color-kumo-danger, #f87171)' : undefined,
-        }}
-        placeholder="{}"
-      />
-      {error && (
-        <div style={{ fontSize: '0.7rem', color: 'var(--text-color-kumo-danger, #f87171)', marginTop: 4 }}>
-          Invalid JSON: {error}
-        </div>
-      )}
-    </div>
-  );
-}
 
 export function SettingsPage() {
+  const [hubTab, setHubTab] = React.useState<'settings' | 'preview' | 'readability' | 'alts' | 'redirects'>('settings');
   const [settings, setSettings] = React.useState<Record<string, string>>({});
   const [saving, setSaving] = React.useState(false);
   const [saved, setSaved] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash) {
+      const h = window.location.hash.replace('#', '');
+      if (['settings', 'preview', 'readability', 'alts', 'redirects'].includes(h)) {
+        setHubTab(h as 'settings' | 'preview' | 'readability' | 'alts' | 'redirects');
+      }
+    }
+  }, []);
 
   React.useEffect(() => {
     apiFetch('settings').then(async (res) => {
@@ -304,7 +171,7 @@ export function SettingsPage() {
     setSettings((prev) => ({ ...prev, [key]: value }));
   };
 
-  if (loading) return <div style={{ padding: '2rem', color: 'var(--text-color-kumo-subtle, #a0a0a0)' }}>Loading settings...</div>;
+  if (loading) return <div style={{ padding: '2rem', color: 'var(--text-color-kumo-subtle, #a0a0a0)' }}>Loading WebABC SEO...</div>;
   if (error) return <div style={{ padding: '2rem', color: 'var(--text-color-kumo-danger, #f87171)' }}>Error: {error}</div>;
 
   const siteRepresents = settings.siteRepresents || 'person';
@@ -319,59 +186,205 @@ export function SettingsPage() {
   ];
 
   return (
-    <div style={{ maxWidth: 640, padding: '1.5rem 0', color: 'var(--text-color-kumo-default, #ededed)' }}>
-      <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.5rem', color: 'var(--text-color-kumo-strong, #ffffff)' }}>SEO Settings</h1>
-      {sections.map((section) => (
-        <div key={section.id} style={{ marginBottom: '2rem' }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.75rem', borderBottom: '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.1))', paddingBottom: '0.5rem', color: 'var(--text-color-kumo-strong, #ffffff)' }}>
-            {section.label}
-          </h3>
-          {FIELDS.filter((f) => f.section === section.id).map((field) => (
-            <Field
-              key={field.key}
-              field={field}
-              value={settings[field.key] || field.default || ''}
-              onChange={(v) => update(field.key, v)}
-            />
-          ))}
-        </div>
-      ))}
-
-      <div style={{ marginBottom: '2rem' }}>
-        <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.75rem', borderBottom: '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.1))', paddingBottom: '0.5rem', color: 'var(--text-color-kumo-strong, #ffffff)' }}>
-          Breadcrumbs
-        </h3>
-        <BreadcrumbLabelsEditor
-          value={settings.breadcrumbLabels || ''}
-          onChange={(v) => update('breadcrumbLabels', v)}
-        />
-        <BreadcrumbRulesEditor
-          value={settings.breadcrumbRules || ''}
-          onChange={(v) => update('breadcrumbRules', v)}
-        />
-      </div>
-
-      <div style={{ marginBottom: '2rem' }}>
-        <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.75rem', borderBottom: '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.1))', paddingBottom: '0.5rem', color: 'var(--text-color-kumo-strong, #ffffff)' }}>
-          Content Types & Live Editor Integration
-        </h3>
-        <p style={{ fontSize: '0.8125rem', color: 'var(--text-color-kumo-subtle, #a0a0a0)', marginBottom: '0.75rem' }}>
-          Enable the real-time Focus Keyword, Hemingway Readability Checker, Alt Auditor, and SERP Preview widgets directly inside the content editor for new posts, pages, and custom content types.
+    <div style={{ maxWidth: 840, padding: '1.5rem 0', color: 'var(--text-color-kumo-default, #ededed)' }}>
+      {/* WebABC SEO Header */}
+      <div style={{ marginBottom: '1.25rem' }}>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0, color: 'var(--text-color-kumo-strong, #ffffff)' }}>
+          WebABC SEO
+        </h1>
+        <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.8125rem', color: 'var(--text-color-kumo-subtle, #a0a0a0)' }}>
+          Comprehensive Search, Generative AI (GEO) & Answer Engine (AEO) Optimization Suite
         </p>
-        <ContentTypesIntegrationPanel />
       </div>
 
-      <button
-        onClick={handleSave}
-        disabled={saving}
+      {/* Top Tab Navigation */}
+      <div
         style={{
-          padding: '0.5rem 1.5rem', borderRadius: 6, background: 'var(--color-kumo-brand, #f6821f)',
-          color: 'var(--color-kumo-contrast, #ffffff)', border: 'none', cursor: saving ? 'wait' : 'pointer', fontWeight: 600,
+          display: 'flex',
+          gap: '0.375rem',
+          borderBottom: '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.12))',
+          paddingBottom: '0.5rem',
+          marginBottom: '1.5rem',
+          flexWrap: 'wrap',
         }}
       >
-        {saving ? 'Saving...' : 'Save Settings'}
-      </button>
-      {saved && <span style={{ marginLeft: 12, color: 'var(--text-color-kumo-success, #4ade80)', fontSize: '0.875rem' }}>Settings saved!</span>}
+        <button
+          type="button"
+          onClick={() => {
+            setHubTab('settings');
+            if (typeof window !== 'undefined') window.location.hash = 'settings';
+          }}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            padding: '0.375rem 0.75rem',
+            borderRadius: 6,
+            border: hubTab === 'settings' ? '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.2))' : '1px solid transparent',
+            background: hubTab === 'settings' ? 'var(--color-kumo-control, #2a2a2a)' : 'transparent',
+            color: hubTab === 'settings' ? 'var(--text-color-kumo-strong, #ffffff)' : 'var(--text-color-kumo-subtle, #9ca3af)',
+            fontSize: '0.8125rem',
+            fontWeight: hubTab === 'settings' ? 600 : 400,
+            cursor: 'pointer',
+          }}
+        >
+          <IconSettings size={13} />
+          <span>SEO Settings</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setHubTab('preview');
+            if (typeof window !== 'undefined') window.location.hash = 'preview';
+          }}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            padding: '0.375rem 0.75rem',
+            borderRadius: 6,
+            border: hubTab === 'preview' ? '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.2))' : '1px solid transparent',
+            background: hubTab === 'preview' ? 'var(--color-kumo-control, #2a2a2a)' : 'transparent',
+            color: hubTab === 'preview' ? 'var(--text-color-kumo-strong, #ffffff)' : 'var(--text-color-kumo-subtle, #9ca3af)',
+            fontSize: '0.8125rem',
+            fontWeight: hubTab === 'preview' ? 600 : 400,
+            cursor: 'pointer',
+          }}
+        >
+          <IconSearch size={13} />
+          <span>SERP & Social Preview</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setHubTab('readability');
+            if (typeof window !== 'undefined') window.location.hash = 'readability';
+          }}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            padding: '0.375rem 0.75rem',
+            borderRadius: 6,
+            border: hubTab === 'readability' ? '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.2))' : '1px solid transparent',
+            background: hubTab === 'readability' ? 'var(--color-kumo-control, #2a2a2a)' : 'transparent',
+            color: hubTab === 'readability' ? 'var(--text-color-kumo-strong, #ffffff)' : 'var(--text-color-kumo-subtle, #9ca3af)',
+            fontSize: '0.8125rem',
+            fontWeight: hubTab === 'readability' ? 600 : 400,
+            cursor: 'pointer',
+          }}
+        >
+          <IconBook size={13} />
+          <span>Readability Checker</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setHubTab('alts');
+            if (typeof window !== 'undefined') window.location.hash = 'alts';
+          }}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            padding: '0.375rem 0.75rem',
+            borderRadius: 6,
+            border: hubTab === 'alts' ? '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.2))' : '1px solid transparent',
+            background: hubTab === 'alts' ? 'var(--color-kumo-control, #2a2a2a)' : 'transparent',
+            color: hubTab === 'alts' ? 'var(--text-color-kumo-strong, #ffffff)' : 'var(--text-color-kumo-subtle, #9ca3af)',
+            fontSize: '0.8125rem',
+            fontWeight: hubTab === 'alts' ? 600 : 400,
+            cursor: 'pointer',
+          }}
+        >
+          <IconImage size={13} />
+          <span>Alt Image Auditor</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setHubTab('redirects');
+            if (typeof window !== 'undefined') window.location.hash = 'redirects';
+          }}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            padding: '0.375rem 0.75rem',
+            borderRadius: 6,
+            border: hubTab === 'redirects' ? '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.2))' : '1px solid transparent',
+            background: hubTab === 'redirects' ? 'var(--color-kumo-control, #2a2a2a)' : 'transparent',
+            color: hubTab === 'redirects' ? 'var(--text-color-kumo-strong, #ffffff)' : 'var(--text-color-kumo-subtle, #9ca3af)',
+            fontSize: '0.8125rem',
+            fontWeight: hubTab === 'redirects' ? 600 : 400,
+            cursor: 'pointer',
+          }}
+        >
+          <IconArrowRight size={13} />
+          <span>Fuzzy 301 Redirects</span>
+        </button>
+      </div>
+
+      {hubTab === 'settings' && (
+        <div style={{ maxWidth: 640 }}>
+          {sections.map((section) => (
+            <div key={section.id} style={{ marginBottom: '2rem' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.75rem', borderBottom: '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.1))', paddingBottom: '0.5rem', color: 'var(--text-color-kumo-strong, #ffffff)' }}>
+                {section.label}
+              </h3>
+              {FIELDS.filter((f) => f.section === section.id).map((field) => (
+                <Field
+                  key={field.key}
+                  field={field}
+                  value={settings[field.key] || field.default || ''}
+                  onChange={(v) => update(field.key, v)}
+                />
+              ))}
+            </div>
+          ))}
+
+          <div style={{ marginBottom: '2rem' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.75rem', borderBottom: '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.1))', paddingBottom: '0.5rem', color: 'var(--text-color-kumo-strong, #ffffff)' }}>
+              Breadcrumbs
+            </h3>
+            <BreadcrumbLabelsEditor
+              value={settings.breadcrumbLabels || ''}
+              onChange={(v) => update('breadcrumbLabels', v)}
+            />
+            <BreadcrumbRulesEditor
+              value={settings.breadcrumbRules || ''}
+              onChange={(v) => update('breadcrumbRules', v)}
+            />
+          </div>
+
+          <div style={{ marginBottom: '2rem' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.75rem', borderBottom: '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.1))', paddingBottom: '0.5rem', color: 'var(--text-color-kumo-strong, #ffffff)' }}>
+              Content Types & Live Editor Integration
+            </h3>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--text-color-kumo-subtle, #a0a0a0)', marginBottom: '0.75rem' }}>
+              Enable the real-time Focus Keyword, Hemingway Readability Checker, Alt Auditor, and SERP Preview widgets directly inside the content editor for new posts, pages, and custom content types.
+            </p>
+            <ContentTypesIntegrationPanel />
+          </div>
+
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            style={{
+              padding: '0.5rem 1.5rem', borderRadius: 6, background: 'var(--color-kumo-brand, #f6821f)',
+              color: 'var(--color-kumo-contrast, #ffffff)', border: 'none', cursor: saving ? 'wait' : 'pointer', fontWeight: 600,
+            }}
+          >
+            {saving ? 'Saving...' : 'Save Settings'}
+          </button>
+          {saved && <span style={{ marginLeft: 12, color: 'var(--text-color-kumo-success, #4ade80)', fontSize: '0.875rem' }}>Settings saved!</span>}
+        </div>
+      )}
+
+      {hubTab === 'preview' && <SerpPreviewPage />}
+      {hubTab === 'readability' && <ReadabilityAdminPage />}
+      {hubTab === 'alts' && <ImageAltAuditorAdminPage />}
+      {hubTab === 'redirects' && <FuzzyRedirectsPage />}
     </div>
   );
 }

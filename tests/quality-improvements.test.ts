@@ -168,14 +168,10 @@ describe('Quality Improvements & Edge Reliability', () => {
       expect(plugin.routes['/llms-full.txt']).toBeUndefined();
     });
 
-    it('registers preview and fuzzy-redirects admin pages', () => {
+    it('registers unified WebABC SEO admin page', () => {
       const descriptor = seoPlugin();
       expect(descriptor.adminPages).toEqual([
-        { path: '/settings', label: 'SEO Settings', icon: 'settings' },
-        { path: '/preview', label: 'SERP & Social Preview', icon: 'search' },
-        { path: '/fuzzy-redirects', label: 'Fuzzy Redirects', icon: 'arrow-right' },
-        { path: '/readability', label: 'Readability Checker', icon: 'file-text' },
-        { path: '/alt-auditor', label: 'Alt Image Auditor', icon: 'image' },
+        { path: '/settings', label: 'WebABC SEO', icon: 'globe' },
       ]);
     });
   });

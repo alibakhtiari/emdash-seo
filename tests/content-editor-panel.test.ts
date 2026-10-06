@@ -88,19 +88,13 @@ describe('EmDash Content Editor Sidebar SEO Panel & Integration', () => {
       expect(panel.order).toBe(15);
     });
 
-    it('seoPlugin registers adminPages including readability and alt-auditor', () => {
+    it('seoPlugin registers unified WebABC SEO adminPages', () => {
       const descriptor = seoPlugin();
       expect(descriptor.id).toBe('emdash-seo');
       expect(descriptor.format).toBe('native');
-      expect(descriptor.adminPages).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ path: '/settings' }),
-          expect.objectContaining({ path: '/preview' }),
-          expect.objectContaining({ path: '/fuzzy-redirects' }),
-          expect.objectContaining({ path: '/readability' }),
-          expect.objectContaining({ path: '/alt-auditor' }),
-        ])
-      );
+      expect(descriptor.adminPages).toEqual([
+        { path: '/settings', label: 'WebABC SEO', icon: 'globe' },
+      ]);
     });
   });
 

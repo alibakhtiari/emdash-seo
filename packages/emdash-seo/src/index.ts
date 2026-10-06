@@ -285,11 +285,7 @@ export function createPlugin(userOptions: Partial<SeoPluginOptions> = {}) {
     storage: {},
     admin: {
       pages: [
-        { path: '/settings', label: 'SEO Settings', icon: 'settings' },
-        { path: '/preview', label: 'SERP & Social Preview', icon: 'search' },
-        { path: '/fuzzy-redirects', label: 'Fuzzy Redirects', icon: 'arrow-right' },
-        { path: '/readability', label: 'Readability Checker', icon: 'file-text' },
-        { path: '/alt-auditor', label: 'Alt Image Auditor', icon: 'image' },
+        { path: '/settings', label: 'WebABC SEO', icon: 'globe' },
       ],
     },
     hooks: {
@@ -341,15 +337,15 @@ export function seoPlugin(userOptions: Partial<SeoPluginOptions> = {}) {
     capabilities: ['content:read', 'content:write', 'page:inject', 'network:fetch'],
     adminEntry: new URL('./admin.tsx', import.meta.url).pathname,
     adminPages: [
-      { path: '/settings', label: 'SEO Settings', icon: 'settings' },
-      { path: '/preview', label: 'SERP & Social Preview', icon: 'search' },
-      { path: '/fuzzy-redirects', label: 'Fuzzy Redirects', icon: 'arrow-right' },
-      { path: '/readability', label: 'Readability Checker', icon: 'file-text' },
-      { path: '/alt-auditor', label: 'Alt Image Auditor', icon: 'image' },
+      { path: '/settings', label: 'WebABC SEO', icon: 'globe' },
     ],
     storage: {},
     options,
   };
 }
 
+export const webabcSeoPlugin = seoPlugin;
+export const webabcPlugin = seoPlugin;
+
 export default seoPlugin;
+
