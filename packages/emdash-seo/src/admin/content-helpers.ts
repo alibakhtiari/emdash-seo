@@ -70,3 +70,29 @@ export function extractAllImagesFromContent(content: unknown, data?: Record<stri
 
   return parts.join('\n');
 }
+
+export const SCHEMA_TYPE_OPTIONS = [
+  { value: 'auto', label: 'Auto (Inferred)' },
+  { value: 'Article', label: 'Standard Article' },
+  { value: 'BlogPosting', label: 'Blog Post' },
+  { value: 'TechArticle', label: 'Technical Article / Guide' },
+  { value: 'NewsArticle', label: 'News Article' },
+  { value: 'Service', label: 'Service / Offering' },
+  { value: 'HowTo', label: 'How-To Instruction' },
+  { value: 'FAQPage', label: 'FAQ Page' },
+  { value: 'AboutPage', label: 'About Page' },
+  { value: 'ContactPage', label: 'Contact Page' },
+];
+
+export function inferSchemaType(title?: string, slug?: string, collection?: string, text?: string): string {
+  const t = `${title || ''} ${slug || ''} ${text ? text.slice(0, 200) : ''}`.toLowerCase();
+  if (t.includes('about')) return 'AboutPage';
+  if (t.includes('contact')) return 'ContactPage';
+  if (t.includes('service') || t.includes('clean') || t.includes('repair') || t.includes('treatment') || t.includes('maintenance')) return 'Service';
+  if (t.includes('how to') || t.includes('howto') || t.includes('guide') || t.includes('tutorial')) return 'HowTo';
+  if (t.includes('faq') || t.includes('questions')) return 'FAQPage';
+  if (collection === 'posts' || (slug && slug.startsWith('blog/')) || t.includes('blog')) return 'BlogPosting';
+  if (t.includes('case-study') || t.includes('technical') || t.includes('architecture')) return 'TechArticle';
+  return 'Article';
+}
+

@@ -6,13 +6,16 @@ import { auditGeoAeo } from '../../engine/geo-aeo-analyzer.js';
 import { inferSchemaType } from '../../engine/schema-nodes.js';
 import type { AuthorProfile, FaqItem, HowToStep } from '../../types.js';
 import { extractEditorDomSnapshot, type EditorDomSnapshot } from './dom-extractor.js';
-import { WidgetReadabilityTab } from './WidgetReadabilityTab.js';
-import { WidgetAltTab } from './WidgetAltTab.js';
-import { WidgetSerpTab } from './WidgetSerpTab.js';
-import { WidgetChecklistTab } from './WidgetChecklistTab.js';
-import { WidgetGeoAeoTab } from './WidgetGeoAeoTab.js';
-import { WidgetSchemaAuthorTab } from './WidgetSchemaAuthorTab.js';
 import { WidgetMetricBar } from './WidgetMetricBar.js';
+import { WidgetStudioDrawer } from './WidgetStudioDrawer.js';
+import {
+  IconTarget,
+  IconClose,
+  IconChevronUp,
+  IconChevronDown,
+  IconSparkles,
+  IconTag,
+} from '../icons.js';
 
 export interface FocusKeywordFieldWidgetProps {
   value?: string | null;
@@ -42,9 +45,9 @@ export function FocusKeywordFieldWidget({
 
   const [author, setAuthor] = React.useState<AuthorProfile>({ name: 'Editorial Team' });
   const [reviewedBy, setReviewedBy] = React.useState<AuthorProfile | undefined>(undefined);
-  const [schemaType, setSchemaType] = React.useState<string>(() =>
-    inferSchemaType(typeof window !== 'undefined' ? window.location.pathname : '', 'Article')
-  );
+  const [isAutoSchema, setIsAutoSchema] = React.useState<boolean>(true);
+  const [customSchemaType, setCustomSchemaType] = React.useState<string>('Article');
+
   const [speakableSelectors, setSpeakableSelectors] = React.useState<string[]>([
     '#field-excerpt',
     '.post-lead',
@@ -60,6 +63,15 @@ export function FocusKeywordFieldWidget({
     headings: [],
     images: [],
   });
+
+  // Dynamic semi-automatic Schema Type inference
+  const autoInferredType = React.useMemo(() => {
+    const path = typeof window !== 'undefined' ? window.location.pathname : '';
+    if (/^how\s+to\b/i.test(snapshot.title)) return 'HowTo';
+    return inferSchemaType(path, 'Article');
+  }, [snapshot.title]);
+
+  const effectiveSchemaType = isAutoSchema ? autoInferredType : customSchemaType;
 
   // Sync external value
   React.useEffect(() => {
@@ -99,35 +111,37 @@ export function FocusKeywordFieldWidget({
     };
 
     window.addEventListener('input', handleInput, { passive: true });
-    window.addEventListener('keyup', handleInput, { passive: true });
-    const interval = window.setInterval(refreshSnapshot, 2000);
+    const interval = setInterval(refreshSnapshot, 2500);
 
     return () => {
       window.removeEventListener('input', handleInput);
-      window.removeEventListener('keyup', handleInput);
-      window.clearInterval(interval);
+      clearInterval(interval);
     };
   }, [refreshSnapshot]);
 
-  // Compute live metrics
-  const readability = React.useMemo(() => auditReadability(snapshot.content), [snapshot.content]);
-
-  const altAudit = React.useMemo(() => {
-    const htmlSnippet = snapshot.images.map((img) => `<img src="${img.src}" alt="${img.alt}" />`).join('\n');
-    return auditImageAlts(htmlSnippet, { targetKeywords: keyword ? [keyword] : [] });
-  }, [snapshot.images, keyword]);
-
+  // Run SEO Content Analysis
   const seoReport = React.useMemo(() => {
     return analyzeContent({
-      title: snapshot.title,
-      slug: '',
-      content: snapshot.content,
       focusKeywords: keyword ? [keyword] : [],
+      title: snapshot.title,
+      content: snapshot.content,
       metaDescription: snapshot.excerpt,
-      minWordCount: 300,
     });
-  }, [snapshot.title, snapshot.content, snapshot.excerpt, keyword]);
+  }, [keyword, snapshot.title, snapshot.content, snapshot.excerpt]);
 
+  // Run Realtime Readability Audit
+  const readability = React.useMemo(() => {
+    return auditReadability(snapshot.content || snapshot.excerpt || snapshot.title || '');
+  }, [snapshot.content, snapshot.excerpt, snapshot.title]);
+
+  // Run Realtime Image Alt Audit
+  const altAudit = React.useMemo(() => {
+    return auditImageAlts(snapshot.content || '', {
+      targetKeywords: keyword ? [keyword] : [],
+    });
+  }, [snapshot.content, keyword]);
+
+  // Run Realtime GEO & AEO AI Engine Audit
   const geoAeoReport = React.useMemo(() => {
     return auditGeoAeo(snapshot.content, {
       title: snapshot.title,
@@ -168,7 +182,7 @@ export function FocusKeywordFieldWidget({
             gap: '0.375rem',
           }}
         >
-          <span>🎯</span>
+          <IconTarget size={14} color="var(--color-kumo-brand, #f6821f)" />
           <span>{label}</span>
           {required && <span style={{ color: '#f87171' }}>*</span>}
         </label>
@@ -227,11 +241,80 @@ export function FocusKeywordFieldWidget({
               cursor: 'pointer',
               fontSize: '0.75rem',
               padding: '0.25rem',
+              display: 'flex',
+              alignItems: 'center',
             }}
           >
-            ✕
+            <IconClose size={12} />
           </button>
         )}
+      </div>
+
+      {/* Semi-Automatic Schema Selector Bar */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0.35rem 0.625rem',
+          borderRadius: 6,
+          background: 'var(--color-kumo-control, #1a1a1a)',
+          border: '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.1))',
+          fontSize: '0.75rem',
+          gap: '0.5rem',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', color: 'var(--text-color-kumo-subtle, #9ca3af)' }}>
+          {isAutoSchema ? <IconSparkles size={13} color="#c084fc" /> : <IconTag size={13} color="#60a5fa" />}
+          <span style={{ fontWeight: 500, color: 'var(--text-color-kumo-strong, #ffffff)' }}>Schema:</span>
+          <span
+            style={{
+              fontSize: '0.6875rem',
+              padding: '0.1rem 0.375rem',
+              borderRadius: 4,
+              background: isAutoSchema ? 'rgba(168, 85, 247, 0.15)' : 'rgba(96, 165, 250, 0.15)',
+              color: isAutoSchema ? '#c084fc' : '#60a5fa',
+              border: `1px solid ${isAutoSchema ? 'rgba(168, 85, 247, 0.3)' : 'rgba(96, 165, 250, 0.3)'}`,
+            }}
+          >
+            {isAutoSchema ? `Auto: ${autoInferredType}` : effectiveSchemaType}
+          </span>
+        </div>
+
+        <select
+          value={isAutoSchema ? 'auto' : effectiveSchemaType}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (val === 'auto') {
+              setIsAutoSchema(true);
+            } else {
+              setIsAutoSchema(false);
+              setCustomSchemaType(val);
+            }
+          }}
+          style={{
+            padding: '0.2rem 0.5rem',
+            borderRadius: 4,
+            background: 'var(--color-kumo-surface, #141414)',
+            border: '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.15))',
+            color: 'var(--text-color-kumo-strong, #ffffff)',
+            fontSize: '0.6875rem',
+            outline: 'none',
+            cursor: 'pointer',
+          }}
+        >
+          <option value="auto">Auto (Inferred: {autoInferredType})</option>
+          <option value="BlogPosting">Blog Post (BlogPosting)</option>
+          <option value="Article">General Article (Article)</option>
+          <option value="TechArticle">Technical / How-To (TechArticle)</option>
+          <option value="NewsArticle">News Article (NewsArticle)</option>
+          <option value="Service">Service / Commercial (Service)</option>
+          <option value="HowTo">Step-by-Step Instructions (HowTo)</option>
+          <option value="FAQPage">FAQ Page (FAQPage)</option>
+          <option value="AboutPage">About Page (AboutPage)</option>
+          <option value="ContactPage">Contact Page (ContactPage)</option>
+          <option value="ProfilePage">Profile / Author (ProfilePage)</option>
+        </select>
       </div>
 
       {/* Live Readability & SEO Metric Pills Bar */}
@@ -263,166 +346,39 @@ export function FocusKeywordFieldWidget({
             gap: '0.25rem',
           }}
         >
-          <span>{isExpanded ? '▲ Hide Studio' : '▼ Live SEO & Readability Studio'}</span>
+          {isExpanded ? <IconChevronUp size={12} /> : <IconChevronDown size={12} />}
+          <span>{isExpanded ? 'Hide Studio' : 'WebABC Studio'}</span>
         </button>
       </div>
 
       {/* Expandable Studio Drawer */}
       {isExpanded && (
-        <div
-          style={{
-            marginTop: '0.25rem',
-            paddingTop: '0.625rem',
-            borderTop: '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.1))',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.75rem',
+        <WidgetStudioDrawer
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          readability={readability}
+          altAudit={altAudit}
+          geoAeoReport={geoAeoReport}
+          snapshot={snapshot}
+          author={author}
+          setAuthor={setAuthor}
+          effectiveSchemaType={effectiveSchemaType}
+          onSelectCustomSchemaType={(st) => {
+            setIsAutoSchema(false);
+            setCustomSchemaType(st);
           }}
-        >
-          {/* Subtabs */}
-          <div style={{ display: 'flex', gap: '0.25rem', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '0.375rem', flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              onClick={() => setActiveTab('readability')}
-              style={{
-                padding: '0.25rem 0.5rem',
-                borderRadius: 4,
-                border: 'none',
-                background: activeTab === 'readability' ? 'var(--color-kumo-control, #2a2a2a)' : 'transparent',
-                color: activeTab === 'readability' ? 'var(--text-color-kumo-strong, #ffffff)' : 'var(--text-color-kumo-subtle, #9ca3af)',
-                fontSize: '0.6875rem',
-                fontWeight: activeTab === 'readability' ? 600 : 400,
-                cursor: 'pointer',
-              }}
-            >
-              📖 Hemingway Readability
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('geo-aeo')}
-              style={{
-                padding: '0.25rem 0.5rem',
-                borderRadius: 4,
-                border: 'none',
-                background: activeTab === 'geo-aeo' ? 'var(--color-kumo-control, #2a2a2a)' : 'transparent',
-                color: activeTab === 'geo-aeo' ? 'var(--text-color-kumo-strong, #ffffff)' : 'var(--text-color-kumo-subtle, #9ca3af)',
-                fontSize: '0.6875rem',
-                fontWeight: activeTab === 'geo-aeo' ? 600 : 400,
-                cursor: 'pointer',
-              }}
-            >
-              🤖 GEO & AEO AI ({geoAeoReport.overallAiScore}%)
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('schema-author')}
-              style={{
-                padding: '0.25rem 0.5rem',
-                borderRadius: 4,
-                border: 'none',
-                background: activeTab === 'schema-author' ? 'var(--color-kumo-control, #2a2a2a)' : 'transparent',
-                color: activeTab === 'schema-author' ? 'var(--text-color-kumo-strong, #ffffff)' : 'var(--text-color-kumo-subtle, #9ca3af)',
-                fontSize: '0.6875rem',
-                fontWeight: activeTab === 'schema-author' ? 600 : 400,
-                cursor: 'pointer',
-              }}
-            >
-              🏷️ Schema & Author
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('alts')}
-              style={{
-                padding: '0.25rem 0.5rem',
-                borderRadius: 4,
-                border: 'none',
-                background: activeTab === 'alts' ? 'var(--color-kumo-control, #2a2a2a)' : 'transparent',
-                color: activeTab === 'alts' ? 'var(--text-color-kumo-strong, #ffffff)' : 'var(--text-color-kumo-subtle, #9ca3af)',
-                fontSize: '0.6875rem',
-                fontWeight: activeTab === 'alts' ? 600 : 400,
-                cursor: 'pointer',
-              }}
-            >
-              🖼️ Image Alts ({snapshot.images.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('serp')}
-              style={{
-                padding: '0.25rem 0.5rem',
-                borderRadius: 4,
-                border: 'none',
-                background: activeTab === 'serp' ? 'var(--color-kumo-control, #2a2a2a)' : 'transparent',
-                color: activeTab === 'serp' ? 'var(--text-color-kumo-strong, #ffffff)' : 'var(--text-color-kumo-subtle, #9ca3af)',
-                fontSize: '0.6875rem',
-                fontWeight: activeTab === 'serp' ? 600 : 400,
-                cursor: 'pointer',
-              }}
-            >
-              🔍 SERP & Social Preview
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('checklist')}
-              style={{
-                padding: '0.25rem 0.5rem',
-                borderRadius: 4,
-                border: 'none',
-                background: activeTab === 'checklist' ? 'var(--color-kumo-control, #2a2a2a)' : 'transparent',
-                color: activeTab === 'checklist' ? 'var(--text-color-kumo-strong, #ffffff)' : 'var(--text-color-kumo-subtle, #9ca3af)',
-                fontSize: '0.6875rem',
-                fontWeight: activeTab === 'checklist' ? 600 : 400,
-                cursor: 'pointer',
-              }}
-            >
-              ✅ Checklist
-            </button>
-          </div>
-
-          {/* Tab Content */}
-          {activeTab === 'readability' && <WidgetReadabilityTab readability={readability} />}
-          {activeTab === 'geo-aeo' && (
-            <WidgetGeoAeoTab
-              geoAeoReport={geoAeoReport}
-              onApplyFaqs={(extracted) => setFaqs(extracted)}
-              onApplyHowTo={(extracted) => setHowToSteps(extracted)}
-            />
-          )}
-          {activeTab === 'schema-author' && (
-            <WidgetSchemaAuthorTab
-              title={snapshot.title}
-              excerpt={snapshot.excerpt}
-              author={author}
-              onAuthorChange={setAuthor}
-              schemaType={schemaType}
-              onSchemaTypeChange={setSchemaType}
-              reviewedBy={reviewedBy}
-              onReviewerChange={setReviewedBy}
-              speakableSelectors={speakableSelectors}
-              onSpeakableChange={setSpeakableSelectors}
-              faqs={faqs}
-              howToSteps={howToSteps}
-            />
-          )}
-          {activeTab === 'alts' && <WidgetAltTab altAudit={altAudit} onRefresh={refreshSnapshot} />}
-          {activeTab === 'serp' && (
-            <WidgetSerpTab
-              title={snapshot.title}
-              excerpt={snapshot.excerpt}
-              featuredImage={snapshot.images[0]?.src}
-            />
-          )}
-          {activeTab === 'checklist' && (
-            <WidgetChecklistTab
-              seoReport={seoReport}
-              readability={readability}
-              altAudit={altAudit}
-              title={snapshot.title}
-              focusKeyword={keyword}
-              headingsCount={snapshot.headings.length}
-            />
-          )}
-        </div>
+          reviewedBy={reviewedBy}
+          setReviewedBy={setReviewedBy}
+          speakableSelectors={speakableSelectors}
+          setSpeakableSelectors={setSpeakableSelectors}
+          faqs={faqs}
+          setFaqs={setFaqs}
+          howToSteps={howToSteps}
+          setHowToSteps={setHowToSteps}
+          seoReport={seoReport}
+          keyword={keyword}
+          refreshSnapshot={refreshSnapshot}
+        />
       )}
     </div>
   );

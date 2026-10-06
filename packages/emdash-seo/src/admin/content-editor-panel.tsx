@@ -7,10 +7,13 @@ import { ImageAltAuditorWidget } from '../components/ImageAltAuditorWidget.js';
 import {
   extractTextFromContent,
   extractAllImagesFromContent,
+  inferSchemaType,
+  SCHEMA_TYPE_OPTIONS,
   type ContentEditorPanelProps,
 } from './content-helpers.js';
 import { EditorOverviewTab } from './editor/EditorOverviewTab.js';
 import { EditorKeywordTab } from './editor/EditorKeywordTab.js';
+import { IconTarget, IconStar, IconSparkles } from './icons.js';
 
 export function ContentEditorSeoPanel(props: ContentEditorPanelProps) {
   const { entry } = props;
@@ -30,23 +33,31 @@ export function ContentEditorSeoPanel(props: ContentEditorPanelProps) {
   }, [data.focus_keyword, seoData.focusKeyword]);
 
   const isCornerstone = Boolean(data.cornerstone ?? seoData.cornerstone ?? false);
-  const schemaType = String(data.schema_type ?? seoData.schemaType ?? 'Article');
 
   const rawContent = data.content || data.body || data.text || data.excerpt || '';
   const textContent = React.useMemo(() => extractTextFromContent(rawContent), [rawContent]);
   const imageContent = React.useMemo(() => extractAllImagesFromContent(rawContent, data), [rawContent, data]);
-
-  const readability = React.useMemo(() => auditReadability(textContent), [textContent]);
-  const altAudit = React.useMemo(
-    () => auditImageAlts(imageContent, { targetKeywords: focusKeyword ? [focusKeyword] : [] }),
-    [imageContent, focusKeyword]
-  );
 
   const postTitle = (typeof data.title === 'string' ? data.title : '') || entry?.slug || '';
   const postSlug = entry?.slug || (typeof data.slug === 'string' ? data.slug : '');
   const metaDesc =
     (typeof seoData.description === 'string' ? seoData.description : '') ||
     (typeof data.excerpt === 'string' ? data.excerpt : '');
+
+  const autoInferredType = React.useMemo(
+    () => inferSchemaType(postTitle, postSlug, props.collection, textContent),
+    [postTitle, postSlug, props.collection, textContent]
+  );
+
+  const initialSchema = String(data.schema_type ?? seoData.schemaType ?? 'auto');
+  const [selectedSchema, setSelectedSchema] = React.useState<string>(initialSchema);
+  const effectiveSchemaType = selectedSchema === 'auto' ? autoInferredType : selectedSchema;
+
+  const readability = React.useMemo(() => auditReadability(textContent), [textContent]);
+  const altAudit = React.useMemo(
+    () => auditImageAlts(imageContent, { targetKeywords: focusKeyword ? [focusKeyword] : [] }),
+    [imageContent, focusKeyword]
+  );
 
   const seoReport = React.useMemo(() => {
     return analyzeContent({
@@ -83,7 +94,8 @@ export function ContentEditorSeoPanel(props: ContentEditorPanelProps) {
               gap: '0.25rem',
             }}
           >
-            <span>🎯</span> <strong>{focusKeyword}</strong>
+            <IconTarget size={12} color="#fbbf24" />
+            <strong>{focusKeyword}</strong>
           </button>
         ) : (
           <button
@@ -113,24 +125,53 @@ export function ContentEditorSeoPanel(props: ContentEditorPanelProps) {
               fontSize: '0.6875rem',
               color: '#facc15',
               fontWeight: 600,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.25rem',
             }}
           >
-            ⭐ Pillar Post
+            <IconStar size={11} color="#facc15" />
+            <span>Pillar Post</span>
           </span>
         )}
 
-        <span
-          style={{
-            padding: '0.125rem 0.375rem',
-            borderRadius: 4,
-            background: 'var(--color-kumo-recessed, #141414)',
-            border: '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.1))',
-            fontSize: '0.6875rem',
-            color: 'var(--text-color-kumo-subtle, #a0a0a0)',
-          }}
-        >
-          {schemaType}
-        </span>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+          <select
+            value={selectedSchema}
+            onChange={(e) => {
+              const val = e.target.value;
+              setSelectedSchema(val);
+              if (data.seo && typeof data.seo === 'object') {
+                (data.seo as Record<string, unknown>).schemaType = val === 'auto' ? autoInferredType : val;
+              }
+              if (typeof data === 'object') {
+                data.schema_type = val === 'auto' ? autoInferredType : val;
+              }
+            }}
+            title={selectedSchema === 'auto' ? `Auto-inferred: ${effectiveSchemaType}` : `Selected Schema: ${effectiveSchemaType}`}
+            style={{
+              padding: '0.125rem 0.375rem',
+              borderRadius: 4,
+              background: 'var(--color-kumo-control, #222222)',
+              border: '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.15))',
+              color: 'var(--text-color-kumo-strong, #ffffff)',
+              fontSize: '0.6875rem',
+              cursor: 'pointer',
+              outline: 'none',
+            }}
+          >
+            {SCHEMA_TYPE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.value === 'auto' ? `Auto (${effectiveSchemaType})` : opt.label}
+              </option>
+            ))}
+          </select>
+          {selectedSchema === 'auto' && (
+            <span title={`Auto-inferred Schema: ${effectiveSchemaType}`} style={{ display: 'flex', alignItems: 'center', color: '#60a5fa' }}>
+              <IconSparkles size={11} />
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Tab Navigation */}
