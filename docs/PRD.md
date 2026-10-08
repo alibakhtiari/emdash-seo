@@ -1,8 +1,8 @@
-# Product Requirement Document (PRD): EmDash SEO Suite (`@emdash/plugin-seo`) & WordPress Migration Architecture
+# Product Requirement Document (PRD): WebABC SEO Suite (`@emdash/plugin-seo`) & WordPress Migration Architecture
 
 ## 1. Executive Summary & Architecture Overview
 
-The **EmDash SEO Suite** is an enterprise-grade, zero-runtime-dependency SEO plugin designed specifically for EmDash CMS and Astro, coupled with an automated migration pipeline to transition WordPress sites (Rank Math Pro, Yoast SEO Premium, All in One SEO) into modern, edge-rendered Astro + EmDash architectures.
+The **WebABC SEO Suite** (`@emdash/plugin-seo` / `webabcSeoPlugin`) is an enterprise-grade, zero-runtime-dependency SEO, Generative AI (GEO), and Answer Engine Optimization (AEO) plugin designed specifically for EmDash CMS and Astro, coupled with an automated migration pipeline to transition WordPress sites (Rank Math Pro, Yoast SEO Premium, All in One SEO) into modern, edge-rendered Astro + EmDash architectures.
 
 Built as an **in-process Native Plugin**, it bypasses the requirement for Cloudflare Dynamic Worker loaders (`worker_loaders`), guaranteeing complete feature parity across:
 
@@ -11,9 +11,10 @@ Built as an **in-process Native Plugin**, it bypasses the requirement for Cloudf
 * **Cloudflare Workers Paid / Self-hosted (Dokploy / Coolify):** Unconstrained edge execution with extended CPU and memory allowances.
 
 The suite combines:
-1. **Core SEO Capabilities:** Matching and exceeding the top WordPress SEO plugins (**Rank Math Pro**, **Yoast SEO Premium**, **All in One SEO**, and **SEOPress**).
+1. **Core SEO & Generative AI Capabilities:** Matching and exceeding the top WordPress SEO plugins (**Rank Math Pro**, **Yoast SEO Premium**, **All in One SEO**, and **SEOPress**) with forward-looking GEO & AEO capabilities.
 2. **Automated WP Migration Engine:** Direct extraction of WordPress content, custom fields, Gutenberg / page builder blocks, and SEO metadata (focus keywords, canonicals, robots flags, social cards, redirects, and connected schema graphs).
 3. **Local Business & Service SEO:** Specialized structured data engine for business entities, services, pricing, customer reviews, and FAQ accordion schema.
+4. **Clean Zero-Emoji Admin Experience:** A unified **WebABC SEO** admin dashboard with typed SVG icons, interactive top tabs, and live editor field widgets.
 
 ---
 
@@ -113,6 +114,30 @@ The suite combines:
   * Auto-extracts question patterns from content headings followed by paragraphs.
 * **Visual Component (`FaqBlock.astro` / `FaqAccordion.astro`):** Interactive accessible HTML `<details>/<summary>` accordion.
 * **Google FAQPage Schema:** Emits `@type: FAQPage` with nested `Question` and `Answer` nodes linked directly to the parent `WebPage`.
+
+### 3.10 Generative Engine & Answer Engine Optimization (GEO & AEO)
+* **AI Overview & Perplexity Readiness:** Real-time scoring of content for citation probability by generative search engines.
+* **Direct Answer Optimization:** Automatically identifies and scores direct answer candidates in lead paragraphs, definition lists, and comparison tables.
+* **Speakable Selectors:** Automatically assigns Google Speakable CSS selectors (`#field-excerpt`, `.post-lead`, `.aeo-summary`) for voice search engines.
+* **AI Search Protocol Routes:** Dynamically generates `/llms.txt` and `/llms-full.txt` endpoints directly at the edge.
+
+### 3.11 Hemingway-Style Readability & Live Highlighting Engine
+* **Flesch Reading Ease & Grade Level:** Accurate sentence segmentation tracking character offsets to compute real-time readability scores.
+* **Interactive Live Color Highlighting:**
+  * Hard sentences highlighted in soft yellow.
+  * Very hard sentences highlighted in soft coral/red.
+  * Passive voice detected with dotted underline and active voice suggestions.
+  * Complex words ($\ge 3$ syllables) highlighted with simple plain-English alternatives.
+* **Filter Controls:** Toggle highlights by category (Hard, Very Hard, Passive Voice, Complex Words).
+
+### 3.12 Image Alt Text Auditor Engine & Inline Quick-Editor
+* **Audit Rules:** Checks images for missing alts, empty alt attributes, filename patterns (`IMG_`, `.webp`), redundant prefixes (`photo of`, `image of`), optimal character length (5–125 characters), and keyword stuffing.
+* **Interactive Inline Quick-Editor:** Allows editors to review thumbnail previews and fix image alt tags in place with instantaneous feedback.
+
+### 3.13 Semi-Automatic Schema Selector & Author/Reviewer E-E-A-T
+* **Automatic Entity Inference:** Evaluates page titles, route slugs, collection types, and text content to dynamically determine the optimal Schema.org type (`BlogPosting`, `Service`, `HowTo`, `AboutPage`, `ContactPage`, `TechArticle`, `Article`, etc.).
+* **Manual Override Dropdown:** Allows authors to choose any schema type or lock in a custom choice.
+* **E-E-A-T Authority Profiles:** Support for author credentials (`Person`) and reviewer credentials (`reviewedBy`), including `jobTitle`, `worksFor`, and `sameAs` links.
 
 ---
 
