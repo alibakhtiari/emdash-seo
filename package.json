@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "emdash": {
-    "label": "EmDash SEO Suite",
+    "label": "WebABC SEO Suite",
     "seed": "seed/seed.json"
   },
   "workspaces": [
