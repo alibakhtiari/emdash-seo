@@ -71,6 +71,20 @@ export async function handleContentBeforeSave(
     }
   }
 
+  // Auto-resolve Reviewer E-E-A-T credentials
+  if (!content.data.seo.reviewedBy || !content.data.seo.reviewedBy.name) {
+    const rawReviewer = content.reviewed_by || content.data.reviewed_by;
+    if (typeof rawReviewer === 'string' && rawReviewer.trim()) {
+      content.data.seo.reviewedBy = {
+        name: rawReviewer.trim(),
+      };
+    } else if (typeof rawReviewer === 'object' && rawReviewer !== null && rawReviewer.name) {
+      content.data.seo.reviewedBy = {
+        ...rawReviewer,
+      };
+    }
+  }
+
   // Auto-infer Schema Type per page / collection
   const entryPath = `/${content.slug || content.data?.slug || ''}`;
   content.data.seo.schemaType = inferSchemaType(

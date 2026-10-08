@@ -25,6 +25,7 @@ interface Props {
 	publishedTime?: string | null;
 	modifiedTime?: string | null;
 	author?: string | null;
+	reviewedBy?: any;
 	/** Pass content reference for plugin page contributions on content pages */
 	content?: { collection: string; id: string; slug?: string | null };
 }
@@ -40,6 +41,7 @@ const {
 	publishedTime,
 	modifiedTime,
 	author,
+	reviewedBy,
 	content,
 } = Astro.props;
 const [settingsResult, menuResult] = await Promise.all([
@@ -98,6 +100,7 @@ const isLoggedIn = !!Astro.locals.user;
 			publishedTime={publishedTime ?? undefined}
 			modifiedTime={modifiedTime ?? undefined}
 			author={author ?? undefined}
+			reviewedBy={reviewedBy ?? undefined}
 		/>
 		<EmDashHead page={pageCtx} />
 		<script is:inline>

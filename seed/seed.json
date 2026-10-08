@@ -54,6 +54,26 @@
           "widget": "emdash-seo:focus-keyword"
         },
         {
+          "slug": "author",
+          "label": "Author / Specialist",
+          "type": "string"
+        },
+        {
+          "slug": "reviewed_by",
+          "label": "Reviewed By (EEAT Verification)",
+          "type": "string"
+        },
+        {
+          "slug": "schema_type",
+          "label": "Schema Type",
+          "type": "select",
+          "options": [
+            { "value": "Service", "label": "Service (Commercial Offering)" },
+            { "value": "LocalBusiness", "label": "Local Business Service" },
+            { "value": "WebPage", "label": "Standard WebPage" }
+          ]
+        },
+        {
           "slug": "service_type",
           "label": "Service Schema Type",
           "type": "string"
@@ -115,6 +135,16 @@
           ]
         },
         {
+          "slug": "author",
+          "label": "Author",
+          "type": "string"
+        },
+        {
+          "slug": "reviewed_by",
+          "label": "Reviewed By (EEAT Fact Check)",
+          "type": "string"
+        },
+        {
           "slug": "cornerstone",
           "label": "Cornerstone Content",
           "type": "boolean"
@@ -153,10 +183,38 @@
           "searchable": true
         },
         {
+          "slug": "excerpt",
+          "label": "Excerpt / Meta Description",
+          "type": "text"
+        },
+        {
           "slug": "focus_keyword",
           "label": "Focus Keyword",
           "type": "string",
           "widget": "emdash-seo:focus-keyword"
+        },
+        {
+          "slug": "author",
+          "label": "Author / Page Editor",
+          "type": "string"
+        },
+        {
+          "slug": "reviewed_by",
+          "label": "Reviewed By (EEAT Verification)",
+          "type": "string"
+        },
+        {
+          "slug": "schema_type",
+          "label": "Schema Type",
+          "type": "select",
+          "options": [
+            { "value": "WebPage", "label": "Standard WebPage" },
+            { "value": "AboutPage", "label": "About Us Page" },
+            { "value": "ContactPage", "label": "Contact Page" },
+            { "value": "FAQPage", "label": "FAQ Page" },
+            { "value": "ProfilePage", "label": "Author / Team Profile" },
+            { "value": "MedicalWebPage", "label": "Medical / Health Page" }
+          ]
         }
       ]
     }

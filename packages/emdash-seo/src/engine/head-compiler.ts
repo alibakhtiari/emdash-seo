@@ -98,7 +98,7 @@ function extractNormalizedMetadata(entry: any, options: SeoPluginOptions) {
     primaryCategory: rawSeo.primaryCategory,
     cornerstone: rawSeo.cornerstone ?? (data.cornerstone !== undefined ? Boolean(data.cornerstone) : undefined),
     author: rawSeo.author || (entry?.author ? { name: typeof entry.author === 'string' ? entry.author : entry.author.name } : options.defaultAuthor),
-    reviewedBy: rawSeo.reviewedBy,
+    reviewedBy: rawSeo.reviewedBy || (entry?.reviewed_by ? { name: typeof entry.reviewed_by === 'string' ? entry.reviewed_by : entry.reviewed_by.name } : (data.reviewed_by ? { name: typeof data.reviewed_by === 'string' ? data.reviewed_by : data.reviewed_by.name } : undefined)),
     speakableSelectors: rawSeo.speakableSelectors || options.defaultSpeakableSelectors,
     howToSteps: rawSeo.howToSteps,
     geoOptimization: rawSeo.geoOptimization,

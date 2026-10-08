@@ -59,6 +59,8 @@ const faqs = (page.data as any)?.seo?.faqs || [];
 	canonical={seo.canonical}
 	robots={seo.robots}
 	type={isService ? "website" : "website"}
+	author={(page.data as any)?.author || null}
+	reviewedBy={(page.data as any)?.reviewed_by ? { name: (page.data as any).reviewed_by } : undefined}
 	content={{ collection: collectionName, id: page.data.id, slug }}
 >
 	<div class="service-page-container">

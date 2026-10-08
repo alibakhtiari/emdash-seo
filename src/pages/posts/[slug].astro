@@ -112,6 +112,8 @@ const publishDate =
 	type="article"
 	publishedTime={post.data.publishedAt?.toISOString() ?? null}
 	modifiedTime={post.data.updatedAt.toISOString()}
+	author={(post.data as any)?.author || (bylines[0] as any)?.name || null}
+	reviewedBy={(post.data as any)?.reviewed_by ? { name: (post.data as any).reviewed_by } : undefined}
 	content={{ collection: "posts", id: post.data.id, slug }}
 >
 	<article class="article">

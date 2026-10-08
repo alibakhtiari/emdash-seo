@@ -36,6 +36,8 @@ const seo = getSeoMeta(page, {
 	description={seo.description}
 	canonical={seo.canonical}
 	robots={seo.robots}
+	author={(page.data as any)?.author || null}
+	reviewedBy={(page.data as any)?.reviewed_by ? { name: (page.data as any).reviewed_by } : undefined}
 	content={{ collection: "pages", id: page.data.id, slug }}
 >
 	<article class="page-article">
