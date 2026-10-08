@@ -93,11 +93,14 @@ export interface EntrySeoMetadata {
   noFollow: boolean;
   noArchive?: boolean;
   noSnippet?: boolean;
+  maxSnippet?: number | string;
+  noImageIndex?: boolean;
+  noTranslate?: boolean;
   maxImagePreview?: 'none' | 'standard' | 'large';
   ogTitle?: string;
   ogDescription?: string;
   ogImage?: string;
-  ogType?: 'website' | 'article' | 'service';
+  ogType?: 'website' | 'article' | 'service' | 'product';
   twitterCard?: 'summary' | 'summary_large_image';
   twitterTitle?: string;
   twitterDescription?: string;
@@ -166,6 +169,40 @@ export interface SeoPluginModules {
   fuzzyRedirects?: boolean;
 }
 
+export type SeoTemplateKey =
+  | 'post'
+  | 'page'
+  | 'product'
+  | 'category'
+  | 'tag'
+  | 'authorArchive'
+  | 'dateArchive'
+  | 'search'
+  | '404'
+  | 'paginated';
+
+export interface SeoSiteVerification {
+  google?: string;
+  bing?: string;
+  yandex?: string;
+  pinterest?: string;
+}
+
+export interface SeoArchiveNoindex {
+  author?: boolean;
+  date?: boolean;
+  category?: boolean;
+  tag?: boolean;
+  search?: boolean;
+  paginated?: boolean;
+}
+
+export interface SeoSitemapOptions {
+  includeImages?: boolean;
+  excludeCollections?: string[];
+  maxUrlsPerFile?: number;
+}
+
 export interface SeoPluginOptions {
   siteUrl: string;
   siteName: string;
@@ -173,6 +210,14 @@ export interface SeoPluginOptions {
   defaultSeparator?: string; // e.g. " | " or " — "
   defaultOgImage?: string;
   defaultDescription?: string;
+  titleTemplates?: Partial<Record<SeoTemplateKey, string>>;
+  descriptionTemplates?: Partial<Record<SeoTemplateKey, string>>;
+  archiveNoindex?: SeoArchiveNoindex;
+  twitterSite?: string;
+  twitterCreator?: string;
+  fbAppId?: string;
+  verification?: SeoSiteVerification;
+  sitemapOptions?: SeoSitemapOptions;
   llmsTxtDescription?: string;
   breadcrumbLabels?: Record<string, string>;
   breadcrumbRules?: Record<string, any>;
@@ -401,10 +446,25 @@ export interface PageMetadataEvent {
     kind?: 'content' | 'index' | 'archive' | 'custom';
     seo?: {
       metaTitle?: string;
+      metaDescription?: string;
       ogDescription?: string;
+      ogType?: 'website' | 'article' | 'service' | 'product';
       robots?: string;
       noIndex?: boolean;
       noFollow?: boolean;
+      noArchive?: boolean;
+      noSnippet?: boolean;
+      maxSnippet?: number | string;
+      noImageIndex?: boolean;
+      noTranslate?: boolean;
+      maxImagePreview?: 'none' | 'standard' | 'large';
+      author?: AuthorProfile | string;
+      reviewedBy?: AuthorProfile | string;
+      speakableSelectors?: string[];
+      howToSteps?: HowToStep[];
+      faqs?: FaqItem[];
+      breadcrumbs?: BreadcrumbItem[];
+      toc?: Array<{ id: string; text: string; level: 2 | 3 }>;
     };
     content?: {
       id: string;

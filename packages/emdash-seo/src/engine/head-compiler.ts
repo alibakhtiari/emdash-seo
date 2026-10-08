@@ -80,6 +80,9 @@ function extractNormalizedMetadata(entry: any, options: SeoPluginOptions) {
     noFollow: Boolean(rawSeo.noFollow),
     noArchive: rawSeo.noArchive,
     noSnippet: rawSeo.noSnippet,
+    maxSnippet: rawSeo.maxSnippet,
+    noImageIndex: rawSeo.noImageIndex,
+    noTranslate: rawSeo.noTranslate,
     maxImagePreview: rawSeo.maxImagePreview || 'large',
     metaTitle: rawSeo.metaTitle,
     metaDescription: rawSeo.metaDescription,
@@ -110,27 +113,25 @@ function extractNormalizedMetadata(entry: any, options: SeoPluginOptions) {
 
   const rawTitle = seo.metaTitle || data.title || entry?.title || siteName;
   let fullTitle = rawTitle;
+  const varCtx = {
+    title: data.title || entry?.title,
+    excerpt: data.excerpt || entry?.excerpt,
+    date: entry?.createdAt || data.createdAt,
+    category: data.category || entry?.category,
+    seoTitle: seo.metaTitle,
+    focusKeyword: focusKeywords[0],
+  };
 
   if (!seo.metaTitle && options.defaultTitleTemplate && (data.title || entry?.title)) {
     fullTitle = resolveSeoVariables(
       options.defaultTitleTemplate,
-      {
-        title: data.title || entry?.title,
-        excerpt: data.excerpt || entry?.excerpt,
-        date: entry?.createdAt || data.createdAt,
-        category: data.category || entry?.category,
-      },
+      varCtx,
       options
     );
   } else if (rawTitle.includes('%')) {
     fullTitle = resolveSeoVariables(
       rawTitle,
-      {
-        title: data.title || entry?.title,
-        excerpt: data.excerpt || entry?.excerpt,
-        date: entry?.createdAt || data.createdAt,
-        category: data.category || entry?.category,
-      },
+      varCtx,
       options
     );
   } else if (!rawTitle.includes(siteName)) {
@@ -138,7 +139,7 @@ function extractNormalizedMetadata(entry: any, options: SeoPluginOptions) {
     fullTitle = `${rawTitle}${sep}${siteName}`;
   }
 
-  const description = seo.metaDescription || data.excerpt || entry?.excerpt || options.defaultDescription || '';
+  const description = seo.metaDescription || seo.ogDescription || data.excerpt || entry?.excerpt || options.defaultDescription || '';
 
   let canonicalUrl = seo.canonicalUrl || entry?.canonicalUrl || data.canonicalUrl || entry?.url || data.url;
   if (!canonicalUrl) {
@@ -170,7 +171,7 @@ function extractNormalizedMetadata(entry: any, options: SeoPluginOptions) {
   const resolvedOgType = seo.ogType || (entry?.collection === 'blog' || data.collection === 'blog' || entry?.type === 'article' || data.type === 'article' ? 'article' : 'website');
   const ogType = resolvedOgType === 'service' ? 'website' : resolvedOgType;
 
-  const cleanSocialTitle = seo.ogTitle || cleanOgTitle(rawTitle, siteName, options.defaultSeparator);
+  const cleanSocialTitle = seo.ogTitle || cleanOgTitle(fullTitle, siteName, options.defaultSeparator);
   const ogDescription = seo.ogDescription || description;
 
   const twitterCard = seo.twitterCard || (finalImage ? 'summary_large_image' : 'summary');
@@ -241,6 +242,20 @@ export function compilePrecomputedHead(entry: any, options: SeoPluginOptions): s
     tags.push(`<meta name="description" content="${escapeHtml(meta.description)}" />`);
   }
 
+  // 2b. Site verification
+  if (options.verification?.google) {
+    tags.push(`<meta name="google-site-verification" content="${escapeHtml(options.verification.google)}" />`);
+  }
+  if (options.verification?.bing) {
+    tags.push(`<meta name="msvalidate.01" content="${escapeHtml(options.verification.bing)}" />`);
+  }
+  if (options.verification?.yandex) {
+    tags.push(`<meta name="yandex-verification" content="${escapeHtml(options.verification.yandex)}" />`);
+  }
+  if (options.verification?.pinterest) {
+    tags.push(`<meta name="p:domain_verify" content="${escapeHtml(options.verification.pinterest)}" />`);
+  }
+
   // 3. Canonical URL (omitted if noIndex is true)
   if (!meta.seo.noIndex && meta.canonicalUrl) {
     tags.push(`<link rel="canonical" href="${escapeHtml(meta.canonicalUrl)}" />`);
@@ -252,8 +267,12 @@ export function compilePrecomputedHead(entry: any, options: SeoPluginOptions): s
     noFollow: meta.seo.noFollow,
     noArchive: meta.seo.noArchive,
     noSnippet: meta.seo.noSnippet,
+    maxSnippet: meta.seo.maxSnippet,
+    noImageIndex: meta.seo.noImageIndex,
+    noTranslate: meta.seo.noTranslate,
     maxImagePreview: meta.seo.maxImagePreview || 'large',
     path: meta.pathname,
+    archiveNoindex: options.archiveNoindex,
   });
   if (robotsDirective) {
     tags.push(`<meta name="robots" content="${escapeHtml(robotsDirective)}" />`);
@@ -285,11 +304,20 @@ export function compilePrecomputedHead(entry: any, options: SeoPluginOptions): s
   tags.push(`<meta property="og:site_name" content="${escapeHtml(meta.siteName)}" />`);
   tags.push(`<meta property="og:type" content="${escapeHtml(meta.ogType)}" />`);
   tags.push(`<meta property="og:locale" content="${escapeHtml(meta.normalizedLocale)}" />`);
+  if (options.fbAppId) {
+    tags.push(`<meta property="fb:app_id" content="${escapeHtml(options.fbAppId)}" />`);
+  }
 
   if (meta.finalImage) {
     tags.push(`<meta property="og:image" content="${escapeHtml(meta.finalImage)}" />`);
     tags.push(`<meta property="og:image:width" content="1200" />`);
     tags.push(`<meta property="og:image:height" content="630" />`);
+    tags.push(`<meta property="og:image:alt" content="${escapeHtml(meta.cleanSocialTitle)}" />`);
+    if (meta.finalImage.startsWith('https://')) {
+      tags.push(`<meta property="og:image:secure_url" content="${escapeHtml(meta.finalImage)}" />`);
+    }
+    const imgType = meta.finalImage.endsWith('.png') ? 'image/png' : meta.finalImage.endsWith('.webp') ? 'image/webp' : meta.finalImage.endsWith('.gif') ? 'image/gif' : 'image/jpeg';
+    tags.push(`<meta property="og:image:type" content="${imgType}" />`);
   }
 
   if (meta.ogType === 'article') {
@@ -300,7 +328,14 @@ export function compilePrecomputedHead(entry: any, options: SeoPluginOptions): s
       tags.push(`<meta property="article:modified_time" content="${escapeHtml(meta.modifiedTime)}" />`);
     }
     if (meta.author) {
-      tags.push(`<meta property="article:author" content="${escapeHtml(meta.author)}" />`);
+      const authorName = typeof meta.author === 'string' ? meta.author : (meta.author as any)?.name;
+      if (authorName) tags.push(`<meta property="article:author" content="${escapeHtml(authorName)}" />`);
+    }
+    if (meta.category) {
+      tags.push(`<meta property="article:section" content="${escapeHtml(meta.category)}" />`);
+    }
+    for (const kw of (meta.taxonomy.keywords || []).slice(0, 10)) {
+      tags.push(`<meta property="article:tag" content="${escapeHtml(kw)}" />`);
     }
   }
 
@@ -312,6 +347,12 @@ export function compilePrecomputedHead(entry: any, options: SeoPluginOptions): s
   }
   if (meta.twitterImage) {
     tags.push(`<meta name="twitter:image" content="${escapeHtml(meta.twitterImage)}" />`);
+  }
+  if (options.twitterSite) {
+    tags.push(`<meta name="twitter:site" content="${escapeHtml(options.twitterSite)}" />`);
+  }
+  if (options.twitterCreator) {
+    tags.push(`<meta name="twitter:creator" content="${escapeHtml(options.twitterCreator)}" />`);
   }
 
   return tags.join('\n');

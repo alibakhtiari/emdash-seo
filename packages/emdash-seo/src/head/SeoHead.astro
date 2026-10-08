@@ -1,8 +1,8 @@
 ---
 import OpenGraph from './OpenGraph.astro';
 import SchemaGraph from './SchemaGraph.astro';
-import { DEFAULT_OPTIONS, DEFAULT_LOCAL_BUSINESS } from '../config.js';
-import type { EntrySeoMetadata, LocalBusinessInfo, AuthorProfile, HowToStep } from '../types.js';
+import { DEFAULT_OPTIONS, DEFAULT_LOCAL_BUSINESS, resolveSeoVariables } from '../config.js';
+import type { EntrySeoMetadata, LocalBusinessInfo, AuthorProfile, HowToStep, SeoSiteVerification, SeoArchiveNoindex } from '../types.js';
 import { generateAutoBreadcrumbs, type BreadcrumbItem } from '../engine/breadcrumbs.js';
 import { extractTableOfContents, type TocItem } from '../engine/toc-extractor.js';
 import { extractFaqsFromContent } from '../importers/rankmath-importer.js';
@@ -15,9 +15,13 @@ interface Props {
   description?: string;
   image?: string;
   canonicalUrl?: string;
-  type?: 'website' | 'article' | 'service';
+  type?: 'website' | 'article' | 'service' | 'product';
   siteUrl?: string;
   siteName?: string;
+  titleTemplate?: string;
+  separator?: string;
+  locale?: string;
+  localeAlternate?: string[];
   business?: LocalBusinessInfo;
   breadcrumbs?: BreadcrumbItem[];
   toc?: TocItem[];
@@ -31,6 +35,18 @@ interface Props {
   howToSteps?: HowToStep[];
   nlwebEndpoint?: string;
   alternateLinks?: AlternateLink[];
+  twitterSite?: string;
+  twitterCreator?: string;
+  fbAppId?: string;
+  verification?: SeoSiteVerification;
+  ogImageAlt?: string;
+  ogImageSecureUrl?: string;
+  ogImageType?: string;
+  articleTags?: string[];
+  articleSection?: string;
+  prevUrl?: string;
+  nextUrl?: string;
+  archiveNoindex?: SeoArchiveNoindex;
 }
 
 const {
@@ -42,6 +58,10 @@ const {
   type = 'website',
   siteUrl = DEFAULT_OPTIONS.siteUrl,
   siteName = DEFAULT_OPTIONS.siteName,
+  titleTemplate = DEFAULT_OPTIONS.defaultTitleTemplate,
+  separator = DEFAULT_OPTIONS.defaultSeparator,
+  locale = 'en_GB',
+  localeAlternate = [],
   business = DEFAULT_LOCAL_BUSINESS,
   breadcrumbs: propBreadcrumbs,
   toc: propToc,
@@ -55,6 +75,18 @@ const {
   howToSteps: propHowTo,
   nlwebEndpoint = DEFAULT_OPTIONS.nlwebEndpoint,
   alternateLinks = [],
+  twitterSite = DEFAULT_OPTIONS.twitterSite,
+  twitterCreator = DEFAULT_OPTIONS.twitterCreator,
+  fbAppId = DEFAULT_OPTIONS.fbAppId,
+  verification = DEFAULT_OPTIONS.verification,
+  ogImageAlt,
+  ogImageSecureUrl,
+  ogImageType,
+  articleTags: propArticleTags,
+  articleSection: propArticleSection,
+  prevUrl,
+  nextUrl,
+  archiveNoindex = DEFAULT_OPTIONS.archiveNoindex,
 } = Astro.props;
 
 // Fast-path: check if pre-computed head & schema cache exists (< 0.1ms TTFB on Cloudflare Workers)
@@ -71,6 +103,8 @@ let robotsDirective: string | null = null;
 let cleanSocialTitle = '';
 let finalImage: string | undefined = undefined;
 let category: string | undefined = undefined;
+let articleTags: string[] = [];
+let articleSection: string | undefined = undefined;
 let breadcrumbs: BreadcrumbItem[] = [];
 let toc: TocItem[] = [];
 const cleanSiteUrl = siteUrl.replace(/\/+$/, '');
@@ -84,33 +118,53 @@ let seo: EntrySeoMetadata = entry?.data?.seo || entry?.seo || {
 if (!hasPrecomputed) {
   is404 = currentPath === '/404' || currentPath.endsWith('/404') || currentPath.endsWith('/404/');
 
+  const dataTitle = entry?.data?.title || propTitle;
   const rawTitle = seo.metaTitle || propTitle || entry?.data?.title || siteName;
-  fullTitle = is404
-    ? `Page not found | ${siteName}`
-    : rawTitle.includes(siteName)
-      ? rawTitle
-      : `${rawTitle} | ${siteName}`;
+  const templateCtx = {
+    title: seo.metaTitle && !seo.metaTitle.includes('%') ? seo.metaTitle : (dataTitle || rawTitle),
+    excerpt: entry?.data?.excerpt || propDescription || '',
+    date: entry?.createdAt || entry?.data?.createdAt,
+    category: entry?.data?.category,
+    seoTitle: seo.metaTitle,
+    focusKeyword: seo.focusKeywords?.[0],
+  };
+  const templateOpts = { siteName, defaultSeparator: separator };
+  if (is404) {
+    fullTitle = `Page not found${separator}${siteName}`;
+  } else if (rawTitle.includes('%')) {
+    fullTitle = resolveSeoVariables(rawTitle, templateCtx, templateOpts);
+  } else if (rawTitle.includes(siteName)) {
+    fullTitle = rawTitle;
+  } else {
+    fullTitle = resolveSeoVariables(titleTemplate || '%title% %separator% %siteName%', { ...templateCtx, title: rawTitle }, templateOpts);
+  }
 
-  resolvedDescription = seo.metaDescription || propDescription || entry?.data?.excerpt || '';
+  resolvedDescription = seo.metaDescription || seo.ogDescription || propDescription || entry?.data?.excerpt || '';
 
   const computedCanonical = `${cleanSiteUrl}${currentPath.endsWith('/') ? currentPath : `${currentPath}/`}`;
   finalCanonical = seo.canonicalUrl || propCanonical || computedCanonical;
 
   finalImage = seo.ogImage || propImage || entry?.data?.featured_image || DEFAULT_OPTIONS.defaultOgImage;
 
-  cleanSocialTitle = seo.ogTitle || (is404 ? 'Page not found' : cleanOgTitle(rawTitle, siteName));
+  cleanSocialTitle = seo.ogTitle || (is404 ? 'Page not found' : cleanOgTitle(rawTitle, siteName, separator));
 
   robotsDirective = generateRobotsDirective({
     noIndex: seo.noIndex,
     noFollow: seo.noFollow,
     noArchive: seo.noArchive,
     noSnippet: seo.noSnippet,
+    maxSnippet: seo.maxSnippet,
+    noImageIndex: seo.noImageIndex,
+    noTranslate: seo.noTranslate,
     maxImagePreview: seo.maxImagePreview || 'large',
     path: currentPath,
+    archiveNoindex,
   });
 
   const taxonomy = extractTaxonomyTerms(entry?.data);
   category = propCategory || taxonomy.articleSection || entry?.data?.category;
+  articleTags = propArticleTags || taxonomy.keywords || [];
+  articleSection = propArticleSection || category;
 
   breadcrumbs =
     propBreadcrumbs && propBreadcrumbs.length > 0
@@ -138,8 +192,14 @@ if (!hasPrecomputed) {
   <>
     <title>{fullTitle}</title>
     {resolvedDescription && !is404 && <meta name="description" content={resolvedDescription} />}
+    {verification?.google && <meta name="google-site-verification" content={verification.google} />}
+    {verification?.bing && <meta name="msvalidate.01" content={verification.bing} />}
+    {verification?.yandex && <meta name="yandex-verification" content={verification.yandex} />}
+    {verification?.pinterest && <meta name="p:domain_verify" content={verification.pinterest} />}
     {!is404 && !seo.noIndex && <link rel="canonical" href={finalCanonical} />}
     {robotsDirective && <meta name="robots" content={robotsDirective} />}
+    {!is404 && prevUrl && <link rel="prev" href={prevUrl} />}
+    {!is404 && nextUrl && <link rel="next" href={nextUrl} />}
 
     {!is404 && alternateLinks && alternateLinks.map((alt) => (
       <link rel="alternate" hreflang={alt.hreflang} href={alt.href} />
@@ -152,9 +212,21 @@ if (!hasPrecomputed) {
       description={is404 ? '' : (seo.ogDescription || resolvedDescription)}
       url={finalCanonical}
       image={is404 ? undefined : finalImage}
+      imageAlt={ogImageAlt}
+      imageSecureUrl={ogImageSecureUrl}
+      imageType={ogImageType}
       type={seo.ogType || type}
       siteName={siteName}
+      locale={locale}
+      localeAlternate={localeAlternate}
       twitterCard={seo.twitterCard || 'summary_large_image'}
+      twitterSite={twitterSite}
+      twitterCreator={twitterCreator}
+      fbAppId={fbAppId}
+      articleTags={articleTags}
+      articleSection={articleSection}
+      publishedTime={publishedTime || entry?.createdAt}
+      modifiedTime={modifiedTime || entry?.updatedAt}
     />
 
     {!is404 && (
@@ -167,7 +239,7 @@ if (!hasPrecomputed) {
         imageUrl={finalImage}
         datePublished={publishedTime || entry?.createdAt}
         dateModified={modifiedTime || entry?.updatedAt}
-        authorName={typeof propAuthor === 'string' ? propAuthor : seo.author?.name || propAuthor?.name}
+        authorName={typeof propAuthor === 'string' ? propAuthor : seo.author?.name || (propAuthor as AuthorProfile)?.name}
         author={typeof propAuthor === 'object' ? propAuthor : seo.author}
         reviewedBy={propReviewedBy || seo.reviewedBy}
         speakableSelectors={propSpeakable || seo.speakableSelectors}

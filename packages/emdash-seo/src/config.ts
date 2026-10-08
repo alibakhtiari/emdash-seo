@@ -65,6 +65,13 @@ export interface ResolveVariablesContext {
   excerpt?: string;
   date?: string;
   category?: string;
+  seoTitle?: string;
+  focusKeyword?: string;
+  tag?: string;
+  searchQuery?: string;
+  page?: string | number;
+  postTypePlural?: string;
+  parentTitle?: string;
   customFields?: Record<string, any>;
 }
 
@@ -82,7 +89,22 @@ export function resolveSeoVariables(
   const separator = opts.defaultSeparator || ' | ';
   const siteName = opts.siteName || 'EmDash CMS Site';
 
+  const now = new Date();
+  const currentDate = now.toISOString().slice(0, 10);
+  const currentYear = String(now.getUTCFullYear());
+  const currentMonth = now.toLocaleString('en-GB', { month: 'long', timeZone: 'UTC' });
+
   let result = template
+    .replace(/%seo_title%/gi, ctx.seoTitle || ctx.title || '')
+    .replace(/%focus_?kw%/gi, ctx.focusKeyword || '')
+    .replace(/%currentdate%/gi, currentDate)
+    .replace(/%currentmonth%/gi, currentMonth)
+    .replace(/%currentyear%/gi, currentYear)
+    .replace(/%tag%/gi, ctx.tag || '')
+    .replace(/%search%/gi, ctx.searchQuery || '')
+    .replace(/%page%/gi, ctx.page !== undefined && ctx.page !== null ? String(ctx.page) : '')
+    .replace(/%pt_plural%/gi, ctx.postTypePlural || '')
+    .replace(/%parent_title%/gi, ctx.parentTitle || '')
     .replace(/%title%/gi, ctx.title || '')
     .replace(/%separator%/gi, separator)
     .replace(/%sep%/gi, separator)

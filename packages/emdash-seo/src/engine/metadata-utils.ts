@@ -5,7 +5,7 @@
 
 const FIX_LOCALES: Record<string, string> = {
   ca: 'ca_ES',
-  en: 'en_US',
+  en: 'en_GB',
   el: 'el_GR',
   et: 'et_EE',
   ja: 'ja_JP',
@@ -51,7 +51,7 @@ const VALID_LOCALES = new Set([
  * E.g. "en" -> "en_US", "en-gb" -> "en_GB", "fr-ca" -> "fr_CA".
  */
 export function normalizeOgLocale(locale?: string): string {
-  if (!locale) return 'en_US';
+  if (!locale) return 'en_GB';
 
   const clean = locale.trim().toLowerCase();
   if (FIX_LOCALES[clean]) return FIX_LOCALES[clean];
@@ -73,7 +73,7 @@ export function normalizeOgLocale(locale?: string): string {
   const lang = clean.slice(0, 2);
   if (FIX_LOCALES[lang]) return FIX_LOCALES[lang];
 
-  return 'en_US';
+  return 'en_GB';
 }
 
 /**
@@ -114,15 +114,27 @@ export interface RobotsOptions {
   noFollow?: boolean;
   noArchive?: boolean;
   noSnippet?: boolean;
+  maxSnippet?: number | string;
+  noImageIndex?: boolean;
+  noTranslate?: boolean;
   maxImagePreview?: 'none' | 'standard' | 'large';
   path?: string;
+  archiveNoindex?: {
+    author?: boolean;
+    date?: boolean;
+    category?: boolean;
+    tag?: boolean;
+    search?: boolean;
+    paginated?: boolean;
+  };
 }
 
 /**
  * Generate standard compliant robots directive.
  * - Suppressed (returns null) on 404 pages (best practice)
  * - Automatically applies noindex on search pages
- * - Includes max-snippet and preview directives
+ * - Honors per-archive noindex toggles via archiveNoindex
+ * - Includes max-snippet, noimageindex, notranslate passthrough
  */
 export function generateRobotsDirective(options: RobotsOptions): string | null {
   const {
@@ -130,8 +142,12 @@ export function generateRobotsDirective(options: RobotsOptions): string | null {
     noFollow = false,
     noArchive = false,
     noSnippet = false,
+    maxSnippet,
+    noImageIndex = false,
+    noTranslate = false,
     maxImagePreview = 'large',
     path = '',
+    archiveNoindex,
   } = options;
 
   // 404 pages should omit robots directives
@@ -139,9 +155,22 @@ export function generateRobotsDirective(options: RobotsOptions): string | null {
     return null;
   }
 
-  // Search pages should not be indexed
-  const isSearch = path === '/search' || path.startsWith('/search/');
-  const shouldNoIndex = noIndex || isSearch;
+  const isSearch = path === '/search' || path.startsWith('/search/') || path.startsWith('/search?');
+  const isAuthor = path.startsWith('/author/') || path.includes('/author/');
+  const isDate = /\/\d{4}\//.test(path) || path.includes('/date/');
+  const isCategory = path.startsWith('/category/') || path.startsWith('/categories/');
+  const isTag = path.startsWith('/tag/') || path.startsWith('/tags/');
+  const isPaginated = /\/page\/\d+/.test(path) || /[?&]paged=\d+/.test(path);
+
+  const archiveHit =
+    (isAuthor && archiveNoindex?.author) ||
+    (isDate && archiveNoindex?.date) ||
+    (isCategory && archiveNoindex?.category) ||
+    (isTag && archiveNoindex?.tag) ||
+    (isPaginated && archiveNoindex?.paginated);
+
+  const searchNoindex = archiveNoindex?.search === false ? false : isSearch;
+  const shouldNoIndex = noIndex || searchNoindex || Boolean(archiveHit);
 
   const directives: string[] = [];
 
@@ -156,11 +185,17 @@ export function generateRobotsDirective(options: RobotsOptions): string | null {
   if (noArchive) directives.push('noarchive');
   if (noSnippet) {
     directives.push('nosnippet');
+  } else if (maxSnippet !== undefined) {
+    directives.push(`max-snippet:${maxSnippet}`);
+    directives.push(`max-image-preview:${maxImagePreview}`);
+    directives.push('max-video-preview:-1');
   } else {
     directives.push('max-snippet:-1');
     directives.push(`max-image-preview:${maxImagePreview}`);
     directives.push('max-video-preview:-1');
   }
+  if (noImageIndex) directives.push('noimageindex');
+  if (noTranslate) directives.push('notranslate');
 
   return directives.join(', ');
 }
@@ -185,14 +220,21 @@ export function extractTaxonomyTerms(entryData: any): ExtractedTaxonomy {
     return result;
   }
 
-  // Extract all tag / keyword names
-  const allTerms = Object.values(termsMap).flat();
-  result.keywords = allTerms
+  // Find category key for articleSection
+  const categoryKey = Object.keys(termsMap).find((k) => /^categor/i.test(k));
+
+  // Keywords come from tags only; category terms are excluded to keep
+  // articleSection distinct from keywords.
+  const tagKeys = Object.keys(termsMap).filter((k) => /^(post_?tag|tags?)/i.test(k));
+  const keywordTerms = tagKeys.length > 0
+    ? tagKeys.flatMap((k) => termsMap[k])
+    : Object.entries(termsMap)
+        .filter(([k]) => k !== categoryKey)
+        .flatMap(([, v]) => v);
+  result.keywords = keywordTerms
     .map((t) => t?.name)
     .filter((name): name is string => typeof name === 'string' && name.length > 0);
 
-  // Find category key for articleSection
-  const categoryKey = Object.keys(termsMap).find((k) => /^categor/i.test(k));
   if (categoryKey && termsMap[categoryKey]?.[0]?.name) {
     result.articleSection = termsMap[categoryKey][0].name;
   } else if (entryData.category) {
