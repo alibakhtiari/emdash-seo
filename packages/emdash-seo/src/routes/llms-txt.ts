@@ -169,11 +169,33 @@ export async function generateLlmsTxtBody(ctx: any, options: SeoPluginOptions): 
 }
 
 export function renderLlmsTxt(_ctx: any, options: SeoPluginOptions): Response {
+  return new Response(buildLlmsTxtOverview(options), {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'public, max-age=86400',
+    },
+  });
+}
+
+/** Dynamic variant: uses published content when ctx.content is available. */
+export async function renderLlmsTxtAsync(ctx: any, options: SeoPluginOptions): Promise<Response> {
+  const body = ctx?.content?.list ? await generateLlmsTxtBody(ctx, options) : buildLlmsTxtOverview(options);
+  return new Response(body, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'public, max-age=86400',
+    },
+  });
+}
+
+function buildLlmsTxtOverview(options: SeoPluginOptions): string {
   const siteUrl = options.siteUrl.replace(/\/+$/, '');
   const siteName = options.siteName || 'EmDash Site';
   const business = options.business;
 
-  const content = `# ${siteName}
+  return `# ${siteName}
 > LLM knowledge index and content summary for ${siteName}.
 
 ## Overview
@@ -195,7 +217,10 @@ ${business?.address ? `- Address: ${business.address.streetAddress}, ${business.
 - XML Sitemap: ${siteUrl}/sitemap.xml
 - Full Knowledge Base: ${siteUrl}/llms-full.txt
 `;
-  return new Response(content, {
+}
+
+export function renderLlmsFullTxt(_ctx: any, options: SeoPluginOptions): Response {
+  return new Response(buildLlmsFullOverview(options), {
     status: 200,
     headers: {
       'Content-Type': 'text/plain; charset=utf-8',
@@ -204,12 +229,80 @@ ${business?.address ? `- Address: ${business.address.streetAddress}, ${business.
   });
 }
 
-export function renderLlmsFullTxt(_ctx: any, options: SeoPluginOptions): Response {
+/** Dynamic variant: injects per-entry full content (length-capped) when available. */
+export async function renderLlmsFullTxtAsync(ctx: any, options: SeoPluginOptions): Promise<Response> {
+  const body = ctx?.content?.list ? await generateLlmsFullBody(ctx, options) : buildLlmsFullOverview(options);
+  return new Response(body, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'public, max-age=86400',
+    },
+  });
+}
+
+/**
+ * Full knowledge base with per-entry content. Caps keep edge CPU safe:
+ * ENTRY_CHARS per entry, MAX_ENTRIES entries total.
+ */
+export const LLMS_FULL_ENTRY_CHARS = 1500;
+export const LLMS_FULL_MAX_ENTRIES = 100;
+
+export async function generateLlmsFullBody(ctx: any, options: SeoPluginOptions): Promise<string> {
+  const parts: string[] = [buildLlmsFullOverview(options)];
+  const siteUrl = options.siteUrl.replace(/\/+$/, '');
+  let count = 0;
+
+  try {
+    const collections = [
+      { slug: 'services', label: 'Services', urlPattern: '/services/{slug}' },
+      { slug: 'posts', label: 'Articles', urlPattern: '/posts/{slug}' },
+      { slug: 'pages', label: 'Pages', urlPattern: '/{slug}' },
+    ];
+    for (const col of collections) {
+      if (count >= LLMS_FULL_MAX_ENTRIES) break;
+      let cursor: string | undefined;
+      const lines: string[] = [];
+      do {
+        const page = await ctx.content.list(col.slug, {
+          limit: 50,
+          cursor,
+          where: { status: 'published' },
+        });
+        if (!page || !page.items) break;
+        for (const item of page.items) {
+          if (count >= LLMS_FULL_MAX_ENTRIES || !item.slug) continue;
+          const data = (item.data || {}) as Record<string, unknown>;
+          if ((data.seo as any)?.noIndex === true) continue;
+          const title =
+            (typeof data.title === 'string' && data.title) ||
+            (typeof data.name === 'string' && data.name) ||
+            item.slug;
+          const raw =
+            (typeof data.content === 'string' && data.content) ||
+            (typeof data.excerpt === 'string' && data.excerpt) ||
+            (typeof data.description === 'string' && data.description) ||
+            '';
+          const body = raw.length > LLMS_FULL_ENTRY_CHARS ? `${raw.slice(0, LLMS_FULL_ENTRY_CHARS)}…` : raw;
+          lines.push(`### [${title}](${siteUrl}${col.urlPattern.replace('{slug}', item.slug)})\n\n${body}\n`);
+          count++;
+        }
+        cursor = page.cursor;
+      } while (cursor && count < LLMS_FULL_MAX_ENTRIES);
+      if (lines.length > 0) parts.push(`## ${col.label}\n\n${lines.join('\n')}`);
+    }
+  } catch {
+    // Fall through with overview-only body
+  }
+  return parts.join('\n');
+}
+
+function buildLlmsFullOverview(options: SeoPluginOptions): string {
   const siteUrl = options.siteUrl.replace(/\/+$/, '');
   const siteName = options.siteName || 'EmDash Site';
   const business = options.business;
 
-  const content = `# ${siteName} — Full LLM Knowledge Base & Documentation
+  return `# ${siteName} — Full LLM Knowledge Base & Documentation
 > Comprehensive knowledge repository and contextual documentation for ${siteName}.
 
 ## Organization Entity
@@ -233,12 +326,4 @@ ${business?.priceRange ? `- Pricing Range: ${business.priceRange}` : ''}
 - Schemas: Connected JSON-LD @graph (WebSite, LocalBusiness, WebPage, BreadcrumbList, ItemList, FAQPage)
 - Equity Preservation: 1:1 path preservation and edge redirect matching
 `;
-
-  return new Response(content, {
-    status: 200,
-    headers: {
-      'Content-Type': 'text/plain; charset=utf-8',
-      'Cache-Control': 'public, max-age=86400',
-    },
-  });
 }

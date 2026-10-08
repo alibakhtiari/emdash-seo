@@ -45,14 +45,19 @@ export function normalizeBcp47(code: string): string {
 
 /**
  * Build alternate links for a set of translated pages.
- * Includes each localized URL plus an automatic x-default pointing to the defaultLocale page.
+ * Always emits a self-referential tag (even for a single locale) plus an
+ * automatic x-default pointing to the defaultLocale page (or first entry).
+ *
+ * og:locale:alternate coupling: page-head renderers emit `og:locale` for the
+ * current locale and derive `og:locale:alternate` from these same alternates —
+ * do NOT duplicate OG logic here, this module only returns link data.
  */
 export function buildAlternateLinks(
   entries: HreflangEntry[],
   defaultLocale = 'en'
 ): AlternateLink[] {
-  if (!entries || entries.length < 2) {
-    return []; // No alternates needed for single-locale pages
+  if (!entries || entries.length < 1) {
+    return [];
   }
 
   const seenLocales = new Set<string>();

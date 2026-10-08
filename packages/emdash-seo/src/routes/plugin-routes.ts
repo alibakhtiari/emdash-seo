@@ -1,7 +1,7 @@
 import type { SeoPluginOptions } from '../types.js';
-import { renderSitemap } from './sitemap.js';
-import { renderRobots } from './robots.js';
-import { renderLlmsTxt, renderLlmsFullTxt, generateLlmsTxtBody } from './llms-txt.js';
+import { renderSitemap, renderSitemapIndex, renderSitemapCollection } from './sitemap.js';
+import { renderRobotsAsync } from './robots.js';
+import { renderLlmsTxtAsync, renderLlmsFullTxtAsync, generateLlmsTxtBody } from './llms-txt.js';
 import { renderSchemaMap, listPublishedSchemaUrls } from './schema-map.js';
 import { handleFuzzyRedirects } from './api-fuzzy-redirects.js';
 import { handleRunAudit, handleGetAudit } from './api-audit.js';
@@ -50,15 +50,21 @@ export function createPluginRoutes(options: SeoPluginOptions): Record<string, an
   if (modSitemaps) {
     registerRoute('sitemap.xml', async (ctx: any) => renderSitemap(ctx, options), { public: true });
     registerRoute('sitemap_index.xml', async (ctx: any) => renderSitemap(ctx, options), { public: true });
+    registerRoute('sitemap-index.xml', async (ctx: any) => renderSitemapIndex(ctx, options), { public: true });
+    for (const col of ['services', 'posts', 'pages']) {
+      registerRoute(`sitemap-${col}.xml`, async (ctx: any) => renderSitemapCollection(ctx, options, col), {
+        public: true,
+      });
+    }
   }
 
   if (modRobots) {
-    registerRoute('robots.txt', async (ctx: any) => renderRobots(ctx, options), { public: true });
+    registerRoute('robots.txt', async (ctx: any) => renderRobotsAsync(ctx, options), { public: true });
   }
 
   if (modLlmsTxt) {
-    registerRoute('llms.txt', async (ctx: any) => renderLlmsTxt(ctx, options), { public: true });
-    registerRoute('llms-full.txt', async (ctx: any) => renderLlmsFullTxt(ctx, options), { public: true });
+    registerRoute('llms.txt', async (ctx: any) => renderLlmsTxtAsync(ctx, options), { public: true });
+    registerRoute('llms-full.txt', async (ctx: any) => renderLlmsFullTxtAsync(ctx, options), { public: true });
     registerRoute('llms/txt', async (ctx: any) => {
       const body = await generateLlmsTxtBody(ctx, options);
       return { enabled: true, body };
