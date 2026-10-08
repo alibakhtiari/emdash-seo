@@ -2,7 +2,7 @@
 node_modules/
 dist/
 .astro/
-.emdash/migrations.json
+.emdash/
 .wrangler/
 data.db*
 *.db
