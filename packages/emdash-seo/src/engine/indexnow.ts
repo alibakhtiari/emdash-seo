@@ -47,6 +47,37 @@ export function urlMapKey(collection: string, id: string): string {
 }
 
 /**
+ * Single disabled-by-default flag honoring both the modular and legacy option.
+ */
+export function isIndexNowEnabled(options: SeoPluginOptions): boolean {
+  return options.modules?.indexNow ?? options.enableIndexNow ?? false;
+}
+
+export interface IndexNowLogEntry {
+  at: string;
+  urls: string[];
+  ok: boolean;
+  status: number;
+  message?: string;
+}
+
+const indexNowLog: IndexNowLogEntry[] = [];
+
+export function recordIndexNowSubmission(entry: IndexNowLogEntry): IndexNowLogEntry[] {
+  indexNowLog.unshift(entry);
+  if (indexNowLog.length > 10) indexNowLog.length = 10;
+  return [...indexNowLog];
+}
+
+export function getIndexNowLog(): IndexNowLogEntry[] {
+  return [...indexNowLog];
+}
+
+export function clearIndexNowLog(): void {
+  indexNowLog.length = 0;
+}
+
+/**
  * Retrieve the active IndexNow key or lazily generate and persist one in KV.
  */
 export async function getOrCreateIndexNowKey(
@@ -120,43 +151,69 @@ export async function submitToIndexNow(params: {
     const status = res.status;
     // IndexNow specs: 200 = OK, 202 = Accepted
     const ok = status === 200 || status === 202;
-    return {
+    const result: IndexNowSubmissionResult = {
       ok,
       status,
       message: ok ? 'Submitted successfully' : `HTTP error: ${status}`,
       urls,
     };
+    recordIndexNowSubmission({ at: new Date().toISOString(), urls, ok, status, message: result.message });
+    return result;
   } catch (error: any) {
-    return {
+    const result: IndexNowSubmissionResult = {
       ok: false,
       status: 0,
       message: error?.message || 'Network error during IndexNow submission',
       urls,
     };
+    recordIndexNowSubmission({ at: new Date().toISOString(), urls, ok: false, status: 0, message: result.message });
+    return result;
   }
 }
 
 /**
  * Build canonical URL for a content item given siteUrl and item slug.
+ * Honors collection urlPattern and Astro i18n locale-prefix rules.
+ * Mirrors engine/urls.ts buildPageUrl inline (no import cycle).
  */
 export function buildContentUrl(
   siteUrl: string,
   slug: string,
   collection?: string,
-  urlPattern?: string
+  urlPattern?: string,
+  locale?: string,
+  i18n?: { locales: string[]; defaultLocale: string; prefixDefaultLocale?: boolean }
 ): string {
   const origin = siteUrl.replace(/\/+$/, '');
+  const cleanSlug = slug.replace(/^\/+|\/+$/g, '');
   let path: string;
 
-  if (urlPattern && urlPattern.includes('{slug}')) {
-    path = urlPattern.replace('{slug}', slug);
+  const pattern =
+    urlPattern || (collection && collection !== 'pages' ? `/${collection}/{slug}` : '/{slug}');
+  if (pattern.includes('{slug}')) {
+    path = pattern.replace('{slug}', cleanSlug);
   } else if (collection && collection !== 'pages') {
-    path = `/${collection}/${slug}/`;
+    path = `/${collection}/${cleanSlug}/`;
   } else {
-    path = `/${slug}/`;
+    path = `/${cleanSlug}/`;
   }
 
-  path = path.replace(/\/+/g, '/');
+  // Reject unsubstituted placeholders
+  if (/\{[^}]+\}/.test(path)) {
+    path = `/${cleanSlug}/`;
+  }
+
+  // Astro i18n locale prefixing
+  if (i18n && locale) {
+    const shouldPrefix = locale !== i18n.defaultLocale || i18n.prefixDefaultLocale === true;
+    if (shouldPrefix) {
+      if (!path.startsWith('/')) path = `/${path}`;
+      path = `/${locale}${path}`;
+    }
+  }
+
+  if (!path.startsWith('/')) path = `/${path}`;
+  path = path.toLowerCase().replace(/\/+/g, '/');
   if (!path.endsWith('/')) path += '/';
   return `${origin}${path}`;
 }
@@ -170,7 +227,7 @@ export async function handleIndexNowPublished(
   ctx: any,
   options: SeoPluginOptions
 ): Promise<void> {
-  if (!options.enableIndexNow) return;
+  if (!isIndexNowEnabled(options)) return;
 
   const content = event?.content || event;
   const collection = event?.collection || content?.collection || 'posts';
@@ -237,7 +294,7 @@ export async function handleIndexNowTransition(
   ctx: any,
   options: SeoPluginOptions
 ): Promise<void> {
-  if (!options.enableIndexNow) return;
+  if (!isIndexNowEnabled(options)) return;
 
   const content = event?.content || event;
   const collection = event?.collection || content?.collection || 'posts';
@@ -265,7 +322,7 @@ export async function handleIndexNowDelete(
   ctx: any,
   options: SeoPluginOptions
 ): Promise<void> {
-  if (!options.enableIndexNow) return;
+  if (!isIndexNowEnabled(options)) return;
   if (event?.permanent === false) return; // Soft trash, not permanent deletion
 
   const collection = event?.collection || 'posts';
@@ -300,4 +357,18 @@ export async function handleIndexNowDelete(
  */
 export function getIndexNowKeyFileContent(key: string): string {
   return `${key.trim()}\n`;
+}
+
+/**
+ * Public route helper serving the IndexNow key file as text/plain.
+ * Mount at /<key>.txt so search engines can verify ownership.
+ */
+export function renderIndexNowKeyFile(key: string): Response {
+  return new Response(getIndexNowKeyFileContent(key), {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'public, max-age=86400',
+    },
+  });
 }

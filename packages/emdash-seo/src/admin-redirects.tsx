@@ -84,6 +84,187 @@ async function createRedirect(source: string, destination: string): Promise<void
   }
 }
 
+const V1_REDIRECTS = '/_emdash/api/seo/v1/redirects';
+
+interface RedirectRow {
+  id?: string;
+  pattern?: string;
+  from?: string;
+  destination?: string;
+  to?: string;
+  comparison?: string;
+  matchType?: string;
+  statusCode?: number;
+  status?: string;
+}
+
+async function fetchRedirectRules(): Promise<RedirectRow[]> {
+  const res = await baseFetch(`${V1_REDIRECTS}?page=1&limit=100`, { method: 'GET' });
+  const data = await parseApiResponse<{ items: RedirectRow[] }>(res);
+  return data.items ?? [];
+}
+
+async function createRedirectRule(input: { pattern: string; destination: string; statusCode: number; comparison: string }): Promise<void> {
+  const res = await baseFetch(V1_REDIRECTS, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new Error(`Create failed (${res.status}): ${await res.text()}`);
+}
+
+async function updateRedirectRule(id: string, patch: Partial<RedirectRow>): Promise<void> {
+  const res = await baseFetch(V1_REDIRECTS, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, ...patch }),
+  });
+  if (!res.ok) throw new Error(`Update failed (${res.status}): ${await res.text()}`);
+}
+
+async function deleteRedirectRule(id: string): Promise<void> {
+  const res = await baseFetch(`${V1_REDIRECTS}?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error(`Delete failed (${res.status}): ${await res.text()}`);
+}
+
+export function RedirectsAdminPage() {
+  const [rules, setRules] = React.useState<RedirectRow[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+  const [pattern, setPattern] = React.useState('');
+  const [destination, setDestination] = React.useState('');
+  const [isRegex, setIsRegex] = React.useState(false);
+  const [editing, setEditing] = React.useState<Record<string, string>>({});
+
+  const load = React.useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      setRules(await fetchRedirectRules());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    void load();
+  }, [load]);
+
+  const handleCreate = async () => {
+    if (!pattern.trim() || !destination.trim()) return;
+    setError(null);
+    try {
+      await createRedirectRule({
+        pattern: pattern.trim(),
+        destination: destination.trim(),
+        statusCode: 301,
+        comparison: isRegex ? 'regex' : 'exact',
+      });
+      setPattern('');
+      setDestination('');
+      setIsRegex(false);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const handleSave = async (row: RedirectRow) => {
+    if (!row.id) return;
+    setError(null);
+    try {
+      const patch: Partial<RedirectRow> = {};
+      if (editing[row.id] !== undefined) patch.destination = editing[row.id];
+      await updateRedirectRule(row.id, patch);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const handleDelete = async (row: RedirectRow) => {
+    if (!row.id) return;
+    setError(null);
+    try {
+      await deleteRedirectRule(row.id);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  return (
+    <div style={{ maxWidth: 820, padding: '1.5rem 0', color: 'var(--text-color-kumo-default, #ededed)' }}>
+      <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--text-color-kumo-strong, #ffffff)' }}>
+        Redirects
+      </h2>
+      {error && (
+        <div style={{ padding: '0.75rem', background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', borderRadius: 6, marginBottom: '1rem', fontSize: '0.875rem' }}>
+          {error}
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: 8, marginBottom: '1rem', flexWrap: 'wrap' }}>
+        <input type="text" value={pattern} onChange={(e) => setPattern(e.target.value)} placeholder="/old-path or ^/old-(.*)" style={{ ...inputStyle, flex: 2, minWidth: 180 }} />
+        <input type="text" value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="/new-path or /new-$1" style={{ ...inputStyle, flex: 2, minWidth: 180 }} />
+        <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.8125rem' }}>
+          <input type="checkbox" checked={isRegex} onChange={(e) => setIsRegex(e.target.checked)} /> regex
+        </label>
+        <button onClick={() => void handleCreate()} style={primaryButtonStyle}>Add 301</button>
+      </div>
+      {loading ? (
+        <div style={{ fontSize: '0.875rem', color: 'var(--text-color-kumo-subtle, #a0a0a0)' }}>Loading…</div>
+      ) : rules.length === 0 ? (
+        <div style={{ fontSize: '0.875rem', color: 'var(--text-color-kumo-subtle, #a0a0a0)' }}>No redirects yet.</div>
+      ) : (
+        <table style={{ width: '100%', fontSize: '0.8125rem', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ textAlign: 'left', color: 'var(--text-color-kumo-subtle, #a0a0a0)' }}>
+              <th>Pattern</th>
+              <th>Destination</th>
+              <th>Status</th>
+              <th>Match</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {rules.map((row) => {
+              const pat = row.pattern || row.from || '';
+              const dest = row.destination || row.to || '';
+              const match = row.comparison || row.matchType || 'exact';
+              return (
+                <tr key={row.id || pat} style={{ borderTop: '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.1))' }}>
+                  <td><span style={codeStyle}>{pat}</span></td>
+                  <td>
+                    <input
+                      type="text"
+                      value={editing[row.id || ''] ?? dest}
+                      onChange={(e) => row.id && setEditing((p) => ({ ...p, [row.id as string]: e.target.value }))}
+                      style={{ ...inputStyle, minWidth: 160 }}
+                    />
+                  </td>
+                  <td>{row.statusCode || 301} · {row.status || 'active'}</td>
+                  <td>{match === 'regex' ? 'regex' : match}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    <button onClick={() => void handleSave(row)} style={{ ...primaryButtonStyle, marginRight: 6 }}>Save</button>
+                    <button
+                      onClick={() => void handleDelete(row)}
+                      style={{ padding: '0.375rem 0.75rem', borderRadius: 6, background: 'transparent', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.4)', cursor: 'pointer', fontSize: '0.8125rem' }}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
 function urlToPath(url: string): string {
   try {
     return new URL(url).pathname;
