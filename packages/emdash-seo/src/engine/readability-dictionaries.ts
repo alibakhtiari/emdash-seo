@@ -45,7 +45,8 @@ export const IRREGULAR_PAST_PARTICIPLES: ReadonlySet<string> = new Set([
 export const NON_PARTICIPLES_ENDING_IN_ED: ReadonlySet<string> = new Set([
   'red', 'bed', 'sled', 'shed', 'speed', 'bleed', 'feed', 'need', 'reed',
   'seed', 'weed', 'breed', 'steed', 'hundred', 'naked', 'wicked', 'crooked',
-  'sacred', 'beloved',
+  'sacred', 'beloved', 'deed', 'creed', 'greed', 'tweed', 'thread', 'shred',
+  'dread', 'overhead', 'thoroughbred', 'flowerbed',
 ]);
 
 /**
@@ -175,4 +176,25 @@ export const COMPLEX_WORD_ALTERNATIVES: Record<string, string> = {
   ubiquitous: 'everywhere',
   deteriorate: 'worsen',
   deteriorated: 'worsened',
+  prior: 'before',
+  acquire: 'get',
+  inquire: 'ask',
+  require: 'need',
+  requires: 'needs',
+  purchase: 'buy',
+  obtain: 'get',
+  retain: 'keep',
+  maintain: 'keep',
+  indicate: 'show',
+  initiate: 'start',
+  leverage: 'use',
+  optimize: 'improve',
+  maximize: 'increase',
+  minimize: 'reduce',
+  accelerate: 'speed up',
+  aggregate: 'total',
+  allocate: 'assign',
+  assist: 'help',
+  attempt: 'try',
+  communicate: 'tell',
 };

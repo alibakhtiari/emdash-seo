@@ -83,10 +83,14 @@ export function buildHowToNode(
 }
 
 /**
- * Infers the most specific schema type based on path and slug
+ * Infers the most specific schema type based on path and slug.
+ * Returns null when explicitly disabled via 'None'.
  */
-export function inferSchemaType(pathname: string, explicitType?: string): string {
-  if (explicitType && explicitType !== 'None') {
+export function inferSchemaType(pathname: string, explicitType?: string | null): string | null {
+  if (explicitType === 'None' || explicitType === 'none') {
+    return null;
+  }
+  if (explicitType) {
     return explicitType;
   }
 
@@ -95,6 +99,11 @@ export function inferSchemaType(pathname: string, explicitType?: string): string
   if (p === '/about' || p.startsWith('/about-') || p.startsWith('/about/')) return 'AboutPage';
   if (p === '/contact' || p.startsWith('/contact-') || p.startsWith('/contact/')) return 'ContactPage';
   if (p === '/profile' || p.startsWith('/author/')) return 'ProfilePage';
+  if (p.startsWith('/product') || p === '/shop' || p.startsWith('/shop/')) return 'Product';
+  if (p.includes('/faq')) return 'FAQPage';
+  if (p === '/how-to' || p.startsWith('/how-to/') || p === '/howto' || p.startsWith('/howto/')) return 'HowTo';
+  if (p.startsWith('/event')) return 'Event';
+  if (p.startsWith('/recipe')) return 'Recipe';
   if (p.startsWith('/services') || p.includes('/service/')) return 'Service';
   if (
     p.startsWith('/blog') ||

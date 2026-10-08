@@ -258,10 +258,127 @@ export function analyzeContent(options: ContentAnalyzeOptions): AnalysisReport {
       : 'Add contextual internal links to related cleaning services or guides.',
   });
 
-  // Calculate overall score (0-100)
-  const totalChecks = checks.length;
-  const passedChecks = checks.filter((c) => c.passed).length;
-  const rawScore = Math.round((passedChecks / totalChecks) * 100);
+  // Readability signals wired into the score (warning-level checks)
+  const detailedReadabilityEarly = auditReadability(content);
+  const passivePct = detailedReadabilityEarly.passiveVoicePercentage;
+  const transitionPct = detailedReadabilityEarly.transitionPercentage;
+  const hardPct = detailedReadabilityEarly.hardSentencesPercentage;
+  checks.push({
+    id: 'readability_passive_voice',
+    label: `Passive Voice (${passivePct}%)`,
+    passed: passivePct <= 10,
+    severity: 'warning',
+    message: passivePct <= 10
+      ? `Passive voice usage is low (${passivePct}% of sentences).`
+      : `${passivePct}% of sentences use passive voice (recommended: 10% or less). Prefer active voice.`,
+  });
+  checks.push({
+    id: 'readability_transitions',
+    label: `Transition Words (${transitionPct}%)`,
+    passed: transitionPct >= 30,
+    severity: 'warning',
+    message: transitionPct >= 30
+      ? `${transitionPct}% of sentences contain transition words.`
+      : `Only ${transitionPct}% of sentences contain transition words (recommended: 30% or more).`,
+  });
+  checks.push({
+    id: 'readability_sentence_length',
+    label: `Hard Sentences (${hardPct}%)`,
+    passed: hardPct <= 25,
+    severity: 'warning',
+    message: hardPct <= 25
+      ? `Hard-to-read sentences are within limits (${hardPct}%).`
+      : `${hardPct}% of sentences are hard or very hard to read (recommended: 25% or less). Shorten long sentences.`,
+  });
+
+  // 12. External (outbound) links
+  const hasExternal = externalLinks >= 1;
+  checks.push({
+    id: 'external_links',
+    label: `External Links (${externalLinks})`,
+    passed: hasExternal,
+    severity: 'warning',
+    message: hasExternal
+      ? `Page includes ${externalLinks} outbound link(s) to external sources.`
+      : 'Add at least one outbound link to an authoritative external source.',
+  });
+
+  // 13. Meta description length (120-156 characters)
+  const metaDescLen = metaDescription.length;
+  const metaDescLenPassed = metaDescLen >= 120 && metaDescLen <= 156;
+  checks.push({
+    id: 'meta_desc_length',
+    label: `Meta Description Length (${metaDescLen} chars)`,
+    passed: metaDescLenPassed,
+    severity: 'warning',
+    message: metaDescLenPassed
+      ? `Meta description length (${metaDescLen} chars) is within the 120-156 character target.`
+      : `Meta description is ${metaDescLen} characters. Target 120-156 characters for full SERP display.`,
+  });
+
+  // 14. SEO title width (30-60 characters)
+  const titleLen = title.length;
+  const titleWidthPassed = titleLen >= 30 && titleLen <= 60;
+  checks.push({
+    id: 'title_width',
+    label: `SEO Title Width (${titleLen} chars)`,
+    passed: titleWidthPassed,
+    severity: 'warning',
+    message: titleWidthPassed
+      ? `SEO title width (${titleLen} chars) fits the 30-60 character SERP target.`
+      : `SEO title is ${titleLen} characters. Target 30-60 characters to avoid SERP truncation.`,
+  });
+
+  // 15. Focus keyword in at least one image alt text
+  const altTexts: string[] = [];
+  const htmlAltRegex = /<img[^>]*\balt\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi;
+  let altMatch: RegExpExecArray | null;
+  while ((altMatch = htmlAltRegex.exec(content)) !== null) {
+    altTexts.push(altMatch[1] ?? altMatch[2] ?? altMatch[3] ?? '');
+  }
+  const mdAltRegex = /!\[([^\]]*?)\]\([^)]*\)/g;
+  while ((altMatch = mdAltRegex.exec(content)) !== null) {
+    altTexts.push(altMatch[1] ?? '');
+  }
+  const imageKwPassed = altTexts.some((a) => a.toLowerCase().includes(primaryKw));
+  checks.push({
+    id: 'image_keyphrase',
+    label: 'Keyphrase in Image Alt Text',
+    passed: imageKwPassed,
+    severity: 'warning',
+    message: imageKwPassed
+      ? 'At least one image alt text contains the focus keyword.'
+      : 'Include the focus keyword in at least one image alt text.',
+  });
+
+  // 16. Keyphrase distribution across 100-word content sections
+  const chunkSize = 100;
+  const chunkCount = Math.max(1, Math.ceil(wordCount / chunkSize));
+  let chunksWithKw = 0;
+  for (let i = 0; i < chunkCount; i++) {
+    const chunk = words.slice(i * chunkSize, (i + 1) * chunkSize).join(' ');
+    if (chunk.includes(primaryKw)) {
+      chunksWithKw++;
+    }
+  }
+  const distPassed = chunksWithKw / chunkCount > 0.5;
+  checks.push({
+    id: 'keyphrase_distribution',
+    label: `Keyphrase Distribution (${chunksWithKw}/${chunkCount} sections)`,
+    passed: distPassed,
+    severity: 'warning',
+    message: distPassed
+      ? `Focus keyword appears in ${chunksWithKw} of ${chunkCount} content sections (even distribution).`
+      : 'Distribute the focus keyword more evenly: it should appear in over half of all 100-word content sections.',
+  });
+
+  // Severity-weighted overall score (error=3, warning=2, info=1)
+  const SEVERITY_WEIGHTS: Record<ContentCheck['severity'], number> = { error: 3, warning: 2, info: 1 };
+  const totalWeight = checks.reduce((acc, c) => acc + SEVERITY_WEIGHTS[c.severity], 0);
+  const passedWeight = checks
+    .filter((c) => c.passed)
+    .reduce((acc, c) => acc + SEVERITY_WEIGHTS[c.severity], 0);
+  const rawScore = totalWeight > 0 ? Math.round((passedWeight / totalWeight) * 100) : 0;
 
   let grade: AnalysisReport['grade'] = 'Needs Improvement';
   if (rawScore >= 80) grade = 'Good';
@@ -302,7 +419,7 @@ export function analyzeContent(options: ContentAnalyzeOptions): AnalysisReport {
 
   const coverage = calculateEntityCoverage(content, expectedEntities);
   const readability = calculateFleschReadingEase(content);
-  const detailedReadability = auditReadability(content);
+  const detailedReadability = detailedReadabilityEarly;
   const altAudit = auditImageAlts(content, { targetKeywords: focusKeywords });
   const recommendations = checks.filter((c) => !c.passed).map((c) => c.message);
 

@@ -5,10 +5,10 @@ describe("Content Analyzer", () => {
   it("scores well for optimized content with keyword in title, slug, and subheadings", () => {
     const html = `
       <h1>Professional Carpet Cleaning London</h1>
-      <p>Looking for the highest rated <strong>carpet cleaning london</strong> service? We provide deep steam extraction across Greater London with 2-hour rapid drying times for residential and commercial customers.</p>
+      <p>Looking for the highest rated <strong>carpet cleaning london</strong> service? We provide deep steam extraction across Greater London with 2-hour drying times for residential and commercial customers.</p>
       <h2>Affordable Carpet Cleaning London Solutions</h2>
       <p>Our experienced technicians utilize industrial-grade hot water extraction equipment that safely removes 99% of bacteria, allergens, dust mites, and persistent stains from wool, nylon, and synthetic carpet fibers without leaving sticky detergent residues behind.</p>
-      <p>Every service includes pre-inspection, fabric testing, furniture moving, non-toxic stain pre-treatment, and high-velocity air dryer deployment. Check out our <a href="/sofa-cleaning-london/">sofa cleaning</a> solutions as well for complete upholstery revitalisation.</p>
+      <p>Every service includes pre-inspection, fabric testing, furniture moving, non-toxic stain pre-treatment, and high-velocity air dryer deployment. Check out our <a href="/sofa-cleaning-london/">sofa cleaning</a> solutions as well for complete upholstery revitalisation <a href="https://example.org/carpet-care">care guide</a>.</p>
       <img src="/carpet.jpg" alt="professional carpet cleaning london" />
     `;
 
@@ -16,7 +16,7 @@ describe("Content Analyzer", () => {
       contentHtml: html,
       focusKeywords: ["carpet cleaning london"],
       title: "Professional Carpet Cleaning London | CleanPro",
-      description: "Book expert carpet cleaning london with CleanPro. 5.0-star rated cleaning specialists.",
+      description: "Book expert carpet cleaning london with CleanPro. 5.0-star rated specialists for deep steam extraction, stain removal and fast drying.",
       slug: "carpet-cleaning-london",
       minWordCount: 80,
     });

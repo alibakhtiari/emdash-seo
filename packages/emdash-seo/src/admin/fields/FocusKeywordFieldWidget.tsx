@@ -68,7 +68,7 @@ export function FocusKeywordFieldWidget({
   const autoInferredType = React.useMemo(() => {
     const path = typeof window !== 'undefined' ? window.location.pathname : '';
     if (/^how\s+to\b/i.test(snapshot.title)) return 'HowTo';
-    return inferSchemaType(path, 'Article');
+    return inferSchemaType(path, 'Article') ?? 'Article';
   }, [snapshot.title]);
 
   const effectiveSchemaType = isAutoSchema ? autoInferredType : customSchemaType;

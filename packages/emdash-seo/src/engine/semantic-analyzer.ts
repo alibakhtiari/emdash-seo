@@ -173,9 +173,36 @@ export function calculateBm25Salience(
 }
 
 /**
+ * Counts occurrences of an entity in content with word/boundary awareness
+ */
+function countEntityOccurrences(content: string, entity: string): number {
+  const norm = entity.trim().toLowerCase();
+  if (!norm) return 0;
+  const escaped = escapeRegex(norm);
+
+  let pattern: string;
+  if (norm.endsWith('s')) {
+    const singular = escapeRegex(norm.slice(0, -1));
+    pattern = `(?:${escaped}|${singular})`;
+  } else {
+    pattern = `${escaped}(?:s|es)?`;
+  }
+
+  const regex = new RegExp(`(^|[^\\p{L}\\p{N}])${pattern}(?=[^\\p{L}\\p{N}]|$)`, 'giu');
+  let count = 0;
+  while (regex.exec(content) !== null) {
+    count++;
+  }
+  return count;
+}
+
+/**
  * 3.3 Entity Coverage Index (ECI) & Gap Analysis
  * Evaluates document text against an expected list of semantic entities.
  * ECI = (Entities Found / Total Expected Entities) * 70 + (Heading Entity Distribution / Total Subheadings) * 30
+ * Entity presence is BM25-weighted: each entity contributes w = 0.8 + 0.2 * salience,
+ * so frequently salient entities count slightly more while equal-frequency
+ * documents score identically to plain coverage.
  */
 export function calculateEntityCoverage(
   text: string,
@@ -191,15 +218,24 @@ export function calculateEntityCoverage(
 
   // Strip HTML tags for clean body text searching
   const cleanBody = text.replace(/<[^>]*>/g, ' ');
+  const docWordCount = cleanBody.split(/\s+/).filter(Boolean).length;
 
   const detected: string[] = [];
   const missing: string[] = [];
+  const detectedSet = new Set<string>();
+  const salienceByEntity = new Map<string, number>();
 
   for (const entity of expectedEntities) {
     if (matchesEntity(cleanBody, entity)) {
       detected.push(entity);
+      detectedSet.add(entity);
+      salienceByEntity.set(
+        entity,
+        calculateBm25Salience(countEntityOccurrences(cleanBody, entity), docWordCount)
+      );
     } else {
       missing.push(entity);
+      salienceByEntity.set(entity, 0);
     }
   }
 
@@ -233,7 +269,20 @@ export function calculateEntityCoverage(
     }
   }
 
-  const entityRatio = detected.length / expectedEntities.length;
+  // BM25 salience feeds 20% of the entity weight: w = 0.8 + 0.2 * normalized salience.
+  // BM25 is capped at idf * (k1 + 1) = 2.2, used here as the normalization ceiling.
+  let detectedWeight = 0;
+  let totalWeight = 0;
+  for (const entity of expectedEntities) {
+    const salience = salienceByEntity.get(entity) ?? 0;
+    const weight = 0.8 + 0.2 * Math.max(0, Math.min(1, salience / 2.2));
+    totalWeight += weight;
+    if (detectedSet.has(entity)) {
+      detectedWeight += weight;
+    }
+  }
+
+  const entityRatio = totalWeight > 0 ? detectedWeight / totalWeight : 0;
   const headingWeight = totalSubheadings > 0 ? (subheadingsWithEntity / totalSubheadings) * 30 : 0;
   const rawScore = Math.round(entityRatio * 70 + headingWeight);
   const score = Math.max(0, Math.min(100, rawScore));

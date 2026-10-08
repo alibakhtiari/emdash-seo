@@ -1,4 +1,5 @@
-import type { AuditSnapshot } from '../types.js';
+import type { AuditSnapshot, LinkGraphEntry } from '../types.js';
+import { detectOrphanPages } from './link-analyzer.js';
 
 export interface AuditEntryInput {
   id: string;
@@ -10,6 +11,8 @@ export interface AuditEntryInput {
   focusKeywords?: string[];
   canonicalUrl?: string;
   noIndex?: boolean;
+  schemaType?: string;
+  cornerstone?: boolean;
 }
 
 export function runSitewideAudit(entries: AuditEntryInput[]): AuditSnapshot {
@@ -42,8 +45,57 @@ export function runSitewideAudit(entries: AuditEntryInput[]): AuditSnapshot {
   }
 
   // Pass 2: Evaluate each entry
-  for (const entry of entries) {
-    if (entry.noIndex) continue;
+  const evaluated = entries.filter((entry) => !entry.noIndex);
+
+  // Build an internal link graph from entry content to detect orphan pages
+  const slugToId = new Map<string, string>();
+  for (const entry of evaluated) {
+    slugToId.set(entry.slug.replace(/^\/+|\/+$/g, ''), entry.id);
+  }
+  const linkGraph: LinkGraphEntry[] = [];
+  for (const entry of evaluated) {
+    const hrefRegex = /<a\s+[^>]*href=["']([^"']+)["'][^>]*>/gi;
+    let hrefMatch: RegExpExecArray | null;
+    while ((hrefMatch = hrefRegex.exec(entry.content)) !== null) {
+      const href = hrefMatch[1].trim();
+      if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) {
+        continue;
+      }
+      let path: string | null = null;
+      if (href.startsWith('/')) {
+        path = href;
+      } else if (href.includes('://')) {
+        try {
+          path = new URL(href).pathname;
+        } catch {
+          path = null;
+        }
+      }
+      if (!path) {
+        continue;
+      }
+      const normSlug = path.replace(/^\/+|\/+$/g, '');
+      const targetId = slugToId.get(normSlug);
+      if (targetId && targetId !== entry.id) {
+        linkGraph.push({
+          id: `${entry.id}->${targetId}`,
+          sourceCollection: '',
+          sourceId: entry.id,
+          targetUrl: href,
+          targetId,
+          isExternal: false,
+        });
+      }
+    }
+  }
+  const orphanIds = new Set(
+    detectOrphanPages(
+      evaluated.map((e) => ({ id: e.id, slug: e.slug, title: e.title })),
+      linkGraph
+    ).map((o) => o.id)
+  );
+
+  for (const entry of evaluated) {
 
     const issues: string[] = [];
     let pageScore = 100;
@@ -101,9 +153,10 @@ export function runSitewideAudit(entries: AuditEntryInput[]): AuditSnapshot {
       }
     }
 
-    // 5. Thin Content Check (< 300 words)
-    if (words.length < 300) {
-      issues.push(`Critical: Thin content detected (${words.length} words). Minimum recommended is 300 words.`);
+    // 5. Thin Content Check (cornerstone content: 900 words, standard: 300 words)
+    const thinThreshold = entry.cornerstone ? 900 : 300;
+    if (words.length < thinThreshold) {
+      issues.push(`Critical: Thin content detected (${words.length} words). Minimum recommended is ${thinThreshold} words${entry.cornerstone ? ' for cornerstone content' : ''}.`);
       pageScore -= 25;
       totalCritical++;
     }
@@ -113,6 +166,20 @@ export function runSitewideAudit(entries: AuditEntryInput[]): AuditSnapshot {
       issues.push('Notice: No focus keyword assigned to entry.');
       pageScore -= 5;
       totalNotice++;
+    }
+
+    // 7. Missing Schema Type
+    if (!entry.schemaType) {
+      issues.push('Warning: No schema type assigned (missing structured data entity).');
+      pageScore -= 10;
+      totalWarning++;
+    }
+
+    // 8. Orphan Page (no inbound internal links)
+    if (orphanIds.has(entry.id)) {
+      issues.push('Warning: Orphan page detected (no inbound internal links).');
+      pageScore -= 10;
+      totalWarning++;
     }
 
     pageScore = Math.max(0, pageScore);

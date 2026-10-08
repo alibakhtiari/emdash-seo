@@ -178,7 +178,8 @@ export function segmentSentences(
 
 /**
  * Passive voice detector
- * Flags auxiliary forms of 'to be' + optional adverb(s) + past participle.
+ * Flags auxiliary forms of 'to be' + optional adverb(s) + past participle,
+ * present-perfect 'have/has/had + been' + participle, and 'get'-passives.
  */
 export function detectPassiveVoice(
   text: string
@@ -195,6 +196,22 @@ export function detectPassiveVoice(
 
     if (isPastParticiple(candidateParticiple)) {
       passivePhrases.push(fullPhrase.trim());
+    }
+  }
+
+  // Present-perfect passive: have/has/had (+ adverb) + been + past participle
+  const perfectRegex = /\b(have|has|had)\s+((?:[a-zA-Z]+ly|not|never|also|already|always)\s+)*been\s+([a-zA-Z]+)\b/gi;
+  while ((match = perfectRegex.exec(text)) !== null) {
+    if (isPastParticiple(match[3])) {
+      passivePhrases.push(match[0].trim());
+    }
+  }
+
+  // Get-passive: get/gets/got/getting + optional adverb(s) + past participle
+  const getRegex = /\b(get|gets|got|getting)\s+((?:[a-zA-Z]+ly|not|never|also|already|always)\s+)*([a-zA-Z]+)\b/gi;
+  while ((match = getRegex.exec(text)) !== null) {
+    if (isPastParticiple(match[3])) {
+      passivePhrases.push(match[0].trim());
     }
   }
 

@@ -125,7 +125,9 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
       "url": business.logo,
       "contentUrl": business.logo,
       "caption": business.name,
-      "inLanguage": "en-GB"
+      "inLanguage": "en-GB",
+      "width": 600,
+      "height": 60
     },
     "image": { "@id": `${cleanSiteUrl}/#logo` },
     "telephone": business.telephone,
@@ -167,7 +169,7 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
   };
 
   // 3. WebPage Node (with optional Speakable for voice / AEO)
-  const isPageSpecific = ['AboutPage', 'ContactPage', 'ProfilePage'].includes(schemaType);
+  const isPageSpecific = schemaType !== null && ['AboutPage', 'ContactPage', 'ProfilePage'].includes(schemaType);
   const webPageNode: Record<string, any> = {
     "@type": isPageSpecific ? ["WebPage", schemaType] : "WebPage",
     "@id": `${cleanCanonical}#webpage`,
@@ -264,7 +266,8 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
   }
 
   // 6. Contextual Entity Node (Service, Article, BlogPosting, TechArticle, NewsArticle, HowTo)
-  const isArticleKind = ['Article', 'BlogPosting', 'TechArticle', 'NewsArticle', 'MedicalWebPage'].includes(schemaType);
+  // A null schemaType (explicit 'None') disables the contextual entity entirely.
+  const isArticleKind = schemaType !== null && ['Article', 'BlogPosting', 'TechArticle', 'NewsArticle', 'MedicalWebPage'].includes(schemaType);
 
   if (schemaType === 'CleaningService' || schemaType === 'Service') {
     graph.push({
@@ -315,11 +318,99 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
       ...(imageUrl ? { "image": imageUrl } : {}),
       ...(seo.schemaOverrides || {})
     });
+  } else if (schemaType === 'Product') {
+    const productOverrides = seo.schemaOverrides || {};
+    graph.push({
+      "@type": "Product",
+      "@id": `${cleanCanonical}#product`,
+      "name": title,
+      "description": description,
+      "brand": { "@type": "Brand", "name": business.name },
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock",
+        ...(productOverrides.price !== undefined ? { "price": String(productOverrides.price) } : {})
+      },
+      ...(business.aggregateRating ? {
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": String(business.aggregateRating.ratingValue),
+          "reviewCount": String(business.aggregateRating.reviewCount)
+        }
+      } : {}),
+      ...(imageUrl ? { "image": imageUrl } : {}),
+      ...(seo.schemaOverrides || {})
+    });
+  } else if (schemaType === 'Review') {
+    const reviewOverrides = seo.schemaOverrides || {};
+    graph.push({
+      "@type": "Review",
+      "@id": `${cleanCanonical}#review`,
+      "itemReviewed": { "@type": "Thing", "name": title },
+      "author": {
+        "@type": "Person",
+        "@id": authorNode["@id"],
+        "name": effectiveAuthor.name
+      },
+      "reviewRating": {
+        "@type": "Rating",
+        "ratingValue": String(reviewOverrides.ratingValue ?? '5'),
+        "bestRating": "5"
+      },
+      "reviewBody": description,
+      ...(seo.schemaOverrides || {})
+    });
+  } else if (schemaType === 'Event') {
+    const eventOverrides = seo.schemaOverrides || {};
+    graph.push({
+      "@type": "Event",
+      "@id": `${cleanCanonical}#event`,
+      "name": title,
+      "description": description,
+      "eventStatus": "https://schema.org/EventScheduled",
+      "location": eventOverrides.location || { "@type": "Place", "name": business.name },
+      ...(eventOverrides.startDate ? { "startDate": eventOverrides.startDate } : {}),
+      ...(eventOverrides.endDate ? { "endDate": eventOverrides.endDate } : {}),
+      ...(imageUrl ? { "image": imageUrl } : {}),
+      ...(seo.schemaOverrides || {})
+    });
+  } else if (schemaType === 'Recipe') {
+    const recipeOverrides = seo.schemaOverrides || {};
+    graph.push({
+      "@type": "Recipe",
+      "@id": `${cleanCanonical}#recipe`,
+      "name": title,
+      "description": description,
+      ...(imageUrl ? { "image": imageUrl } : {}),
+      ...(recipeOverrides.recipeIngredient ? { "recipeIngredient": recipeOverrides.recipeIngredient } : {}),
+      ...(recipeOverrides.recipeInstructions ? { "recipeInstructions": recipeOverrides.recipeInstructions } : {}),
+      ...(seo.schemaOverrides || {})
+    });
+  } else if (schemaType === 'VideoObject') {
+    graph.push({
+      "@type": "VideoObject",
+      "@id": `${cleanCanonical}#video`,
+      "name": title,
+      "description": description,
+      ...(imageUrl ? { "thumbnailUrl": imageUrl } : {}),
+      ...(datePublished ? { "uploadDate": datePublished } : {}),
+      ...(seo.schemaOverrides || {})
+    });
+  } else if (schemaType === 'Course') {
+    graph.push({
+      "@type": "Course",
+      "@id": `${cleanCanonical}#course`,
+      "name": title,
+      "description": description,
+      "provider": { "@id": `${cleanSiteUrl}/#organization` },
+      ...(seo.schemaOverrides || {})
+    });
   }
 
-  // HowTo Node (explicit HowTo schema or detected steps)
+  // HowTo Node (explicit HowTo schema or detected steps; disabled when schemaType is null)
   const effectiveSteps = howToSteps || seo.howToSteps || [];
-  if (schemaType === 'HowTo' || effectiveSteps.length > 0) {
+  if (schemaType !== null && (schemaType === 'HowTo' || effectiveSteps.length > 0)) {
     graph.push(buildHowToNode(effectiveSteps, cleanCanonical, title, description, imageUrl));
   }
 
