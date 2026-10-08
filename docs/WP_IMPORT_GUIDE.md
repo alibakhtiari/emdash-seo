@@ -57,7 +57,7 @@ If you have custom redirect rules stored in third-party database tables (such as
 
 ## 4. Rank Math & Yoast SEO Data Mapping Table
 
-| WordPress / SEO Plugin Field | Target EmDash SEO Schema (`data.seo`) | Description & Value Transformation |
+| WordPress / SEO Plugin Field | Target WebABC SEO Schema (`data.seo`) | Description & Value Transformation |
 | :--- | :--- | :--- |
 | `rank_math_title` / `_yoast_wpseo_title` | `metaTitle` | Replaces variables like `%title% %sep% %sitename%` |
 | `rank_math_description` / `_yoast_wpseo_metadesc` | `metaDescription` | Cleaned text snippet for SERP |

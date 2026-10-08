@@ -2,7 +2,7 @@
 
 ## 1. Migration Overview
 
-This document outlines the systematic, zero-downtime migration strategy for transitioning any content-rich **WordPress** website into a blazing-fast, edge-rendered **Astro + EmDash CMS** architecture deployed on Cloudflare Workers, powered by the **EmDash SEO Suite** (`@emdash/plugin-seo`).
+This document outlines the systematic, zero-downtime migration strategy for transitioning any content-rich **WordPress** website into a blazing-fast, edge-rendered **Astro + EmDash CMS** architecture deployed on Cloudflare Workers, powered by the **WebABC SEO Suite** (`@emdash/plugin-seo` / `webabcSeoPlugin`).
 
 ---
 
