@@ -48,20 +48,28 @@ Provides instant visual emulation across four primary display targets:
 * **X (Twitter) Card:** `summary_large_image` emulator with handle attribution and image bounds.
 
 ### 2.2 Entity Coverage Index & Semantic Checklist
-Replaces legacy keyword counting with interactive entity badges:
-* **ECI Score Gauge:** Dynamic 0–100 circular score indicator with green/amber/red status.
-* **Entity Coverage Badges:**
-  * 🟢 **Green (Detected):** Entities found with sufficient salience (e.g., `hot water extraction`, `steam cleaning`).
-  * 🟡 **Amber (Topic Gap):** Recommended domain entities missing from the draft. Clicking a badge suggests contextual placement.
+Replaces legacy keyword counting with interactive entity indicators:
+* **ECI Score Gauge:** Dynamic 0–100 circular score indicator with passed/warning/critical status.
+* **Entity Coverage Indicators:**
+  * **Detected (`IconCheck`):** Entities found with sufficient salience (e.g., `hot water extraction`, `steam cleaning`).
+  * **Topic Gap (`IconAlertCircle`):** Recommended domain entities missing from the draft. Clicking a badge suggests contextual placement.
 * **Structural Hygiene Meters:**
   * Heading hierarchy check (Flags H1 $\rightarrow$ H3 skips).
   * Flesch-Kincaid Reading Ease gauge.
   * Image alt text completion counter.
 
-### 2.3 Contextual Internal Link Assistant
-* Automatically scans draft paragraphs against the published collection link index.
-* Displays card suggestions with matched entities and surrounding sentence context.
-* Features a single **"Insert Link"** button that wraps the anchor text in the active editor state without manual copy-pasting.
+### 2.3 Interactive Content Studio & Field Widgets (`emdash-seo:focus-keyword`)
+In addition to the sidebar extension, the suite provides custom field widgets (`emdash-seo:focus-keyword` and `emdash-seo:seo-suite`):
+* **Immediate Availability on New Posts:** Unlike sidebar panels which require an entry to be saved first, the `focus_keyword` field widget is available directly in the form on new post/page creation.
+* **Embedded Optimization Studio:** Features expandable studio drawer with tabs for Hemingway Readability, GEO/AEO Analyzer, Semi-Automatic Schema Selector, Image Alt Auditor, and SERP Preview.
+
+### 2.4 Unified Admin Hub (`WebABC SEO`)
+The EmDash navigation menu mounts a single **WebABC SEO** item (`/_emdash/admin/plugins/emdash-seo/settings`), providing an integrated top tab bar:
+1. **SEO Settings:** Global business entity, Person profile, social accounts, and breadcrumb rules.
+2. **SERP & Social Preview:** Live Google Desktop/Mobile, Facebook OpenGraph, and X (Twitter) cards.
+3. **Readability Checker:** Hemingway-style live color highlighting with filter toggles.
+4. **Alt Image Auditor:** Sitewide image accessibility audit with inline quick-editing.
+5. **Fuzzy 301 Redirects:** Smart algorithmic suggestions for 404 URL remediation.
 
 ---
 
