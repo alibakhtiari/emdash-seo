@@ -36,15 +36,15 @@ However, several advanced architectural specifications documented in `docs/` wer
 
 | Document | Primary Domain | Core Architectural Requirements |
 |---|---|---|
-| [`docs/PRD.md`](file:///Users/alib/emdash-seo/docs/PRD.md) | Product Requirements | Rank Math & Yoast parity, Cloudflare Workers budget (<10ms CPU, <1MB bundle), connected schema @graph, TOC & FAQ extraction. |
-| [`docs/BLUEPRINT_BEST_OF_ALL_EMDASH_SEO.md`](file:///Users/alib/emdash-seo/docs/BLUEPRINT_BEST_OF_ALL_EMDASH_SEO.md) | Strategic Blueprint | Synthesis of top WordPress plugins; 3 pillars: zero front-end overhead, next-gen semantic SEO, strict admin hygiene; Cloudflare Free/Pro dual-tier execution. |
-| [`docs/EDGE_PERFORMANCE_AND_STORAGE_SPEC.md`](file:///Users/alib/emdash-seo/docs/EDGE_PERFORMANCE_AND_STORAGE_SPEC.md) | Edge Runtime & Caching | Pre-computed `_cachedHead` in `data.seo`, sub-0.1ms SSR delivery, zero edge D1 queries, 404 log pruning, clean uninstall. |
-| [`docs/SEMANTIC_CONTENT_ENGINE.md`](file:///Users/alib/emdash-seo/docs/SEMANTIC_CONTENT_ENGINE.md) | NLP & Semantic Analysis | Okapi BM25, N-gram topical extraction, Entity Coverage Index (ECI 0–100), Flesch-Kincaid readability, zero runtime npm dependencies. |
-| [`docs/EMDASH_ADMIN_AND_API_INTEGRATION.md`](file:///Users/alib/emdash-seo/docs/EMDASH_ADMIN_AND_API_INTEGRATION.md) | Admin UI & REST API | React Document Sidebar extension, SERP/Social previews, typed `/_emdash/api/seo/v1/*` endpoints, headless CLI tools. |
-| [`docs/JDEVALK_PLUGIN_ANALYSIS_AND_CHERRYPICK.md`](file:///Users/alib/emdash-seo/docs/JDEVALK_PLUGIN_ANALYSIS_AND_CHERRYPICK.md) | Joost de Valk Cherry-Pick | React Admin UI (`admin.tsx`, `admin-redirects.tsx`), `buildPageUrl` with i18n, dynamic collection crawler for `llms.txt` and `schemamap.xml`, breadcrumb noise suppression, IndexNow tombstone cache. |
-| [`docs/SEO_PLUGIN_ARCHITECTURE.md`](file:///Users/alib/emdash-seo/docs/SEO_PLUGIN_ARCHITECTURE.md) | Core Technical Design | EmDash Native Plugin contract (`format: "native"`, `createPlugin()`), lifecycle hooks, and schema graph builder. |
-| [`docs/WP_IMPORT_GUIDE.md`](file:///Users/alib/emdash-seo/docs/WP_IMPORT_GUIDE.md) | WordPress Migration | Rank Math, Yoast, and Kadence meta field mappings into native EmDash schema. |
-| [`docs/EMDASH_ASTRO_NATIVE_COMPARISON.md`](file:///Users/alib/emdash-seo/docs/EMDASH_ASTRO_NATIVE_COMPARISON.md) | Native vs Plugin Audit | Dual-head architecture (`<EmDashHead>` + `<SeoHead>`) and edge redirection. |
+| [`docs/PRD.md`](PRD.md) | Product Requirements | Rank Math & Yoast parity, Cloudflare Workers budget (<10ms CPU, <1MB bundle), connected schema @graph, TOC & FAQ extraction. |
+| [`docs/BLUEPRINT_BEST_OF_ALL_EMDASH_SEO.md`](BLUEPRINT_BEST_OF_ALL_EMDASH_SEO.md) | Strategic Blueprint | Synthesis of top WordPress plugins; 3 pillars: zero front-end overhead, next-gen semantic SEO, strict admin hygiene; Cloudflare Free/Pro dual-tier execution. |
+| [`docs/EDGE_PERFORMANCE_AND_STORAGE_SPEC.md`](EDGE_PERFORMANCE_AND_STORAGE_SPEC.md) | Edge Runtime & Caching | Pre-computed `_cachedHead` in `data.seo`, sub-0.1ms SSR delivery, zero edge D1 queries, 404 log pruning, clean uninstall. |
+| [`docs/SEMANTIC_CONTENT_ENGINE.md`](SEMANTIC_CONTENT_ENGINE.md) | NLP & Semantic Analysis | Okapi BM25, N-gram topical extraction, Entity Coverage Index (ECI 0–100), Flesch-Kincaid readability, zero runtime npm dependencies. |
+| [`docs/EMDASH_ADMIN_AND_API_INTEGRATION.md`](EMDASH_ADMIN_AND_API_INTEGRATION.md) | Admin UI & REST API | React Document Sidebar extension, SERP/Social previews, typed `/_emdash/api/seo/v1/*` endpoints, headless CLI tools. |
+| [`docs/JDEVALK_PLUGIN_ANALYSIS_AND_CHERRYPICK.md`](JDEVALK_PLUGIN_ANALYSIS_AND_CHERRYPICK.md) | Joost de Valk Cherry-Pick | React Admin UI (`admin.tsx`, `admin-redirects.tsx`), `buildPageUrl` with i18n, dynamic collection crawler for `llms.txt` and `schemamap.xml`, breadcrumb noise suppression, IndexNow tombstone cache. |
+| [`docs/SEO_PLUGIN_ARCHITECTURE.md`](SEO_PLUGIN_ARCHITECTURE.md) | Core Technical Design | EmDash Native Plugin contract (`format: "native"`, `createPlugin()`), lifecycle hooks, and schema graph builder. |
+| [`docs/WP_IMPORT_GUIDE.md`](WP_IMPORT_GUIDE.md) | WordPress Migration | Rank Math, Yoast, and Kadence meta field mappings into native EmDash schema. |
+| [`docs/EMDASH_ASTRO_NATIVE_COMPARISON.md`](EMDASH_ASTRO_NATIVE_COMPARISON.md) | Native vs Plugin Audit | Dual-head architecture (`<EmDashHead>` + `<SeoHead>`) and edge redirection. |
 
 ---
 

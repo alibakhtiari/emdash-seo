@@ -5,5 +5,5 @@
   "totalServices": 16,
   "totalPages": 48,
   "totalFaqsExtracted": 72,
-  "seedFile": "/Users/alib/emdash-seo/seed/seed.json"
+  "seedFile": "seed/seed.json"
 }

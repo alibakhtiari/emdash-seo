@@ -110,13 +110,12 @@ While our repository (`@emdash/plugin-seo`) already excels as an **Enterprise SE
 
 ### 5.1 EmDash Admin GUI
 
-Located in [`packages/emdash-seo/src/admin.tsx`](file:///Users/alib/emdash-seo/packages/emdash-seo/src/admin.tsx) and [`packages/emdash-seo/src/admin-redirects.tsx`](file:///Users/alib/emdash-seo/packages/emdash-seo/src/admin-redirects.tsx).
+Located in [`packages/emdash-seo/src/admin.tsx`](../packages/emdash-seo/src/admin.tsx) and [`packages/emdash-seo/src/admin-redirects.tsx`](../packages/emdash-seo/src/admin-redirects.tsx).
 
 The plugin exports `adminEntry` in `seoPlugin()` and registers admin pages:
 ```ts
 adminPages: [
-  { path: '/settings', label: 'SEO', icon: 'settings' },
-  { path: '/fuzzy-redirects', label: 'Fuzzy Redirects', icon: 'arrow-right' },
+  { path: '/settings', label: 'WebABC SEO', icon: 'globe' },
 ]
 ```
 
@@ -125,7 +124,7 @@ adminPages: [
 
 ### 5.2 Dynamic Collection & i18n URL Construction
 
-Located in [`packages/emdash-seo/src/engine/urls.ts`](file:///Users/alib/emdash-seo/packages/emdash-seo/src/engine/urls.ts).
+Located in [`packages/emdash-seo/src/engine/urls.ts`](../packages/emdash-seo/src/engine/urls.ts).
 
 ```ts
 export function buildPageUrl(input: BuildPageUrlInput): string | null {
@@ -154,7 +153,7 @@ export function buildPageUrl(input: BuildPageUrlInput): string | null {
 
 ### 5.3 Dynamic `llms.txt` Spec Generator
 
-Located in [`packages/emdash-seo/src/routes/llms-txt.ts`](file:///Users/alib/emdash-seo/packages/emdash-seo/src/routes/llms-txt.ts).
+Located in [`packages/emdash-seo/src/routes/llms-txt.ts`](../packages/emdash-seo/src/routes/llms-txt.ts).
 
 - Implements `buildLlmsTxt` conforming to the [llmstxt.org](https://llmstxt.org) standard.
 - Groups entries into H2 sections based on collection labels.
@@ -163,7 +162,7 @@ Located in [`packages/emdash-seo/src/routes/llms-txt.ts`](file:///Users/alib/emd
 
 ### 5.4 Smart Breadcrumb Segment Filtering & Overrides
 
-Located in [`packages/emdash-seo/src/engine/breadcrumbs.ts`](file:///Users/alib/emdash-seo/packages/emdash-seo/src/engine/breadcrumbs.ts).
+Located in [`packages/emdash-seo/src/engine/breadcrumbs.ts`](../packages/emdash-seo/src/engine/breadcrumbs.ts).
 
 - Implements `shouldSkipSegment` to remove noise from breadcrumbs:
   - Skips `/page/N/` pagination segments.
@@ -174,7 +173,7 @@ Located in [`packages/emdash-seo/src/engine/breadcrumbs.ts`](file:///Users/alib/
 
 ### 5.5 IndexNow Verification Key Route & URL Tombstones
 
-Located in [`packages/emdash-seo/src/engine/indexnow.ts`](file:///Users/alib/emdash-seo/packages/emdash-seo/src/engine/indexnow.ts).
+Located in [`packages/emdash-seo/src/engine/indexnow.ts`](../packages/emdash-seo/src/engine/indexnow.ts).
 
 - Added `getIndexNowKeyFileContent(key)` returning the plain-text body required by search engine bots at `/<key>.txt`.
 - Exposed via plugin route `indexnow/key` and API route `/_emdash/api/seo/indexnow/key`.
