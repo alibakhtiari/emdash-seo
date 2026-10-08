@@ -4,7 +4,11 @@ import {
   detectRankMathToc,
   stripRankMathTocBlock,
   extractFaqsFromContent,
+  parseRankMathMeta,
 } from '../importers/rankmath-importer.js';
+import { parseYoastMeta } from '../importers/yoast-importer.js';
+import { parseAioseoMeta } from '../importers/aioseo-importer.js';
+import { parseSeopressMeta } from '../importers/seopress-importer.js';
 import {
   compilePrecomputedHead,
   compilePrecomputedSchemaGraph,
@@ -36,6 +40,36 @@ export async function handleContentBeforeSave(
 
   // Auto-sync custom collection fields (focus_keyword, schema_type, cornerstone) into seo metadata
   content.data.seo = content.data.seo || { focusKeywords: [], noIndex: false, noFollow: false };
+  // Legacy WP meta merge (RankMath/Yoast/AIOSEO/SEOPress via native migrator meta._rankmath/_yoast)
+  {
+    const m = content.meta || content.data?.meta || {};
+    const rawMeta = {
+      ...(content.data?.rawMeta || {}),
+      ...m,
+      ...(m._rankmath || {}),
+      ...(m._yoast || {}),
+      ...(content.data?.meta?._rankmath || {}),
+      ...(content.data?.meta?._yoast || {}),
+    };
+    const keys = Object.keys(rawMeta);
+    const parsed = [
+      keys.some((k) => k.startsWith('rank_math_') || k.startsWith('_yoast_wpseo'))
+        ? { ...parseYoastMeta(rawMeta), ...parseRankMathMeta(rawMeta) }
+        : null,
+      keys.some((k) => k.startsWith('_aioseo')) ? parseAioseoMeta(rawMeta) : null,
+      keys.some((k) => k.startsWith('_seopress')) ? parseSeopressMeta(rawMeta) : null,
+    ];
+    for (const p of parsed) {
+      if (!p) continue;
+      const s = content.data.seo;
+      for (const f of ['metaTitle', 'metaDescription', 'canonicalUrl', 'ogTitle', 'ogDescription', 'ogImage', 'twitterTitle', 'twitterDescription', 'twitterImage'] as const) {
+        if (!s[f] && p[f]) (s as any)[f] = p[f];
+      }
+      if ((!s.focusKeywords || s.focusKeywords.length === 0) && p.focusKeywords?.length) s.focusKeywords = p.focusKeywords;
+      s.noIndex = s.noIndex || (p as any).noIndex || false;
+      s.noFollow = s.noFollow || (p as any).noFollow || false;
+    }
+  }
   if (content.data.focus_keyword && typeof content.data.focus_keyword === 'string') {
     const kw = content.data.focus_keyword.trim();
     if (kw) {

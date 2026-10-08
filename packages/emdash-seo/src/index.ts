@@ -10,6 +10,9 @@ import { buildConnectedSchemaGraph } from './engine/schema-builder.js';
 import { extractLinksFromContent, findInternalLinkOpportunities, detectOrphanPages } from './engine/link-analyzer.js';
 import { parseRankMathMeta, extractFaqsFromContent, detectRankMathToc, stripRankMathTocBlock } from './importers/rankmath-importer.js';
 import { parseYoastMeta } from './importers/yoast-importer.js';
+import { parseAioseoMeta } from './importers/aioseo-importer.js';
+import { parseSeopressMeta } from './importers/seopress-importer.js';
+import { parseSeoCsv, type SeoCsvRow } from './importers/csv-importer.js';
 import { matchRedirect, createRedirectResponse } from './routes/redirects.js';
 import { generateAutoBreadcrumbs, type BreadcrumbItem } from './engine/breadcrumbs.js';
 import { extractTableOfContents, slugifyHeading, type TocItem } from './engine/toc-extractor.js';
@@ -172,6 +175,9 @@ export {
   detectRankMathToc,
   stripRankMathTocBlock,
   parseYoastMeta,
+  parseAioseoMeta,
+  parseSeopressMeta,
+  parseSeoCsv,
   matchRedirect,
   createRedirectResponse,
   resolveSeoVariables,
@@ -266,7 +272,18 @@ export type {
   NotFoundEntry,
   UninstallResult,
   AltAuditorOptions,
+  SeoCsvRow,
 };
+
+/**
+ * Minimal role guard for SEO management routes.
+ * Hosts map the `seo:manage` route permission to this check.
+ */
+export function hasSeoCap(role?: string | null): boolean {
+  return role === 'admin' || role === 'editor';
+}
+
+export const SEO_MANAGE_PERMISSION = 'seo:manage';
 
 /**
  * Native plugin runtime instantiator
@@ -276,6 +293,10 @@ export function createPlugin(userOptions: Partial<SeoPluginOptions> = {}) {
   const options: SeoPluginOptions = { ...DEFAULT_OPTIONS, ...userOptions };
   const modIndexNow = options.modules?.indexNow ?? options.enableIndexNow ?? false;
   const routes = createPluginRoutes(options);
+  for (const route of Object.values(routes)) {
+    const r = route as any;
+    if (r && !r.public && !r.permission) r.permission = SEO_MANAGE_PERMISSION;
+  }
 
   return {
     id: 'emdash-seo',

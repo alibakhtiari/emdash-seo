@@ -13,11 +13,16 @@ import {
 } from './content-helpers.js';
 import { EditorOverviewTab } from './editor/EditorOverviewTab.js';
 import { EditorKeywordTab } from './editor/EditorKeywordTab.js';
+import { EditorFaqTab } from './editor/EditorFaqTab.js';
+import { WidgetSerpTab } from './fields/WidgetSerpTab.js';
+import type { FaqItem } from '../types.js';
 import { IconTarget, IconStar, IconSparkles } from './icons.js';
+
+export type EditorPanelTab = 'overview' | 'keyword' | 'serp' | 'faq' | 'highlighter' | 'alts';
 
 export function ContentEditorSeoPanel(props: ContentEditorPanelProps) {
   const { entry } = props;
-  const [activeTab, setActiveTab] = React.useState<'overview' | 'keyword' | 'highlighter' | 'alts'>('overview');
+  const [activeTab, setActiveTab] = React.useState<EditorPanelTab>('overview');
 
   const data = (entry?.data || {}) as Record<string, unknown>;
   const seoData = (data.seo || entry?.seo || {}) as Record<string, unknown>;
@@ -40,6 +45,7 @@ export function ContentEditorSeoPanel(props: ContentEditorPanelProps) {
 
   const postTitle = (typeof data.title === 'string' ? data.title : '') || entry?.slug || '';
   const postSlug = entry?.slug || (typeof data.slug === 'string' ? data.slug : '');
+  const featuredImage = typeof data.featured_image === 'string' ? data.featured_image : undefined;
   const metaDesc =
     (typeof seoData.description === 'string' ? seoData.description : '') ||
     (typeof data.excerpt === 'string' ? data.excerpt : '');
@@ -72,6 +78,17 @@ export function ContentEditorSeoPanel(props: ContentEditorPanelProps) {
 
   const seoScore = seoReport.score;
   const hasContent = textContent.trim().length > 0;
+
+  const initialFaqs = Array.isArray(seoData.faqs) ? (seoData.faqs as FaqItem[]) : [];
+  const [faqs, setFaqs] = React.useState<FaqItem[]>(initialFaqs);
+
+  const handleFaqChange = (next: FaqItem[]) => {
+    setFaqs(next);
+    const cleaned = next.filter((f) => f.question.trim() && f.answer.trim());
+    if (data.seo && typeof data.seo === 'object') {
+      (data.seo as Record<string, unknown>).faqs = cleaned;
+    }
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.8125rem', color: 'var(--text-color-kumo-default, #ededed)' }}>
@@ -178,7 +195,7 @@ export function ContentEditorSeoPanel(props: ContentEditorPanelProps) {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
+          gridTemplateColumns: 'repeat(3, 1fr)',
           background: 'var(--color-kumo-recessed, #141414)',
           borderRadius: 6,
           padding: '0.1875rem',
@@ -216,6 +233,38 @@ export function ContentEditorSeoPanel(props: ContentEditorPanelProps) {
           }}
         >
           Keyword {focusKeyword ? `(${seoScore}/100)` : ''}
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('serp')}
+          style={{
+            padding: '0.25rem 0.5rem',
+            borderRadius: 4,
+            border: activeTab === 'serp' ? '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.15))' : '1px solid transparent',
+            background: activeTab === 'serp' ? 'var(--color-kumo-tint, #2e2e2e)' : 'transparent',
+            color: activeTab === 'serp' ? 'var(--text-color-kumo-strong, #ffffff)' : 'var(--text-color-kumo-subtle, #a0a0a0)',
+            fontWeight: activeTab === 'serp' ? 600 : 400,
+            cursor: 'pointer',
+            fontSize: '0.75rem',
+          }}
+        >
+          SERP
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('faq')}
+          style={{
+            padding: '0.25rem 0.5rem',
+            borderRadius: 4,
+            border: activeTab === 'faq' ? '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.15))' : '1px solid transparent',
+            background: activeTab === 'faq' ? 'var(--color-kumo-tint, #2e2e2e)' : 'transparent',
+            color: activeTab === 'faq' ? 'var(--text-color-kumo-strong, #ffffff)' : 'var(--text-color-kumo-subtle, #a0a0a0)',
+            fontWeight: activeTab === 'faq' ? 600 : 400,
+            cursor: 'pointer',
+            fontSize: '0.75rem',
+          }}
+        >
+          FAQ ({faqs.length})
         </button>
         <button
           type="button"
@@ -272,6 +321,19 @@ export function ContentEditorSeoPanel(props: ContentEditorPanelProps) {
           isCornerstone={isCornerstone}
           seoReport={seoReport}
         />
+      ) : activeTab === 'serp' ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <WidgetSerpTab
+            title={postTitle}
+            excerpt={metaDesc}
+            featuredImage={featuredImage}
+            slug={postSlug}
+          />
+        </div>
+      ) : activeTab === 'faq' ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <EditorFaqTab faqs={faqs} onChange={handleFaqChange} />
+        </div>
       ) : activeTab === 'highlighter' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <LiveSentenceHighlighter

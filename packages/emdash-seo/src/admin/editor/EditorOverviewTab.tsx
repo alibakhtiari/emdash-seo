@@ -8,7 +8,7 @@ export interface EditorOverviewTabProps {
   altAudit: AltAuditReport;
   focusKeyword: string;
   isCornerstone: boolean;
-  onTabChange: (tab: 'overview' | 'keyword' | 'highlighter' | 'alts') => void;
+  onTabChange: (tab: 'overview' | 'keyword' | 'serp' | 'faq' | 'highlighter' | 'alts') => void;
 }
 
 export function EditorOverviewTab({

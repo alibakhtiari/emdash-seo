@@ -4,12 +4,16 @@ import { ContentTypesIntegrationPanel } from './editor/ContentTypesIntegrationPa
 import { SerpPreviewPage } from '../admin-preview.js';
 import { ReadabilityAdminPage, ImageAltAuditorAdminPage } from './standalone-pages.js';
 import { FuzzyRedirectsPage } from '../admin-redirects.js';
+import { AuditTab, LinksTab } from './settings/HubDataTabs.js';
+import { CornerstonePanel } from './settings/CornerstonePanel.js';
 import {
   IconSettings,
   IconSearch,
   IconBook,
   IconImage,
   IconArrowRight,
+  IconChecklist,
+  IconList,
 } from './icons.js';
 
 const API = '/_emdash/api/plugins/emdash-seo';
@@ -63,6 +67,11 @@ export const FIELDS: FieldDef[] = [
   { key: 'enableAeoOptimization', type: 'select', label: 'AEO (Answer Engine Optimization)', description: 'Optimize for voice search & Google Featured Snippets with direct answers and speakable specs', options: [{ value: 'true', label: 'Enabled' }, { value: 'false', label: 'Disabled' }], default: 'true', section: 'geo_aeo' },
   { key: 'defaultSpeakableSelectors', type: 'string', label: 'Speakable CSS Selectors', description: 'CSS selectors for voice assistants (comma-separated, e.g. #field-excerpt, .post-lead, .aeo-summary)', default: '#field-excerpt, .post-lead, .aeo-summary', section: 'geo_aeo' },
   { key: 'nlwebEndpoint', type: 'string', label: 'NLWeb endpoint URL', description: 'Absolute URL of conversational endpoint for agent discovery. Emits <link rel="nlweb" href="...">.', section: 'discovery' },
+  { key: 'noindexCategory', type: 'select', label: 'Noindex category archives', description: 'Prevent category archive pages from appearing in search results', options: [{ value: 'true', label: 'Noindex' }, { value: 'false', label: 'Index' }], default: 'false', section: 'taxonomies' },
+  { key: 'noindexTag', type: 'select', label: 'Noindex tag archives', description: 'Prevent tag archive pages from appearing in search results', options: [{ value: 'true', label: 'Noindex' }, { value: 'false', label: 'Index' }], default: 'false', section: 'taxonomies' },
+  { key: 'noindexAuthor', type: 'select', label: 'Noindex author archives', description: 'Prevent author archive pages from appearing in search results', options: [{ value: 'true', label: 'Noindex' }, { value: 'false', label: 'Index' }], default: 'false', section: 'taxonomies' },
+  { key: 'noindexDate', type: 'select', label: 'Noindex date archives', description: 'Prevent year/month/day archive pages from appearing in search results', options: [{ value: 'true', label: 'Noindex' }, { value: 'false', label: 'Index' }], default: 'true', section: 'taxonomies' },
+  { key: 'noindexSearch', type: 'select', label: 'Noindex internal search', description: 'Prevent internal search result pages from appearing in search results', options: [{ value: 'true', label: 'Noindex' }, { value: 'false', label: 'Index' }], default: 'true', section: 'taxonomies' },
 ];
 
 const inputStyle: React.CSSProperties = {
@@ -114,8 +123,22 @@ import {
 export { BreadcrumbLabelsEditor, BreadcrumbRulesEditor };
 
 
+type HubTab = 'settings' | 'preview' | 'readability' | 'alts' | 'redirects' | 'audit' | 'links';
+
+const HUB_TABS: Array<{ id: HubTab; label: string; Icon: (p: { size?: number }) => React.ReactElement }> = [
+  { id: 'settings', label: 'SEO Settings', Icon: IconSettings },
+  { id: 'preview', label: 'SERP & Social Preview', Icon: IconSearch },
+  { id: 'readability', label: 'Readability Checker', Icon: IconBook },
+  { id: 'alts', label: 'Alt Image Auditor', Icon: IconImage },
+  { id: 'redirects', label: 'Fuzzy 301 Redirects', Icon: IconArrowRight },
+  { id: 'audit', label: 'Site Audit', Icon: IconChecklist },
+  { id: 'links', label: 'Link Opportunities', Icon: IconList },
+];
+
+const HUB_TAB_IDS = HUB_TABS.map((t) => t.id);
+
 export function SettingsPage() {
-  const [hubTab, setHubTab] = React.useState<'settings' | 'preview' | 'readability' | 'alts' | 'redirects'>('settings');
+  const [hubTab, setHubTab] = React.useState<HubTab>('settings');
   const [settings, setSettings] = React.useState<Record<string, string>>({});
   const [saving, setSaving] = React.useState(false);
   const [saved, setSaved] = React.useState(false);
@@ -125,8 +148,8 @@ export function SettingsPage() {
   React.useEffect(() => {
     if (typeof window !== 'undefined' && window.location.hash) {
       const h = window.location.hash.replace('#', '');
-      if (['settings', 'preview', 'readability', 'alts', 'redirects'].includes(h)) {
-        setHubTab(h as 'settings' | 'preview' | 'readability' | 'alts' | 'redirects');
+      if ((HUB_TAB_IDS as string[]).includes(h)) {
+        setHubTab(h as HubTab);
       }
     }
   }, []);
@@ -180,6 +203,7 @@ export function SettingsPage() {
     { id: 'general', label: 'General' },
     ...(siteRepresents === 'person' ? [{ id: 'person', label: 'Person' }] : [{ id: 'org', label: 'Organization' }]),
     { id: 'author', label: 'Default Author & E-E-A-T Credentials' },
+    { id: 'taxonomies', label: 'Taxonomy & Archive Indexing' },
     { id: 'geo_aeo', label: 'GEO & AEO (AI Search & Voice Optimization)' },
     { id: 'social', label: 'Social Profiles' },
     { id: 'discovery', label: 'Agent Discovery & LLMs' },
@@ -208,121 +232,32 @@ export function SettingsPage() {
           flexWrap: 'wrap',
         }}
       >
-        <button
-          type="button"
-          onClick={() => {
-            setHubTab('settings');
-            if (typeof window !== 'undefined') window.location.hash = 'settings';
-          }}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.35rem',
-            padding: '0.375rem 0.75rem',
-            borderRadius: 6,
-            border: hubTab === 'settings' ? '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.2))' : '1px solid transparent',
-            background: hubTab === 'settings' ? 'var(--color-kumo-control, #2a2a2a)' : 'transparent',
-            color: hubTab === 'settings' ? 'var(--text-color-kumo-strong, #ffffff)' : 'var(--text-color-kumo-subtle, #9ca3af)',
-            fontSize: '0.8125rem',
-            fontWeight: hubTab === 'settings' ? 600 : 400,
-            cursor: 'pointer',
-          }}
-        >
-          <IconSettings size={13} />
-          <span>SEO Settings</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setHubTab('preview');
-            if (typeof window !== 'undefined') window.location.hash = 'preview';
-          }}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.35rem',
-            padding: '0.375rem 0.75rem',
-            borderRadius: 6,
-            border: hubTab === 'preview' ? '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.2))' : '1px solid transparent',
-            background: hubTab === 'preview' ? 'var(--color-kumo-control, #2a2a2a)' : 'transparent',
-            color: hubTab === 'preview' ? 'var(--text-color-kumo-strong, #ffffff)' : 'var(--text-color-kumo-subtle, #9ca3af)',
-            fontSize: '0.8125rem',
-            fontWeight: hubTab === 'preview' ? 600 : 400,
-            cursor: 'pointer',
-          }}
-        >
-          <IconSearch size={13} />
-          <span>SERP & Social Preview</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setHubTab('readability');
-            if (typeof window !== 'undefined') window.location.hash = 'readability';
-          }}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.35rem',
-            padding: '0.375rem 0.75rem',
-            borderRadius: 6,
-            border: hubTab === 'readability' ? '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.2))' : '1px solid transparent',
-            background: hubTab === 'readability' ? 'var(--color-kumo-control, #2a2a2a)' : 'transparent',
-            color: hubTab === 'readability' ? 'var(--text-color-kumo-strong, #ffffff)' : 'var(--text-color-kumo-subtle, #9ca3af)',
-            fontSize: '0.8125rem',
-            fontWeight: hubTab === 'readability' ? 600 : 400,
-            cursor: 'pointer',
-          }}
-        >
-          <IconBook size={13} />
-          <span>Readability Checker</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setHubTab('alts');
-            if (typeof window !== 'undefined') window.location.hash = 'alts';
-          }}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.35rem',
-            padding: '0.375rem 0.75rem',
-            borderRadius: 6,
-            border: hubTab === 'alts' ? '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.2))' : '1px solid transparent',
-            background: hubTab === 'alts' ? 'var(--color-kumo-control, #2a2a2a)' : 'transparent',
-            color: hubTab === 'alts' ? 'var(--text-color-kumo-strong, #ffffff)' : 'var(--text-color-kumo-subtle, #9ca3af)',
-            fontSize: '0.8125rem',
-            fontWeight: hubTab === 'alts' ? 600 : 400,
-            cursor: 'pointer',
-          }}
-        >
-          <IconImage size={13} />
-          <span>Alt Image Auditor</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setHubTab('redirects');
-            if (typeof window !== 'undefined') window.location.hash = 'redirects';
-          }}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.35rem',
-            padding: '0.375rem 0.75rem',
-            borderRadius: 6,
-            border: hubTab === 'redirects' ? '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.2))' : '1px solid transparent',
-            background: hubTab === 'redirects' ? 'var(--color-kumo-control, #2a2a2a)' : 'transparent',
-            color: hubTab === 'redirects' ? 'var(--text-color-kumo-strong, #ffffff)' : 'var(--text-color-kumo-subtle, #9ca3af)',
-            fontSize: '0.8125rem',
-            fontWeight: hubTab === 'redirects' ? 600 : 400,
-            cursor: 'pointer',
-          }}
-        >
-          <IconArrowRight size={13} />
-          <span>Fuzzy 301 Redirects</span>
-        </button>
+        {HUB_TABS.map(({ id, label, Icon }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => {
+              setHubTab(id);
+              if (typeof window !== 'undefined') window.location.hash = id;
+            }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              padding: '0.375rem 0.75rem',
+              borderRadius: 6,
+              border: hubTab === id ? '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.2))' : '1px solid transparent',
+              background: hubTab === id ? 'var(--color-kumo-control, #2a2a2a)' : 'transparent',
+              color: hubTab === id ? 'var(--text-color-kumo-strong, #ffffff)' : 'var(--text-color-kumo-subtle, #9ca3af)',
+              fontSize: '0.8125rem',
+              fontWeight: hubTab === id ? 600 : 400,
+              cursor: 'pointer',
+            }}
+          >
+            <Icon size={13} />
+            <span>{label}</span>
+          </button>
+        ))}
       </div>
 
       {hubTab === 'settings' && (
@@ -359,6 +294,16 @@ export function SettingsPage() {
 
           <div style={{ marginBottom: '2rem' }}>
             <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.75rem', borderBottom: '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.1))', paddingBottom: '0.5rem', color: 'var(--text-color-kumo-strong, #ffffff)' }}>
+              Cornerstone Content
+            </h3>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--text-color-kumo-subtle, #a0a0a0)', marginBottom: '0.75rem' }}>
+              Pillar posts flagged in the content editor. Cornerstone entries target 1,200+ words.
+            </p>
+            <CornerstonePanel fallbackCount={settings.cornerstoneCount} />
+          </div>
+
+          <div style={{ marginBottom: '2rem' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.75rem', borderBottom: '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.1))', paddingBottom: '0.5rem', color: 'var(--text-color-kumo-strong, #ffffff)' }}>
               Content Types & Live Editor Integration
             </h3>
             <p style={{ fontSize: '0.8125rem', color: 'var(--text-color-kumo-subtle, #a0a0a0)', marginBottom: '0.75rem' }}>
@@ -385,6 +330,8 @@ export function SettingsPage() {
       {hubTab === 'readability' && <ReadabilityAdminPage />}
       {hubTab === 'alts' && <ImageAltAuditorAdminPage />}
       {hubTab === 'redirects' && <FuzzyRedirectsPage />}
+      {hubTab === 'audit' && <AuditTab />}
+      {hubTab === 'links' && <LinksTab />}
     </div>
   );
 }
