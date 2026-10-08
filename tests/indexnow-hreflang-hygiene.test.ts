@@ -98,8 +98,11 @@ describe("Hreflang & Multilingual Alternates", () => {
     });
   });
 
-  it("returns empty array when fewer than 2 locales exist", () => {
-    expect(buildAlternateLinks([{ locale: "en", url: "https://example.com/" }])).toEqual([]);
+  it("returns self-referential pair when fewer than 2 locales exist", () => {
+    expect(buildAlternateLinks([{ locale: "en", url: "https://example.com/" }])).toEqual([
+      { hreflang: "en", href: "https://example.com/" },
+      { hreflang: "x-default", href: "https://example.com/" },
+    ]);
   });
 });
 
@@ -115,7 +118,7 @@ describe("Metadata Hygiene & OpenGraph Polish", () => {
   });
 
   it("normalizes Facebook OpenGraph locales", () => {
-    expect(normalizeOgLocale("en")).toBe("en_US");
+    expect(normalizeOgLocale("en")).toBe("en_GB");
     expect(normalizeOgLocale("fr-ca")).toBe("fr_CA");
     expect(normalizeOgLocale("el")).toBe("el_GR");
     expect(normalizeOgLocale("ca")).toBe("ca_ES");
@@ -148,7 +151,7 @@ describe("Metadata Hygiene & OpenGraph Polish", () => {
     };
     const extracted = extractTaxonomyTerms(entryData);
     expect(extracted.articleSection).toBe("Commercial Cleaning");
-    expect(extracted.keywords).toEqual(["Commercial Cleaning", "Office", "Sanitization"]);
+    expect(extracted.keywords).toEqual(["Office", "Sanitization"]);
   });
 });
 

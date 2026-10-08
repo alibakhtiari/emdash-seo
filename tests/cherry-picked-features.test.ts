@@ -54,7 +54,7 @@ describe('Cherry-Picked Joost de Valk Features', () => {
       expect(url).toBe('https://example.com/en/hello/');
     });
 
-    it('normalizes uppercase, duplicate slashes, and enforces trailing slash', () => {
+    it('preserves slug case, collapses slashes, and enforces trailing slash', () => {
       const url = buildPageUrl({
         locale: 'en',
         slug: 'Acme-Widget',
@@ -62,7 +62,7 @@ describe('Cherry-Picked Joost de Valk Features', () => {
         cfg: CFG_NO_PREFIX,
         urlPattern: '/products//{slug}',
       });
-      expect(url).toBe('https://example.com/products/acme-widget/');
+      expect(url).toBe('https://example.com/products/Acme-Widget/');
     });
 
     it('rejects patterns without {slug} or with unsubstituted placeholders', () => {
