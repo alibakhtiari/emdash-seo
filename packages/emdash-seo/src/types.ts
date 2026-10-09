@@ -111,6 +111,12 @@ export interface EntrySeoMetadata {
     ratingValue: string | number;
     reviewCount: string | number;
   };
+  sku?: string;
+  gtin?: string;
+  brand?: string;
+  price?: string | number;
+  priceCurrency?: string;
+  availability?: string;
   faqs?: FaqItem[];
   author?: AuthorProfile;
   reviewedBy?: AuthorProfile;
@@ -157,6 +163,24 @@ export interface LocalBusinessInfo {
     ratingValue: string | number;
     reviewCount: string | number;
   };
+  /** Branch locations (cap 5 emitted) for multi-location businesses. */
+  locations?: LocalBusinessBranch[];
+}
+
+export interface LocalBusinessBranch {
+  name?: string;
+  telephone?: string;
+  address?: {
+    streetAddress?: string;
+    addressLocality?: string;
+    postalCode?: string;
+    addressCountry?: string;
+  };
+  geoCoordinates?: {
+    latitude: string | number;
+    longitude: string | number;
+  };
+  openingHours?: string[];
 }
 
 export interface NavigationItem {

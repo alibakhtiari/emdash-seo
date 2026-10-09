@@ -2,7 +2,7 @@
  * Schema Nodes Builder for Author E-E-A-T, HowTo, and Page Types
  */
 
-import type { AuthorProfile, HowToStep } from '../types.js';
+import type { AuthorProfile, HowToStep, LocalBusinessBranch } from '../types.js';
 
 export function slugify(str: string): string {
   return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -119,4 +119,81 @@ export function inferSchemaType(pathname: string, explicitType?: string | null):
   }
 
   return 'Article';
+}
+
+/**
+ * Builds one LocalBusiness branch node per location (cap 5), linked to the
+ * parent organization via parentOrganization (mirrored by department refs).
+ */
+export function buildLocationNodes(
+  business: { name: string; locations?: LocalBusinessBranch[] },
+  cleanSiteUrl: string
+): Record<string, any>[] {
+  return (business.locations || []).slice(0, 5).map((loc, i) => ({
+    "@type": "LocalBusiness",
+    "@id": `${cleanSiteUrl}/#location-${i + 1}`,
+    ...(loc.name ? { "name": loc.name } : { "name": `${business.name} — Location ${i + 1}` }),
+    ...(loc.telephone ? { "telephone": loc.telephone } : {}),
+    ...(loc.address ? {
+      "address": {
+        "@type": "PostalAddress",
+        ...(loc.address.streetAddress ? { "streetAddress": loc.address.streetAddress } : {}),
+        ...(loc.address.addressLocality ? { "addressLocality": loc.address.addressLocality } : {}),
+        ...(loc.address.postalCode ? { "postalCode": loc.address.postalCode } : {}),
+        ...(loc.address.addressCountry ? { "addressCountry": loc.address.addressCountry } : {}),
+      }
+    } : {}),
+    ...(loc.geoCoordinates ? {
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": loc.geoCoordinates.latitude,
+        "longitude": loc.geoCoordinates.longitude
+      }
+    } : {}),
+    ...(loc.openingHours ? { "openingHours": loc.openingHours } : {}),
+    "parentOrganization": { "@id": `${cleanSiteUrl}/#organization` },
+  }));
+}
+
+export interface PlaceNodeContext {
+  title: string;
+  description: string;
+  cleanCanonical: string;
+  cleanSiteUrl: string;
+  imageUrl?: string;
+  datePublished?: string;
+  overrides: Record<string, any>;
+}
+
+/**
+ * Builds JobPosting / CollectionPage / SearchResultsPage nodes. Extracted
+ * from schema-builder.ts to honor the 500-line file cap.
+ */
+export function buildPlaceNode(
+  schemaType: 'JobPosting' | 'CollectionPage' | 'SearchResultsPage',
+  ctx: PlaceNodeContext
+): Record<string, any> | null {
+  const { title, description, cleanCanonical, cleanSiteUrl, imageUrl, datePublished, overrides } = ctx;
+  if (schemaType === 'JobPosting') {
+    return {
+      "@type": "JobPosting",
+      "@id": `${cleanCanonical}#jobposting`,
+      "title": title,
+      "description": description,
+      "hiringOrganization": { "@id": `${cleanSiteUrl}/#organization` },
+      ...(datePublished ? { "datePosted": datePublished } : {}),
+      ...(overrides.employmentType ? { "employmentType": overrides.employmentType } : {}),
+      ...(overrides.jobLocation ? { "jobLocation": overrides.jobLocation } : {}),
+      ...(imageUrl ? { "image": imageUrl } : {}),
+      ...overrides,
+    };
+  }
+  return {
+    "@type": schemaType,
+    "@id": `${cleanCanonical}#${schemaType.toLowerCase()}`,
+    "name": title,
+    "description": description,
+    "isPartOf": { "@id": `${cleanCanonical}#webpage` },
+    ...overrides,
+  };
 }

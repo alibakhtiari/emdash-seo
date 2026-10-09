@@ -91,6 +91,21 @@ export async function handleContentBeforeSave(
   if (content.data.schema_type && typeof content.data.schema_type === 'string') {
     content.data.seo.schemaType = content.data.schema_type;
   }
+  // Sync custom product fields (product_sku, product_gtin, product_brand,
+  // product_price, product_price_currency, product_availability) into seo metadata
+  for (const [field, key] of [
+    ['product_sku', 'sku'],
+    ['product_gtin', 'gtin'],
+    ['product_brand', 'brand'],
+    ['product_price', 'price'],
+    ['product_price_currency', 'priceCurrency'],
+    ['product_availability', 'availability'],
+  ] as const) {
+    const v = content.data[field];
+    if (v !== undefined && v !== null && v !== '' && (content.data.seo as any)[key] === undefined) {
+      (content.data.seo as any)[key] = v;
+    }
+  }
   if (content.data.cornerstone !== undefined) {
     content.data.seo.cornerstone = Boolean(content.data.cornerstone);
   }

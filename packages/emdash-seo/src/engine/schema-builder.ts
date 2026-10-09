@@ -2,7 +2,7 @@ import type { EntrySeoMetadata, LocalBusinessInfo, FaqItem, AuthorProfile, HowTo
 import { DEFAULT_LOCAL_BUSINESS } from '../config.js';
 import { generateAutoBreadcrumbs, type BreadcrumbItem } from './breadcrumbs.js';
 import type { TocItem } from './toc-extractor.js';
-import { buildAuthorNode, buildHowToNode, inferSchemaType } from './schema-nodes.js';
+import { buildAuthorNode, buildHowToNode, buildLocationNodes, buildPlaceNode, inferSchemaType } from './schema-nodes.js';
 
 export interface BuildSchemaGraphOptions {
   siteUrl: string;
@@ -176,6 +176,9 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
     ...(business.openingHours ? { "openingHours": business.openingHours } : {}),
     ...(business.sameAs ? { "sameAs": business.sameAs } : {}),
     ...(publishingPrinciples ? { "publishingPrinciples": publishingPrinciples } : {}),
+    ...((business.locations || []).length > 0 ? {
+      "department": (business.locations || []).slice(0, 5).map((_, i) => ({ "@id": `${cleanSiteUrl}/#location-${i + 1}` }))
+    } : {}),
     ...(business.aggregateRating ? {
       "aggregateRating": {
         "@type": "AggregateRating",
@@ -219,6 +222,11 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
   };
 
   const graph: Record<string, any>[] = [websiteNode, organizationNode, webPageNode, authorNode];
+
+  // 2b. Branch locations (multi-location businesses, cap 5)
+  for (const node of buildLocationNodes(business, cleanSiteUrl)) {
+    graph.push(node);
+  }
   if (reviewerNode) graph.push(reviewerNode);
 
   // Optional: SiteNavigationElement Schema
@@ -349,17 +357,20 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
   } else if (schemaType === 'Product') {
     const productOverrides = seo.schemaOverrides || {};
     const productRating = seo.aggregateRating || business.aggregateRating;
+    const pick = (k: string) => (seo as any)[k] ?? productOverrides[k];
     graph.push({
       "@type": "Product",
       "@id": `${cleanCanonical}#product`,
       "name": title,
       "description": description,
-      "brand": { "@type": "Brand", "name": business.name },
+      ...(pick('sku') ? { "sku": String(pick('sku')) } : {}),
+      ...(pick('gtin') ? { "gtin": String(pick('gtin')) } : {}),
+      "brand": { "@type": "Brand", "name": String(pick('brand') || business.name) },
       "offers": {
         "@type": "Offer",
-        "priceCurrency": "GBP",
-        "availability": "https://schema.org/InStock",
-        ...(productOverrides.price !== undefined ? { "price": String(productOverrides.price) } : {})
+        "priceCurrency": String(pick('priceCurrency') || 'GBP'),
+        "availability": String(pick('availability') || 'https://schema.org/InStock'),
+        ...(pick('price') !== undefined ? { "price": String(pick('price')) } : {})
       },
       ...(productRating ? {
         "aggregateRating": {
@@ -430,29 +441,12 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
       ...(videoOverrides.embedUrl ? { "embedUrl": videoOverrides.embedUrl } : {}),
       ...(seo.schemaOverrides || {})
     });
-  } else if (schemaType === 'JobPosting') {
-    const jobOverrides = seo.schemaOverrides || {};
-    graph.push({
-      "@type": "JobPosting",
-      "@id": `${cleanCanonical}#jobposting`,
-      "title": title,
-      "description": description,
-      "hiringOrganization": { "@id": `${cleanSiteUrl}/#organization` },
-      ...(datePublished ? { "datePosted": datePublished } : {}),
-      ...(jobOverrides.employmentType ? { "employmentType": jobOverrides.employmentType } : {}),
-      ...(jobOverrides.jobLocation ? { "jobLocation": jobOverrides.jobLocation } : {}),
-      ...(imageUrl ? { "image": imageUrl } : {}),
-      ...(seo.schemaOverrides || {})
+  } else if (schemaType === 'JobPosting' || schemaType === 'CollectionPage' || schemaType === 'SearchResultsPage') {
+    const node = buildPlaceNode(schemaType, {
+      title, description, cleanCanonical, cleanSiteUrl, imageUrl, datePublished,
+      overrides: seo.schemaOverrides || {},
     });
-  } else if (schemaType === 'CollectionPage' || schemaType === 'SearchResultsPage') {
-    graph.push({
-      "@type": schemaType,
-      "@id": `${cleanCanonical}#${schemaType.toLowerCase()}`,
-      "name": title,
-      "description": description,
-      "isPartOf": { "@id": `${cleanCanonical}#webpage` },
-      ...(seo.schemaOverrides || {})
-    });
+    if (node) graph.push(node);
   } else if (schemaType === 'Course') {
     graph.push({
       "@type": "Course",

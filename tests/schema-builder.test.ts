@@ -67,3 +67,50 @@ describe("LocalBusiness subtype inference", () => {
     ).toContain("Dentist");
   });
 });
+
+describe("Product commerce fields", () => {
+  it("emits sku/gtin/brand/price from dedicated seo fields with overrides fallback", () => {
+    const base = {
+      siteUrl: "https://example.com",
+      siteName: "Example",
+      canonicalUrl: "https://example.com/products/widget/",
+      title: "Widget",
+      description: "A fine widget.",
+      business: DEFAULT_LOCAL_BUSINESS,
+    };
+    const graph = buildConnectedSchemaGraph({
+      ...base,
+      pathname: "/products/widget/",
+      seo: { focusKeywords: [], noIndex: false, noFollow: false, schemaType: "Product", sku: "W-1", gtin: "123", brand: "Acme", price: 19.99 } as any,
+    });
+    const product = (graph["@graph"] as any[]).find((n) => n["@type"] === "Product");
+    expect(product.sku).toBe("W-1");
+    expect(product.brand.name).toBe("Acme");
+    expect(product.offers.price).toBe("19.99");
+  });
+});
+
+describe("Multi-location branches", () => {
+  it("emits department links plus one node per branch", () => {
+    const graph = buildConnectedSchemaGraph({
+      siteUrl: "https://example.com",
+      siteName: "Example",
+      canonicalUrl: "https://example.com/",
+      title: "Home",
+      description: "Home.",
+      business: {
+        ...DEFAULT_LOCAL_BUSINESS,
+        locations: [
+          { name: "North Branch", telephone: "+441234", address: { addressLocality: "Leeds", addressCountry: "UK" } },
+          { name: "South Branch" },
+        ],
+      },
+    });
+    const nodes = graph["@graph"] as any[];
+    const org = nodes.find((n) => n["@id"].includes("#organization"));
+    expect(org.department).toHaveLength(2);
+    const branches = nodes.filter((n) => String(n["@id"]).includes("#location-"));
+    expect(branches).toHaveLength(2);
+    expect(branches[0].parentOrganization["@id"]).toContain("#organization");
+  });
+});
