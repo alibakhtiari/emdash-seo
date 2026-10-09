@@ -38,6 +38,11 @@ export async function handleContentBeforeSave(
   const content = event.content;
   if (!content || !content.data) return content;
 
+  // NOTE: slug-change 301s are created natively by the EmDash host
+  // (RedirectRepository.createAutoRedirect with chain collapsing), so this
+  // hook deliberately does NOT mirror them into the plugin store — that
+  // would shadow host rules. See routes/api-v1/redirects.ts onSlugChange
+  // (exported for CSV/manual flows only).
   // Auto-sync custom collection fields (focus_keyword, schema_type, cornerstone) into seo metadata
   content.data.seo = content.data.seo || { focusKeywords: [], noIndex: false, noFollow: false };
   // Legacy WP meta merge (RankMath/Yoast/AIOSEO/SEOPress via native migrator meta._rankmath/_yoast)

@@ -1,4 +1,5 @@
 import type { RedirectRule } from '../types.js';
+import { recordRedirectHit } from './api-v1/state.js';
 
 export interface MatchRedirectOptions {
   ignoreQuery?: boolean;
@@ -96,6 +97,7 @@ export function matchRedirect(
     // Chain-loop guard: destination already visited in this chain.
     if (visited.includes(normalizeForMatch(target, resolved))) continue;
 
+    recordRedirectHit(rule);
     return { destination: target, statusCode, to: target };
   }
 

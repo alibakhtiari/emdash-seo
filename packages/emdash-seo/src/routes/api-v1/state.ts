@@ -7,67 +7,160 @@ export function setLatestV1AuditSnapshot(snapshot: AuditSnapshot | null): void {
   latestV1AuditSnapshot = snapshot;
 }
 
-export let v1RedirectRules: RedirectRule[] = [
-  {
-    id: 'redir-default-1',
-    pattern: '/legacy-carpet-care',
-    from: '/legacy-carpet-care',
-    destination: '/services/carpet-cleaning',
-    to: '/services/carpet-cleaning',
-    comparison: 'exact',
-    matchType: 'exact',
-    statusCode: 301,
-    status: 'active',
-  },
-];
+export let v1RedirectRules: RedirectRule[] = [];
 
-export let v1NotFoundLogs: NotFoundEntry[] = [
-  {
-    path: '/old-price-list',
-    count: 42,
-    lastSeen: new Date().toISOString(),
-    topReferrer: 'https://www.google.com/',
-  },
-  {
-    path: '/services/steam-dry-clean',
-    count: 24,
-    lastSeen: new Date().toISOString(),
-    topReferrer: 'https://bing.com/',
-  },
-  {
-    path: '/contact-us-2024',
-    count: 8,
-    lastSeen: new Date().toISOString(),
-    topReferrer: null,
-  },
-];
+export let v1NotFoundLogs: NotFoundEntry[] = [];
 
 export function resetApiV1State(): void {
   latestV1AuditSnapshot = null;
-  v1RedirectRules = [
-    {
-      id: 'redir-default-1',
-      pattern: '/legacy-carpet-care',
-      from: '/legacy-carpet-care',
-      destination: '/services/carpet-cleaning',
-      to: '/services/carpet-cleaning',
-      comparison: 'exact',
-      matchType: 'exact',
-      statusCode: 301,
-      status: 'active',
-    },
-  ];
-  v1NotFoundLogs = [
-    {
-      path: '/old-price-list',
-      count: 42,
-      lastSeen: new Date().toISOString(),
-      topReferrer: 'https://www.google.com/',
-    },
-  ];
+  v1RedirectRules = [];
+  v1NotFoundLogs = [];
 }
 
 export const MAX_404_ENTRIES = 1000;
+
+export const V1_REDIRECTS_KV_KEY = 'seo:v1:redirects';
+export const V1_404S_KV_KEY = 'seo:v1:404s';
+
+type KvLike = {
+  get(key: string): Promise<any>;
+  set(key: string, val: any): Promise<any>;
+};
+
+function readKv(ctx: any): KvLike | null {
+  const kv = ctx?.kv;
+  if (kv && typeof kv.get === 'function' && typeof kv.set === 'function') return kv as KvLike;
+  return null;
+}
+
+async function loadArrayKey(ctx: any, key: string): Promise<any[] | null> {
+  const kv = readKv(ctx);
+  if (!kv) return null;
+  try {
+    const raw = await kv.get(key);
+    if (Array.isArray(raw)) return raw;
+    if (typeof raw === 'string') {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch {
+    // Fall through to memory fallback
+  }
+  return null;
+}
+
+async function saveArrayKey(ctx: any, key: string, value: any[]): Promise<void> {
+  const kv = readKv(ctx);
+  if (!kv) return;
+  try {
+    await kv.set(key, value);
+  } catch {
+    // Memory fallback already holds the data
+  }
+}
+
+// The EmDash host exposes ctx.redirects (RedirectAccess): list() returns
+// PaginatedResult {items}, never a bare array. Prefer it as source of truth;
+// KV snapshot second; module memory last (dev/test fallback).
+function hostRedirectAccess(ctx: any): any | null {
+  const r = ctx?.redirects;
+  return r && typeof r.list === 'function' ? r : null;
+}
+
+// Map a host RedirectInfo row onto the plugin RedirectRule shape.
+// Extra host fields (_rev for conditional writes, hits, group) ride along.
+export function fromHostRedirect(info: any): RedirectRule {
+  const comparison = info?.isPattern ? 'regex' : 'exact';
+  return {
+    id: String(info?.id ?? ''),
+    pattern: info?.source ?? '',
+    from: info?.source ?? '',
+    destination: info?.destination ?? '',
+    to: info?.destination ?? '',
+    comparison,
+    matchType: comparison,
+    statusCode: Number(info?.type ?? 301),
+    status: info?.enabled === false ? 'inactive' : 'active',
+    hitCount: typeof info?.hits === 'number' ? info.hits : undefined,
+    ...(info?.groupName ? { groupName: info.groupName } : {}),
+    ...(info?.auto ? { auto: true } : {}),
+  } as RedirectRule;
+}
+
+export function toHostCreateInput(rule: RedirectRule): Record<string, any> {
+  return {
+    source: rule.pattern || (rule as any).from,
+    destination: rule.destination ?? (rule as any).to,
+    type: Number(rule.statusCode ?? 301),
+    enabled: (rule.status || 'active') !== 'inactive',
+  };
+}
+
+// Load persisted redirect rules into the module store when KV is available.
+// Falls back to the in-memory array (and ctx.redirects when provided).
+export async function loadRedirectRules(ctx?: any): Promise<RedirectRule[]> {
+  if (Array.isArray(ctx?.redirects)) return ctx.redirects;
+  const host = hostRedirectAccess(ctx);
+  if (host) {
+    try {
+      const collected: RedirectRule[] = [];
+      let cursor: string | undefined;
+      for (let page = 0; page < 5; page++) {
+        const res = await host.list({ limit: 100, ...(cursor ? { cursor } : {}) });
+        const items = Array.isArray(res) ? res : res?.items;
+        if (!Array.isArray(items) || items.length === 0) break;
+        for (const info of items) collected.push(fromHostRedirect(info));
+        cursor = (res as any)?.cursor;
+        if (!(res as any)?.hasMore || !cursor) break;
+      }
+      return collected;
+    } catch {
+      // Fall through to KV/memory
+    }
+  }
+  const persisted = await loadArrayKey(ctx, V1_REDIRECTS_KV_KEY);
+  if (persisted) {
+    v1RedirectRules = persisted as RedirectRule[];
+    return v1RedirectRules;
+  }
+  return v1RedirectRules;
+}
+
+// Persist the module store to KV when available. Memory always holds the data.
+export async function persistRedirectRules(ctx?: any): Promise<void> {
+  await saveArrayKey(ctx, V1_REDIRECTS_KV_KEY, v1RedirectRules);
+}
+
+// Load persisted 404 logs into the module store when KV is available.
+export async function load404Logs(ctx?: any): Promise<NotFoundEntry[]> {
+  if (Array.isArray(ctx?.notFoundLog)) return ctx.notFoundLog;
+  const persisted = await loadArrayKey(ctx, V1_404S_KV_KEY);
+  if (persisted) {
+    v1NotFoundLogs = persisted as NotFoundEntry[];
+    return v1NotFoundLogs;
+  }
+  if (ctx?.redirects?.get404s) {
+    try {
+      const dbLogs = await ctx.redirects.get404s();
+      if (Array.isArray(dbLogs)) return dbLogs;
+    } catch {
+      // Fall through to memory fallback
+    }
+  }
+  return v1NotFoundLogs;
+}
+
+// Persist the module 404 store to KV when available.
+export async function persist404Logs(ctx?: any): Promise<void> {
+  await saveArrayKey(ctx, V1_404S_KV_KEY, v1NotFoundLogs);
+}
+
+// Bump the hit counter for the rule that served a redirect.
+export function recordRedirectHit(rule: RedirectRule | null | undefined): void {
+  if (!rule) return;
+  const entry = rule as RedirectRule & { hitCount?: number };
+  entry.hitCount = typeof entry.hitCount === 'number' ? entry.hitCount + 1 : 1;
+}
 
 export function record404Hit(path: string, referrer: string | null = null): void {
   const normPath = path.startsWith('/') ? path : `/${path}`;
@@ -89,6 +182,30 @@ export function record404Hit(path: string, referrer: string | null = null): void
       v1NotFoundLogs.sort((a, b) => b.count - a.count);
       v1NotFoundLogs.length = MAX_404_ENTRIES;
     }
+  }
+}
+
+// Record a 404 hit and persist to KV when available. Never throws.
+export async function record404HitPersistent(
+  ctx: any,
+  path: string,
+  referrer: string | null = null
+): Promise<void> {
+  record404Hit(path, referrer);
+  try {
+    await persist404Logs(ctx);
+  } catch {
+    // Memory fallback already updated
+  }
+}
+
+// Record a redirect hit on the matched rule and persist to KV when available.
+export async function recordRedirectHitPersistent(ctx: any, rule: RedirectRule | null | undefined): Promise<void> {
+  recordRedirectHit(rule);
+  try {
+    await persistRedirectRules(ctx);
+  } catch {
+    // Memory fallback already updated
   }
 }
 
