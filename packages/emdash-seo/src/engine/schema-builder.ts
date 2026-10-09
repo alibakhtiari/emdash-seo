@@ -194,7 +194,10 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
     "name": title,
     "description": description,
     "isPartOf": { "@id": `${cleanSiteUrl}/#website` },
-    "about": { "@id": `${cleanSiteUrl}/#organization` },
+    "about": keywords.length > 0
+      ? [{ "@id": `${cleanSiteUrl}/#organization` }, { "@type": "Thing", "name": keywords[0] }]
+      : { "@id": `${cleanSiteUrl}/#organization` },
+    ...(keywords.length > 1 ? { "mentions": keywords.slice(1, 6).map((k) => ({ "@type": "Thing", "name": k })) } : {}),
     "inLanguage": "en-GB",
     ...speakableSpec,
     ...(copyrightYear ? { "copyrightYear": copyrightYear } : {}),

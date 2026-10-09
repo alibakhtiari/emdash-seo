@@ -12,6 +12,9 @@ export interface ExtendedChecksInput {
   authorName?: string;
   reviewerName?: string;
   speakableSelectors?: string[];
+  dateModified?: string;
+  authorityDomains?: string[];
+  externalDomains: string[];
   wordCount: number;
   h2Count: number;
   h3Count: number;
@@ -47,6 +50,9 @@ export function extendedContentChecks(input: ExtendedChecksInput): ContentCheck[
     authorName,
     reviewerName,
     speakableSelectors,
+    dateModified,
+    authorityDomains,
+    externalDomains,
     wordCount,
     h2Count,
     h3Count,
@@ -216,6 +222,58 @@ export function extendedContentChecks(input: ExtendedChecksInput): ContentCheck[
       ? 'Content carries reviewer credit.'
       : 'Add reviewer credit for YMYL or advice content to strengthen trust signals.',
   });
+
+  // 30. Content freshness (stale content loses AI citations; skipped when undated)
+  if (dateModified) {
+    const ageDays = (Date.now() - new Date(dateModified).getTime()) / 86400000;
+    const fresh = Number.isFinite(ageDays) && ageDays <= 540;
+    checks.push({
+      id: 'content_freshness',
+      label: 'Content Freshness',
+      passed: fresh,
+      severity: 'info',
+      message: fresh
+        ? 'Content was updated within the last 18 months.'
+        : 'Content is over 18 months old. Refresh facts, dates, and statistics to protect rankings and AI citations.',
+    });
+  }
+
+  // 31. Statistic attribution (numbers need named sources for AI trust)
+  const hasNumber = /\d/.test(cleanText);
+  const hasAttribution = /according to|source:|sources:|study (by|from|shows)|research (by|from|shows)|data (from|shows)|reported by/i.test(cleanText);
+  if (hasNumber) {
+    checks.push({
+      id: 'stat_attribution',
+      label: 'Statistic Attribution',
+      passed: hasAttribution,
+      severity: 'info',
+      message: hasAttribution
+        ? 'Statistics are attributed to named sources.'
+        : 'Attribute statistics to named sources ("according to…") — sourced numbers earn more AI citations.',
+    });
+  }
+
+  // 32. Outbound-authority citations (gov/edu/reference + configured domains)
+  const authorityMatchers: RegExp[] = [
+    /\.gov(\.|$)/, /\.edu(\.|$)/, /\.ac\.[a-z]{2}$/, /(^|\.)wikipedia\.org$/,
+    /(^|\.)nih\.gov$/, /(^|\.)who\.int$/, /(^|\.)nature\.com$/,
+  ];
+  for (const d of authorityDomains || []) {
+    const esc = d.trim().toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (esc) authorityMatchers.push(new RegExp(`(^|\\.)${esc}$`));
+  }
+  if (externalDomains.length > 0) {
+    const cited = externalDomains.some((h) => authorityMatchers.some((re) => re.test(h)));
+    checks.push({
+      id: 'eeat_citations',
+      label: 'Authoritative Citations',
+      passed: cited,
+      severity: 'info',
+      message: cited
+        ? 'Content cites at least one authoritative reference domain.'
+        : 'Link claims to an authoritative reference (government, academic, or primary source) to strengthen trust.',
+    });
+  }
 
   return checks;
 }

@@ -134,7 +134,11 @@ export async function handleContentBeforeSave(
     content.data.seo.schemaType || content.data.schema_type
   ) as any;
 
-  // Auto-assign Speakable CSS Selectors for Voice & AEO
+  // Auto-assign Speakable CSS Selectors for Voice & AEO.
+  // Contract: `.post-lead` ships on theme excerpt elements (PostCard,
+  // ServiceCard, homepage featured) so it resolves in rendered HTML;
+  // `#field-excerpt` targets the admin editor; `.aeo-summary` is the
+  // documented author convention for a speakable summary block.
   if (!content.data.seo.speakableSelectors || content.data.seo.speakableSelectors.length === 0) {
     content.data.seo.speakableSelectors = options.defaultSpeakableSelectors || [
       '#field-excerpt',

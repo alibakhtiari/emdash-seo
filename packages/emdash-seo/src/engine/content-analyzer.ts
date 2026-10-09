@@ -21,6 +21,8 @@ export interface ContentAnalyzeOptions {
   authorName?: string;
   reviewerName?: string;
   speakableSelectors?: string[];
+  dateModified?: string;
+  authorityDomains?: string[];
   expectedEntities?: string[];
   topicClusters?: Record<string, string[]>;
 }
@@ -58,6 +60,7 @@ export function analyzeContent(options: ContentAnalyzeOptions): AnalysisReport {
   const linkMatches = content.match(/<a\s+[^>]*href=["']([^"']+)["'][^>]*>/gi) || [];
   let internalLinks = 0;
   let externalLinks = 0;
+  const externalDomains = new Set<string>();
   const siteHostname = options.siteUrl ? new URL(options.siteUrl).hostname : '';
 
   for (const link of linkMatches) {
@@ -72,6 +75,12 @@ export function analyzeContent(options: ContentAnalyzeOptions): AnalysisReport {
       internalLinks++;
     } else {
       externalLinks++;
+      try {
+        const host = new URL(href).hostname.toLowerCase();
+        if (host && externalDomains.size < 20) externalDomains.add(host);
+      } catch {
+        // Ignore unparsable outbound URLs
+      }
     }
   }
 
@@ -389,6 +398,9 @@ export function analyzeContent(options: ContentAnalyzeOptions): AnalysisReport {
     authorName: options.authorName,
     reviewerName: options.reviewerName,
     speakableSelectors: options.speakableSelectors,
+    dateModified: options.dateModified,
+    authorityDomains: options.authorityDomains,
+    externalDomains: [...externalDomains],
     wordCount,
     h2Count: h2Matches.length,
     h3Count: h3Matches.length,

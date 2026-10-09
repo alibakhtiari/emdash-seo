@@ -60,6 +60,7 @@ export async function handleStatelessAnalyze(ctx: any, options: SeoPluginOptions
           ? body.reviewedBy
           : body.reviewedBy?.name,
     speakableSelectors: Array.isArray(body.speakableSelectors) ? body.speakableSelectors : undefined,
+    dateModified: body.dateModified || body.updatedAt || body.modifiedTime,
   });
 
   const totalTopicEntities = entitiesDetected.length + entityGaps.length;

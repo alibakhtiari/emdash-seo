@@ -191,7 +191,9 @@ Use a steam extractor.`,
       // Check connected @id references
       const webpageNode = nodes.find((n) => n['@type'] === 'WebPage');
       expect(webpageNode.isPartOf['@id']).toBe('https://example.com/#website');
-      expect(webpageNode.about['@id']).toBe('https://example.com/#organization');
+      const aboutRefs = Array.isArray(webpageNode.about) ? webpageNode.about : [webpageNode.about];
+      expect(aboutRefs.some((a: any) => a['@id'] === 'https://example.com/#organization')).toBe(true);
+      expect(aboutRefs.some((a: any) => a['@type'] === 'Thing' && typeof a.name === 'string')).toBe(true);
 
       const articleNode = nodes.find((n) => n['@type'] === 'Article');
       expect(articleNode.isPartOf['@id']).toBe('https://example.com/blog/carpet-cleaning-tips#webpage');

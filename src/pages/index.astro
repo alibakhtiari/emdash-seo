@@ -142,7 +142,7 @@ function formatDate(date: Date | null | undefined) {
 									<h1 class="featured-title" {...featuredPost.edit.title}>{featuredPost.data.title}</h1>
 								</a>
 								{featuredPost.data.excerpt && (
-									<p class="featured-excerpt" {...featuredPost.edit.excerpt}>{featuredPost.data.excerpt}</p>
+									<p class="featured-excerpt post-lead" {...featuredPost.edit.excerpt}>{featuredPost.data.excerpt}</p>
 								)}
 								{featuredTags.length > 0 && (
 									<div class="featured-tags">
