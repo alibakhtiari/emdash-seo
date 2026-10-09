@@ -20,6 +20,8 @@ describe("Content Analyzer", () => {
       slug: "carpet-cleaning-london",
       minWordCount: 80,
       authorName: "Jane Pro",
+      reviewerName: "Sam Reviewer",
+      speakableSelectors: ["#field-excerpt"],
     });
 
     expect(result.score).toBeGreaterThanOrEqual(80);

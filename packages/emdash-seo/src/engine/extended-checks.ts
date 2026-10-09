@@ -10,10 +10,24 @@ export interface ExtendedChecksInput {
   focusKeywords: string[];
   metaDescription: string;
   authorName?: string;
+  reviewerName?: string;
+  speakableSelectors?: string[];
+  wordCount: number;
+  h2Count: number;
+  h3Count: number;
   readingEase: number;
   longParagraphsCount: number;
   longSectionsCount: number;
 }
+
+const TITLE_POWER_WORDS = [
+  'ultimate', 'complete', 'proven', 'essential', 'powerful', 'exclusive',
+  'guaranteed', 'effortless', 'master', 'definitive', 'professional', 'trusted',
+];
+const TITLE_SENTIMENT_WORDS = [
+  'amazing', 'awesome', 'best', 'excellent', 'outstanding', 'incredible',
+  'worst', 'avoid', 'mistakes', 'never', 'stop', 'warning',
+];
 
 /**
  * Extended parity checks (17-25): secondary keywords, keyphrase/URL/title
@@ -31,6 +45,11 @@ export function extendedContentChecks(input: ExtendedChecksInput): ContentCheck[
     focusKeywords,
     metaDescription,
     authorName,
+    reviewerName,
+    speakableSelectors,
+    wordCount,
+    h2Count,
+    h3Count,
     readingEase,
     longParagraphsCount,
     longSectionsCount,
@@ -146,6 +165,56 @@ export function extendedContentChecks(input: ExtendedChecksInput): ContentCheck[
     message: aiScore >= 60
       ? `AI citation readiness ${aiScore} meets the 60+ target (quotable passages, stats, direct answers).`
       : `AI citation readiness ${aiScore} is below 60. Add a quotable definition, statistics, and a direct answer near the top.`,
+  });
+
+  // 26. Title power/sentiment wording (CTR hint)
+  const titleLower = title.toLowerCase();
+  const hasPowerWord = [...TITLE_POWER_WORDS, ...TITLE_SENTIMENT_WORDS].some((w) => titleLower.includes(w));
+  checks.push({
+    id: 'title_power_words',
+    label: 'Title Power Wording',
+    passed: hasPowerWord,
+    severity: 'info',
+    message: hasPowerWord
+      ? 'SEO title uses power or sentiment wording that can lift click-through rate.'
+      : 'Consider a power word (ultimate, proven, complete) or sentiment word (best, avoid) in the SEO title.',
+  });
+
+  // 27. Long-form TOC presence (>1500 words without subheadings)
+  const subCount = h2Count + h3Count;
+  const tocOk = wordCount <= 1500 || subCount > 0;
+  checks.push({
+    id: 'toc_missing',
+    label: `Table of Contents (${wordCount} words, ${subCount} subheadings)`,
+    passed: tocOk,
+    severity: 'warning',
+    message: tocOk
+      ? 'Long-form content has subheading navigation or is concise enough without it.'
+      : 'Content exceeds 1500 words with no H2/H3 subheadings. Add a table of contents with jump links.',
+  });
+
+  // 28. Voice-search speakable readiness
+  const speakableOk = Array.isArray(speakableSelectors) && speakableSelectors.length > 0;
+  checks.push({
+    id: 'speakable_readiness',
+    label: 'Speakable Voice Readiness',
+    passed: speakableOk,
+    severity: 'info',
+    message: speakableOk
+      ? 'Speakable selectors are configured for voice-assistant readout.'
+      : 'Configure speakable CSS selectors so voice assistants can read the summary aloud.',
+  });
+
+  // 29. E-E-A-T reviewer presence
+  const hasReviewer = Boolean((reviewerName || '').trim());
+  checks.push({
+    id: 'eeat_reviewer',
+    label: 'Reviewer Credit (E-E-A-T)',
+    passed: hasReviewer,
+    severity: 'info',
+    message: hasReviewer
+      ? 'Content carries reviewer credit.'
+      : 'Add reviewer credit for YMYL or advice content to strengthen trust signals.',
   });
 
   return checks;

@@ -20,6 +20,7 @@ export interface ContentAnalyzeOptions {
   minWordCount?: number;
   authorName?: string;
   reviewerName?: string;
+  speakableSelectors?: string[];
   expectedEntities?: string[];
   topicClusters?: Record<string, string[]>;
 }
@@ -386,6 +387,11 @@ export function analyzeContent(options: ContentAnalyzeOptions): AnalysisReport {
     focusKeywords,
     metaDescription,
     authorName: options.authorName,
+    reviewerName: options.reviewerName,
+    speakableSelectors: options.speakableSelectors,
+    wordCount,
+    h2Count: h2Matches.length,
+    h3Count: h3Matches.length,
     readingEase: detailedReadabilityEarly.readingEase,
     longParagraphsCount: detailedReadabilityEarly.longParagraphsCount,
     longSectionsCount: detailedReadabilityEarly.longSectionsCount,

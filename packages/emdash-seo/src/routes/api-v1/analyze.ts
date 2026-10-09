@@ -53,6 +53,13 @@ export async function handleStatelessAnalyze(ctx: any, options: SeoPluginOptions
         : typeof body.author === 'string'
           ? body.author
           : body.author?.name,
+    reviewerName:
+      typeof body.reviewerName === 'string'
+        ? body.reviewerName
+        : typeof body.reviewedBy === 'string'
+          ? body.reviewedBy
+          : body.reviewedBy?.name,
+    speakableSelectors: Array.isArray(body.speakableSelectors) ? body.speakableSelectors : undefined,
   });
 
   const totalTopicEntities = entitiesDetected.length + entityGaps.length;

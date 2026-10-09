@@ -279,6 +279,8 @@ describe("Content Analyzer Integration with Semantic Engine", () => {
       slug: "carpet-cleaning-london",
       minWordCount: 80,
       authorName: "Jane Pro",
+      reviewerName: "Sam Reviewer",
+      speakableSelectors: ["#field-excerpt"],
     });
 
     // Existing checks and backwards compatibility

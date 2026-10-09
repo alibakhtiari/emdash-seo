@@ -75,8 +75,10 @@ export function ContentEditorSeoPanel(props: ContentEditorPanelProps) {
       metaDescription: metaDesc,
       minWordCount: isCornerstone ? 1200 : 600,
       authorName: typeof author === 'string' ? author : author?.name,
+      reviewerName: typeof seoData.reviewedBy === 'string' ? seoData.reviewedBy : (seoData.reviewedBy as { name?: string } | undefined)?.name,
+      speakableSelectors: Array.isArray(seoData.speakableSelectors) ? seoData.speakableSelectors as string[] : undefined,
     });
-  }, [postTitle, postSlug, textContent, focusKeyword, metaDesc, isCornerstone, seoData.author]);
+  }, [postTitle, postSlug, textContent, focusKeyword, metaDesc, isCornerstone, seoData.author, seoData.reviewedBy, seoData.speakableSelectors]);
 
   const seoScore = seoReport.score;
   const hasContent = textContent.trim().length > 0;

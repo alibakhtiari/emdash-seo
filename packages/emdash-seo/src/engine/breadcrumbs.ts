@@ -46,9 +46,11 @@ export function shouldSkipSegment(segment: string, all: string[], index: number)
     return true;
   }
 
-  // Pure numeric year (4 digits) or month (1-2 digits) archive segments
+  // Pure numeric year (4 digits), or month (1-2 digits) only when it directly
+  // follows a year (date archive context) — plain numbers like /top-10/
+  // or /part-2/ are legitimate slugs and must be kept.
   if (/^\d{4}$/.test(segment)) return true;
-  if (/^\d{1,2}$/.test(segment)) return true;
+  if (/^\d{1,2}$/.test(segment) && index > 0 && /^\d{4}$/.test(all[index - 1])) return true;
 
   return false;
 }

@@ -76,3 +76,15 @@ describe("Breadcrumbs and Table of Contents", () => {
     });
   });
 });
+
+describe("Breadcrumb numeric segments", () => {
+  it("keeps legitimate numeric slugs like /top-10/ while skipping date archives", async () => {
+    const { shouldSkipSegment } = await import("../packages/emdash-seo/src/engine/breadcrumbs.js");
+    expect(shouldSkipSegment("top-10", ["blog", "top-10"], 1)).toBe(false);
+    expect(shouldSkipSegment("10", ["blog", "top-10", "10"], 2)).toBe(false);
+    expect(shouldSkipSegment("2026", ["blog", "2026", "09"], 1)).toBe(true);
+    expect(shouldSkipSegment("09", ["blog", "2026", "09"], 2)).toBe(true);
+    const trail = generateAutoBreadcrumbs("/blog/top-10/", "https://example.com", "Top 10");
+    expect(trail.map((c) => c.name)).toContain("Top 10");
+  });
+});
