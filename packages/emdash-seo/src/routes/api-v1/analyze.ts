@@ -47,6 +47,12 @@ export async function handleStatelessAnalyze(ctx: any, options: SeoPluginOptions
     focusKeywords,
     metaDescription,
     siteUrl: options.siteUrl,
+    authorName:
+      typeof body.authorName === 'string'
+        ? body.authorName
+        : typeof body.author === 'string'
+          ? body.author
+          : body.author?.name,
   });
 
   const totalTopicEntities = entitiesDetected.length + entityGaps.length;

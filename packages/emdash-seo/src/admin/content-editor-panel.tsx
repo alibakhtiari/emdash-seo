@@ -66,6 +66,7 @@ export function ContentEditorSeoPanel(props: ContentEditorPanelProps) {
   );
 
   const seoReport = React.useMemo(() => {
+    const author = seoData.author as { name?: string } | string | undefined;
     return analyzeContent({
       title: postTitle,
       slug: postSlug,
@@ -73,8 +74,9 @@ export function ContentEditorSeoPanel(props: ContentEditorPanelProps) {
       focusKeywords: focusKeyword ? [focusKeyword] : [],
       metaDescription: metaDesc,
       minWordCount: isCornerstone ? 1200 : 600,
+      authorName: typeof author === 'string' ? author : author?.name,
     });
-  }, [postTitle, postSlug, textContent, focusKeyword, metaDesc, isCornerstone]);
+  }, [postTitle, postSlug, textContent, focusKeyword, metaDesc, isCornerstone, seoData.author]);
 
   const seoScore = seoReport.score;
   const hasContent = textContent.trim().length > 0;

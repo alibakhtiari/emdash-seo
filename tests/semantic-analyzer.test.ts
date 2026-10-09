@@ -274,10 +274,11 @@ describe("Content Analyzer Integration with Semantic Engine", () => {
     const report = analyzeContent({
       contentHtml: html,
       focusKeywords: ["carpet cleaning london"],
-      title: "Professional Carpet Cleaning London | CleanPro",
+      title: "Professional Carpet Cleaning London | 5.0-Star CleanPro",
       description: "Book expert carpet cleaning london with CleanPro. 5.0-star rated specialists for deep steam extraction, stain removal and fast drying.",
       slug: "carpet-cleaning-london",
       minWordCount: 80,
+      authorName: "Jane Pro",
     });
 
     // Existing checks and backwards compatibility

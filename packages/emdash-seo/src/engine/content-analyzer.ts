@@ -6,6 +6,7 @@ import {
 } from './semantic-analyzer.js';
 import { auditReadability } from './readability-auditor.js';
 import { auditImageAlts } from './alt-auditor.js';
+import { extendedContentChecks } from './extended-checks.js';
 
 export interface ContentAnalyzeOptions {
   title: string;
@@ -17,6 +18,8 @@ export interface ContentAnalyzeOptions {
   description?: string;
   siteUrl?: string;
   minWordCount?: number;
+  authorName?: string;
+  reviewerName?: string;
   expectedEntities?: string[];
   topicClusters?: Record<string, string[]>;
 }
@@ -372,6 +375,21 @@ export function analyzeContent(options: ContentAnalyzeOptions): AnalysisReport {
       ? `Focus keyword appears in ${chunksWithKw} of ${chunkCount} content sections (even distribution).`
       : 'Distribute the focus keyword more evenly: it should appear in over half of all 100-word content sections.',
   });
+
+  // 17-25. Extended parity checks (see engine/extended-checks.ts for bodies)
+  checks.push(...extendedContentChecks({
+    title,
+    slug,
+    content,
+    cleanText,
+    primaryKw,
+    focusKeywords,
+    metaDescription,
+    authorName: options.authorName,
+    readingEase: detailedReadabilityEarly.readingEase,
+    longParagraphsCount: detailedReadabilityEarly.longParagraphsCount,
+    longSectionsCount: detailedReadabilityEarly.longSectionsCount,
+  }));
 
   // Severity-weighted overall score (error=3, warning=2, info=1)
   const SEVERITY_WEIGHTS: Record<ContentCheck['severity'], number> = { error: 3, warning: 2, info: 1 };

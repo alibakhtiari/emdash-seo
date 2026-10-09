@@ -126,8 +126,9 @@ export function FocusKeywordFieldWidget({
       title: snapshot.title,
       content: snapshot.content,
       metaDescription: snapshot.excerpt,
+      authorName: author?.name,
     });
-  }, [keyword, snapshot.title, snapshot.content, snapshot.excerpt]);
+  }, [keyword, snapshot.title, snapshot.content, snapshot.excerpt, author?.name]);
 
   // Run Realtime Readability Audit
   const readability = React.useMemo(() => {
