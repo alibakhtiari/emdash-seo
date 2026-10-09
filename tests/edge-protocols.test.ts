@@ -92,3 +92,29 @@ describe("Robots AI governance", () => {
     expect(txt).toContain("Allow: /llms-full.txt");
   });
 });
+
+describe("AI crawler training/search split", () => {
+  it("allows search citers while denying training crawlers under search-only", async () => {
+    const { buildRobotsTxt } = await import("../packages/emdash-seo/src/routes/robots.js");
+    const txt = buildRobotsTxt(
+      { ...DEFAULT_OPTIONS, siteUrl: "https://example.com", aiCrawlerPolicy: "search-only" },
+      {}
+    );
+    const blockOf = (bot: string) => {
+      const i = txt.indexOf(`User-agent: ${bot}`);
+      return txt.slice(i, txt.indexOf("User-agent:", i + 1) === -1 ? undefined : txt.indexOf("User-agent:", i + 1));
+    };
+    expect(blockOf("OAI-SearchBot")).toContain("Allow: /");
+    expect(blockOf("GPTBot")).toContain("Disallow: /");
+    expect(blockOf("GPTBot")).toContain("Allow: /llms.txt");
+    expect(blockOf("CCBot")).toContain("Disallow: /");
+  });
+
+  it("preserves legacy blockAiBots behavior", async () => {
+    const { buildRobotsTxt } = await import("../packages/emdash-seo/src/routes/robots.js");
+    const blocked = buildRobotsTxt({ ...DEFAULT_OPTIONS, siteUrl: "https://example.com", blockAiBots: true }, {});
+    expect(blocked).toContain("Disallow: /");
+    const open = buildRobotsTxt({ ...DEFAULT_OPTIONS, siteUrl: "https://example.com" }, {});
+    expect(open).toContain("User-agent: Claude-SearchBot");
+  });
+});

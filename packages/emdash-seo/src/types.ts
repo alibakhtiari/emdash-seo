@@ -231,6 +231,10 @@ export interface SeoPluginOptions {
   enableLlmsTxt?: boolean;
   enableSitemap?: boolean;
   enableRobots?: boolean;
+  /** Legacy boolean: true maps to aiCrawlerPolicy 'block-all'. */
+  blockAiBots?: boolean;
+  /** Granular AI crawler policy; wins over blockAiBots when set. */
+  aiCrawlerPolicy?: 'allow-all' | 'search-only' | 'block-all';
   enableRedirects?: boolean;
   enableIndexNow?: boolean;
   indexnowKey?: string;

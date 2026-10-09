@@ -1,35 +1,42 @@
 import type { SeoPluginOptions } from '../types.js';
 import { cachedProtocol } from '../engine/protocol-cache.js';
 
-/** AI crawler user-agents governed by the block-AI toggle. Training and
- * search crawlers share one toggle today; per-group policies are tracked
- * in tasks.md (training/search split). */
-const AI_BOTS = [
-  'GPTBot',
-  'ChatGPT-User',
+/** Citation-indexing search crawlers: safe to allow for AI visibility. */
+const AI_SEARCH_BOTS = [
   'OAI-SearchBot',
-  'ClaudeBot',
-  'Claude-User',
+  'ChatGPT-User',
   'Claude-SearchBot',
-  'anthropic-ai',
+  'Claude-User',
   'PerplexityBot',
   'Perplexity-User',
-  'Google-Extended',
+  'DuckAssistBot',
+  'YouBot',
   'Applebot-Extended',
-  'Bytespider',
   'Amazonbot',
+];
+
+/** Training/data-collection crawlers: commonly denied to protect content. */
+const AI_TRAINING_BOTS = [
+  'GPTBot',
+  'ClaudeBot',
+  'anthropic-ai',
+  'Google-Extended',
+  'Bytespider',
   'Cohere-ai',
   'Meta-ExternalAgent',
-  'YouBot',
-  'DuckAssistBot',
   'CCBot',
 ];
+
+/** Search + training groups (union preserved for tests/consumers). */
+export const AI_BOT_GROUPS = { search: AI_SEARCH_BOTS, training: AI_TRAINING_BOTS };
 
 export interface RobotsKnobs {
   /** Extra raw `Disallow:`/`Allow:` lines from seo_settings or options. */
   customRules?: string[];
   /** When true, AI crawlers get `Disallow: /` (except llms endpoints stay open). */
   blockAiBots?: boolean;
+  /** Granular policy; wins over blockAiBots when set. */
+  aiCrawlerPolicy?: 'allow-all' | 'search-only' | 'block-all';
   /** Passed through as `Crawl-delay: N` under `User-agent: *`. */
   crawlDelay?: number;
 }
@@ -39,11 +46,13 @@ function knobsFromOptions(options: SeoPluginOptions): RobotsKnobs {
     robotsRules?: string[];
     robotsCustomRules?: string[];
     blockAiBots?: boolean;
+    aiCrawlerPolicy?: RobotsKnobs['aiCrawlerPolicy'];
     crawlDelay?: number;
   };
   return {
     customRules: o.robotsRules ?? o.robotsCustomRules,
     blockAiBots: o.blockAiBots,
+    aiCrawlerPolicy: o.aiCrawlerPolicy,
     crawlDelay: o.crawlDelay,
   };
 }
@@ -66,6 +75,10 @@ async function knobsFromSettings(ctx: any): Promise<Partial<RobotsKnobs>> {
     if (raw) out.customRules = raw.split('\n').map((l) => l.trim()).filter(Boolean);
     const blockAi = await get('robots_block_ai');
     if (blockAi != null) out.blockAiBots = blockAi === '1' || blockAi === 'true';
+    const policy = (await get('ai_crawler_policy')) ?? (await get('aiCrawlerPolicy'));
+    if (policy === 'allow-all' || policy === 'search-only' || policy === 'block-all') {
+      out.aiCrawlerPolicy = policy;
+    }
     const delay = await get('robots_crawl_delay');
     if (delay != null && delay !== '' && !Number.isNaN(Number(delay))) {
       out.crawlDelay = Number(delay);
@@ -92,11 +105,19 @@ export function buildRobotsTxt(options: SeoPluginOptions, knobs: RobotsKnobs = {
   lines.push('', '# Sitemaps', `Sitemap: ${siteUrl}/sitemap.xml`, `Sitemap: ${siteUrl}/sitemap-index.xml`, `Sitemap: ${siteUrl}/sitemap-news.xml`);
 
   lines.push('', '# AI Agent Directives');
-  for (const bot of AI_BOTS) {
-    lines.push(`User-agent: ${bot}`);
-    lines.push(merged.blockAiBots ? 'Disallow: /' : 'Allow: /');
-    lines.push('Allow: /llms.txt', 'Allow: /llms-full.txt');
-  }
+  // Effective policy: explicit aiCrawlerPolicy wins, else legacy boolean.
+  const policy = merged.aiCrawlerPolicy ?? (merged.blockAiBots ? 'block-all' : 'allow-all');
+  const searchBlocked = policy === 'block-all';
+  const trainingBlocked = policy !== 'allow-all';
+  const emitGroup = (bots: string[], blocked: boolean) => {
+    for (const bot of bots) {
+      lines.push(`User-agent: ${bot}`);
+      lines.push(blocked ? 'Disallow: /' : 'Allow: /');
+      lines.push('Allow: /llms.txt', 'Allow: /llms-full.txt');
+    }
+  };
+  emitGroup(AI_SEARCH_BOTS, searchBlocked);
+  emitGroup(AI_TRAINING_BOTS, trainingBlocked);
   return `${lines.join('\n')}\n`;
 }
 
