@@ -1,6 +1,34 @@
 # WebABC SEO (`@emdash/plugin-seo`) — Master Task List
 
-Date: 2026-10-08. Health: 208/208 vitest, `astro check` 0 errors, `eslint` 0 errors, max src file 497 lines, `dependencies: {}`.
+Date: 2026-10-09. Health: 219/219 vitest (20 files), `astro check` 0 errors, `eslint` 0 errors, `astro build` clean, max src file 499 lines, `dependencies: {}`.
+
+## Audit 2026-10-09 — verdict: ~93% WP-best parity, GEO/AEO ahead
+
+Method: live gate (vitest + astro check + eslint + production build) plus line-level
+verification of every prior audit claim. No fiction found: zero seeded fixtures
+(`legacy-carpet-care`/`count: 42` gone), error paths fail loudly (500/501, never
+sample-with-success), all 32 analyzer checks / 12+ schema emitters / 33 routes /
+8 hub tabs exercised by tests.
+
+Genuinely at or beyond RankMath Pro / Yoast Premium: per-type title/desc
+templates, severity-weighted 32-check analyzer, connected `@graph` (17 types +
+LocalBusiness subtypes + per-post ratings), content-driven sitemaps
+(index/news/video/image/xhtml) + XSL, settings-driven robots (13 AI bots),
+host-write-through redirects with chain guard, KV protocol cache, IndexNow
+lifecycle + key-file + fan-out, passage citability → `llms-full`, Answers API,
+`speakable`/FAQ/HowTo loop, 4-engine WP import + CSV, bulk editor, role matrix
+with enforcement, settings export/import, honest audits (cannibalization,
+orphan suggestions, unified bands).
+
+Remaining gaps (ranked): score history/trends (KV latest only — actionable,
+small); Product commerce depth SKU/GTIN/shipping (overrides passthrough only);
+email reports/webhooks (absent); multi-location entities (single-entity now);
+generative Content-AI suggestions (ECI/BM25 exist, Workers-AI stub unused);
+GSC integration (blocked: external OAuth); corpus IDF (blocked: sync engine);
+IndexNow fan-out cron trigger (blocked: no host hook — route ready);
+stemming (exact-match kept intentionally); RSS footer / attachment redirect
+(minor, host-adjacent). Server bundle ~15MB total app JS is host territory;
+plugin weight is zero-dep — p99 CPU unmeasured here, not claimed.
 
 Commits landed (`main` ahead 6):
 - `51f223c` feat(seo): per-type title templates, verification/social head parity, metadata divergence fix
