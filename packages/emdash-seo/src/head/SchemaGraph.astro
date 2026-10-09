@@ -25,6 +25,14 @@ interface Props {
   seo?: EntrySeoMetadata;
   business?: LocalBusinessInfo;
   customGraphNodes?: Record<string, any>[];
+  keywords?: string[];
+  articleSection?: string;
+  publishingPrinciples?: string;
+  copyrightYear?: number;
+  licenseUrl?: string;
+  blogUrl?: string;
+  blogName?: string;
+  navigationItems?: Array<{ name: string; url: string }>;
 }
 
 const {
@@ -48,6 +56,14 @@ const {
   seo,
   business,
   customGraphNodes,
+  keywords,
+  articleSection,
+  publishingPrinciples,
+  copyrightYear,
+  licenseUrl,
+  blogUrl,
+  blogName,
+  navigationItems,
 } = Astro.props;
 
 const schemaData = buildConnectedSchemaGraph({
@@ -71,6 +87,14 @@ const schemaData = buildConnectedSchemaGraph({
   seo,
   business,
   customGraphNodes,
+  keywords,
+  articleSection,
+  publishingPrinciples,
+  copyrightYear,
+  licenseUrl,
+  blogUrl,
+  blogName,
+  navigationItems,
 });
 
 const jsonLd = JSON.stringify(schemaData);

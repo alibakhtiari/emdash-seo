@@ -218,7 +218,7 @@ if (!hasPrecomputed) {
       type={seo.ogType || type}
       siteName={siteName}
       locale={locale}
-      localeAlternate={localeAlternate}
+      localeAlternate={localeAlternate.length > 0 ? localeAlternate : alternateLinks.filter((a) => a.hreflang !== 'x-default').map((a) => a.hreflang)}
       twitterCard={seo.twitterCard || 'summary_large_image'}
       twitterSite={twitterSite}
       twitterCreator={twitterCreator}

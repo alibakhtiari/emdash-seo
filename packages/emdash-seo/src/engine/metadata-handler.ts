@@ -159,6 +159,13 @@ export async function handlePageMetadata(
               href: a.href,
               key: `hreflang:${a.hreflang}`,
             });
+            if (a.hreflang !== 'x-default') {
+              contributions.push({
+                kind: 'property',
+                property: 'og:locale:alternate',
+                content: normalizeOgLocale(a.hreflang),
+              });
+            }
           }
         }
       }
@@ -276,6 +283,7 @@ export async function handlePageMetadata(
     }
     if (image) {
       contributions.push({ kind: 'meta', name: 'twitter:image', content: image });
+      contributions.push({ kind: 'meta', name: 'twitter:image:alt', content: ogTitle || fullTitle });
     }
     if (options.twitterSite) {
       contributions.push({ kind: 'meta', name: 'twitter:site', content: options.twitterSite });

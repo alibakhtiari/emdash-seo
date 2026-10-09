@@ -288,6 +288,7 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
       ...(seo.schemaOverrides || {})
     });
   } else if (isArticleKind) {
+    const pageRating = seo.aggregateRating || business.aggregateRating;
     graph.push({
       "@type": schemaType,
       "@id": `${cleanCanonical}#${schemaType.toLowerCase()}`,
@@ -315,11 +316,19 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
       ...(keywords && keywords.length > 0 ? { "keywords": keywords.join(', ') } : {}),
       ...(datePublished ? { "datePublished": datePublished } : {}),
       ...(dateModified ? { "dateModified": dateModified } : {}),
+      ...(pageRating ? {
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": String(pageRating.ratingValue),
+          "reviewCount": String(pageRating.reviewCount)
+        }
+      } : {}),
       ...(imageUrl ? { "image": imageUrl } : {}),
       ...(seo.schemaOverrides || {})
     });
   } else if (schemaType === 'Product') {
     const productOverrides = seo.schemaOverrides || {};
+    const productRating = seo.aggregateRating || business.aggregateRating;
     graph.push({
       "@type": "Product",
       "@id": `${cleanCanonical}#product`,
@@ -332,11 +341,11 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
         "availability": "https://schema.org/InStock",
         ...(productOverrides.price !== undefined ? { "price": String(productOverrides.price) } : {})
       },
-      ...(business.aggregateRating ? {
+      ...(productRating ? {
         "aggregateRating": {
           "@type": "AggregateRating",
-          "ratingValue": String(business.aggregateRating.ratingValue),
-          "reviewCount": String(business.aggregateRating.reviewCount)
+          "ratingValue": String(productRating.ratingValue),
+          "reviewCount": String(productRating.reviewCount)
         }
       } : {}),
       ...(imageUrl ? { "image": imageUrl } : {}),
@@ -388,6 +397,7 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
       ...(seo.schemaOverrides || {})
     });
   } else if (schemaType === 'VideoObject') {
+    const videoOverrides = seo.schemaOverrides || {};
     graph.push({
       "@type": "VideoObject",
       "@id": `${cleanCanonical}#video`,
@@ -395,6 +405,32 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
       "description": description,
       ...(imageUrl ? { "thumbnailUrl": imageUrl } : {}),
       ...(datePublished ? { "uploadDate": datePublished } : {}),
+      ...(videoOverrides.duration ? { "duration": videoOverrides.duration } : {}),
+      ...(videoOverrides.contentUrl ? { "contentUrl": videoOverrides.contentUrl } : {}),
+      ...(videoOverrides.embedUrl ? { "embedUrl": videoOverrides.embedUrl } : {}),
+      ...(seo.schemaOverrides || {})
+    });
+  } else if (schemaType === 'JobPosting') {
+    const jobOverrides = seo.schemaOverrides || {};
+    graph.push({
+      "@type": "JobPosting",
+      "@id": `${cleanCanonical}#jobposting`,
+      "title": title,
+      "description": description,
+      "hiringOrganization": { "@id": `${cleanSiteUrl}/#organization` },
+      ...(datePublished ? { "datePosted": datePublished } : {}),
+      ...(jobOverrides.employmentType ? { "employmentType": jobOverrides.employmentType } : {}),
+      ...(jobOverrides.jobLocation ? { "jobLocation": jobOverrides.jobLocation } : {}),
+      ...(imageUrl ? { "image": imageUrl } : {}),
+      ...(seo.schemaOverrides || {})
+    });
+  } else if (schemaType === 'CollectionPage' || schemaType === 'SearchResultsPage') {
+    graph.push({
+      "@type": schemaType,
+      "@id": `${cleanCanonical}#${schemaType.toLowerCase()}`,
+      "name": title,
+      "description": description,
+      "isPartOf": { "@id": `${cleanCanonical}#webpage` },
       ...(seo.schemaOverrides || {})
     });
   } else if (schemaType === 'Course') {

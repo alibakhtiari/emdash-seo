@@ -187,7 +187,16 @@ function extractNormalizedMetadata(entry: any, options: SeoPluginOptions) {
     description = data.excerpt || entry?.excerpt || options.defaultDescription || '';
   }
 
-  const finalImage = seo.ogImage || data.featured_image || entry?.featured_image || data.image || entry?.image || options.defaultOgImage;
+  let finalImage = seo.ogImage || data.featured_image || entry?.featured_image || data.image || entry?.image;
+  if (!finalImage) {
+    const bodyText = typeof data.content === 'string' ? data.content : typeof entry?.content === 'string' ? entry.content : '';
+    const imgMatch = bodyText ? /<img[^>]+src=["']([^"']+)["']/i.exec(bodyText.slice(0, 20000)) : null;
+    if (imgMatch?.[1] && !imgMatch[1].startsWith('data:')) {
+      const src = imgMatch[1].trim();
+      finalImage = src.startsWith('http') ? src : `${cleanSiteUrl}${src.startsWith('/') ? '' : '/'}${src}`;
+    }
+  }
+  if (!finalImage) finalImage = options.defaultOgImage;
   const publishedTime = entry?.publishedTime || data.publishedTime || entry?.createdAt || data.createdAt;
   const modifiedTime = entry?.modifiedTime || data.modifiedTime || entry?.updatedAt || data.updatedAt;
   const author = entry?.author || data.author;
@@ -314,12 +323,17 @@ export function compilePrecomputedHead(entry: any, options: SeoPluginOptions): s
     tags.push(`<meta name="robots" content="${escapeHtml(robotsDirective)}" />`);
   }
 
-  // 5. Multilingual hreflang alternates
+  // 5. Multilingual hreflang alternates (+ og:locale:alternate auto-fill)
   const alternateLinks = entry?.alternateLinks || meta.data?.alternateLinks;
   if (Array.isArray(alternateLinks)) {
     for (const alt of alternateLinks) {
       if (alt?.hreflang && alt?.href) {
         tags.push(`<link rel="alternate" hreflang="${escapeHtml(alt.hreflang)}" href="${escapeHtml(alt.href)}" />`);
+      }
+    }
+    for (const alt of alternateLinks) {
+      if (alt?.hreflang && alt.hreflang !== 'x-default') {
+        tags.push(`<meta property="og:locale:alternate" content="${escapeHtml(normalizeOgLocale(alt.hreflang))}" />`);
       }
     }
   }
@@ -383,6 +397,7 @@ export function compilePrecomputedHead(entry: any, options: SeoPluginOptions): s
   }
   if (meta.twitterImage) {
     tags.push(`<meta name="twitter:image" content="${escapeHtml(meta.twitterImage)}" />`);
+    tags.push(`<meta name="twitter:image:alt" content="${escapeHtml(meta.cleanSocialTitle)}" />`);
   }
   if (options.twitterSite) {
     tags.push(`<meta name="twitter:site" content="${escapeHtml(options.twitterSite)}" />`);

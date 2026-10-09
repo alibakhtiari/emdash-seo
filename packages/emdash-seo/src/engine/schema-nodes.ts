@@ -104,6 +104,9 @@ export function inferSchemaType(pathname: string, explicitType?: string | null):
   if (p === '/how-to' || p.startsWith('/how-to/') || p === '/howto' || p.startsWith('/howto/')) return 'HowTo';
   if (p.startsWith('/event')) return 'Event';
   if (p.startsWith('/recipe')) return 'Recipe';
+  if (p.startsWith('/jobs') || p.startsWith('/careers') || p.startsWith('/job/')) return 'JobPosting';
+  if (p === '/search' || p.startsWith('/search/')) return 'SearchResultsPage';
+  if (p.startsWith('/categor') || p.startsWith('/tag/') || p === '/tags') return 'CollectionPage';
   if (p.startsWith('/services') || p.includes('/service/')) return 'Service';
   if (
     p.startsWith('/blog') ||

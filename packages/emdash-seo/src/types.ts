@@ -105,8 +105,12 @@ export interface EntrySeoMetadata {
   twitterTitle?: string;
   twitterDescription?: string;
   twitterImage?: string;
-  schemaType?: 'CleaningService' | 'LocalBusiness' | 'Service' | 'Article' | 'BlogPosting' | 'TechArticle' | 'NewsArticle' | 'FAQPage' | 'HowTo' | 'AboutPage' | 'ContactPage' | 'ProfilePage' | 'Product' | 'Review' | 'MedicalWebPage' | 'None' | (string & {});
+  schemaType?: 'CleaningService' | 'LocalBusiness' | 'Service' | 'Article' | 'BlogPosting' | 'TechArticle' | 'NewsArticle' | 'FAQPage' | 'HowTo' | 'AboutPage' | 'ContactPage' | 'ProfilePage' | 'Product' | 'Review' | 'Event' | 'Recipe' | 'VideoObject' | 'Course' | 'JobPosting' | 'CollectionPage' | 'SearchResultsPage' | 'MedicalWebPage' | 'None' | (string & {});
   schemaOverrides?: Record<string, any>;
+  aggregateRating?: {
+    ratingValue: string | number;
+    reviewCount: string | number;
+  };
   faqs?: FaqItem[];
   author?: AuthorProfile;
   reviewedBy?: AuthorProfile;
