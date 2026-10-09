@@ -8,7 +8,7 @@ import { handleFuzzyRedirects } from './routes/api-fuzzy-redirects.js';
 import { analyzeContent } from './engine/content-analyzer.js';
 import { buildConnectedSchemaGraph } from './engine/schema-builder.js';
 import { extractLinksFromContent, findInternalLinkOpportunities, detectOrphanPages } from './engine/link-analyzer.js';
-import { parseRankMathMeta, extractFaqsFromContent, detectRankMathToc, stripRankMathTocBlock } from './importers/rankmath-importer.js';
+import { parseRankMathMeta, parseRankMathTitlesOptions, convertRankMathVariables, extractFaqsFromContent, detectRankMathToc, stripRankMathTocBlock } from './importers/rankmath-importer.js';
 import { parseYoastMeta } from './importers/yoast-importer.js';
 import { parseAioseoMeta } from './importers/aioseo-importer.js';
 import { parseSeopressMeta } from './importers/seopress-importer.js';
@@ -176,6 +176,8 @@ export {
   findInternalLinkOpportunities,
   detectOrphanPages,
   parseRankMathMeta,
+  parseRankMathTitlesOptions,
+  convertRankMathVariables,
   extractFaqsFromContent,
   detectRankMathToc,
   stripRankMathTocBlock,

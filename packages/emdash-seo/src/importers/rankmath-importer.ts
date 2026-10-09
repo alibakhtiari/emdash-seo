@@ -80,6 +80,60 @@ export function parseRankMathMeta(rawMeta: Record<string, any>, postContent = ''
 }
 
 /**
+ * Converts Rank Math title/description variables to plugin tokens:
+ * %sep%→%separator%, %sitename%→%siteName%, %title%/%excerpt%/%category% kept.
+ */
+export function convertRankMathVariables(template: string): string {
+  return String(template || '')
+    .replace(/%sep%/g, '%separator%')
+    .replace(/%sitename%/g, '%siteName%')
+    .replace(/%sitedesc%/g, '%excerpt%')
+    .replace(/%id%/g, '')
+    .replace(/%page%/g, '%page%');
+}
+
+const RANKMATH_TEMPLATE_MAP: Array<[string, 'titleTemplates' | 'descriptionTemplates', string]> = [
+  ['pt_post_title', 'titleTemplates', 'post'],
+  ['pt_post_description', 'descriptionTemplates', 'post'],
+  ['pt_page_title', 'titleTemplates', 'page'],
+  ['pt_page_description', 'descriptionTemplates', 'page'],
+  ['pt_product_title', 'titleTemplates', 'product'],
+  ['pt_product_description', 'descriptionTemplates', 'product'],
+  ['author_archive_title', 'titleTemplates', 'authorArchive'],
+  ['author_archive_description', 'descriptionTemplates', 'authorArchive'],
+  ['date_archive_title', 'titleTemplates', 'dateArchive'],
+  ['date_archive_description', 'descriptionTemplates', 'dateArchive'],
+  ['search_title', 'titleTemplates', 'search'],
+  ['404_title', 'titleTemplates', '404'],
+  ['tax_category_title', 'titleTemplates', 'category'],
+  ['tax_category_description', 'descriptionTemplates', 'category'],
+  ['tax_post_tag_title', 'titleTemplates', 'tag'],
+  ['tax_post_tag_description', 'descriptionTemplates', 'tag'],
+];
+
+/**
+ * Maps Rank Math `rank-math-options-titles` (via emdash-export-helper.php
+ * `rank_math_settings.titles`) onto plugin title/description templates.
+ * Unknown/empty keys are skipped; result merges over caller defaults.
+ */
+export function parseRankMathTitlesOptions(
+  titles: Record<string, any>
+): { titleTemplates: Record<string, string>; descriptionTemplates: Record<string, string> } {
+  const titleTemplates: Record<string, string> = {};
+  const descriptionTemplates: Record<string, string> = {};
+  if (!titles || typeof titles !== 'object') return { titleTemplates, descriptionTemplates };
+  for (const [rmKey, group, key] of RANKMATH_TEMPLATE_MAP) {
+    const raw = titles[rmKey];
+    if (typeof raw === 'string' && raw.trim()) {
+      const converted = convertRankMathVariables(raw.trim());
+      if (group === 'titleTemplates') titleTemplates[key] = converted;
+      else descriptionTemplates[key] = converted;
+    }
+  }
+  return { titleTemplates, descriptionTemplates };
+}
+
+/**
  * Extracts FAQ questions and answers from Rank Math FAQ blocks and Kadence accordions
  */
 export function extractFaqsFromContent(content: string): FaqItem[] {

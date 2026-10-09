@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseRankMathMeta, extractFaqsFromContent, detectRankMathToc, stripRankMathTocBlock } from "../packages/emdash-seo/src/importers/rankmath-importer.js";
+import { parseRankMathMeta, parseRankMathTitlesOptions, convertRankMathVariables, extractFaqsFromContent, detectRankMathToc, stripRankMathTocBlock } from "../packages/emdash-seo/src/importers/rankmath-importer.js";
 import { parseYoastMeta } from "../packages/emdash-seo/src/importers/yoast-importer.js";
 import { matchRedirect } from "../packages/emdash-seo/src/routes/redirects.js";
 
@@ -127,5 +127,23 @@ describe("WordPress Migration Engine & Importers", () => {
       const match = matchRedirect("/unrelated-page", redirects);
       expect(match).toBeNull();
     });
+  });
+});
+
+describe("Rank Math titles-options import", () => {
+  it("maps pt/tax/archive titles to plugin templates with variable conversion", () => {
+    expect(convertRankMathVariables("%title% %sep% %sitename%")).toBe("%title% %separator% %siteName%");
+    const { titleTemplates, descriptionTemplates } = parseRankMathTitlesOptions({
+      pt_post_title: "%title% %sep% %sitename%",
+      pt_post_description: "%excerpt%",
+      search_title: "",
+      date_archive_title: "%title% %sep% Archives",
+      unknown_key: "ignored",
+    });
+    expect(titleTemplates.post).toBe("%title% %separator% %siteName%");
+    expect(descriptionTemplates.post).toBe("%excerpt%");
+    expect(titleTemplates.search).toBeUndefined();
+    expect(titleTemplates.dateArchive).toContain("Archives");
+    expect(parseRankMathTitlesOptions(null as any)).toEqual({ titleTemplates: {}, descriptionTemplates: {} });
   });
 });
