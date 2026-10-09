@@ -91,7 +91,9 @@ Refuted / nuanced (not added as defects):
 - [x] LocalBusiness subtype inference (10 verticals + explicit `businessType` override)
 - [x] Answers API `GET /_emdash/api/seo/v1/answers?q=` (tested)
 - [x] Cron cooled hourly; single cornerstone threshold 1200/600
-- [ ] Corpus IDF in D1 + Workers-AI hybrid (blocked: sync `analyzeContent` has no async KV path; needs engine refactor)
-- [ ] Sitemap-`lastmod` IndexNow fan-out on cron (blocked: no plugin cron hook — needs host scheduler)
+- [x] Role Capabilities UI (`RoleCapsPanel` matrix) + stored `seo_role_caps` enforced via `requireSeoCapFor` on redirects/meta/settings/indexnow routes (tested in `tests/auth.test.ts`)
+- [x] IndexNow fan-out route (`_emdash/api/seo/indexnow/fanout`: sitemap-diff vs KV snapshot, cap 200, 501s without KV — external-scheduler triggerable; tested)
+- [x] RankMath secondary keywords: covered — importer comma-splits `rank_math_focus_keyword` (array or comma string); no separate meta key exists per RankMath docs/API
+- [ ] Corpus IDF in D1 + Workers-AI hybrid (blocked: sync `analyzeContent` has no async KV path; needs engine refactor — no dead code shipped instead)
 - [ ] GSC integration (blocked: external OAuth/API credentials)
-- [ ] Roles admin UI matrix (helper `canManageModule` shipped); truSEO/secondary-key import (RankMath key unverified, not guessed); stemming (exact-match kept intentionally, dependency-free)
+- [ ] Stemming (exact `\bkw\b` kept intentionally, dependency-free)
