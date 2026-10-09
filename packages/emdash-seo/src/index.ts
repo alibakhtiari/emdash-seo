@@ -80,6 +80,7 @@ import {
   handleSeoMetaPatch,
   handleStatelessAnalyze,
   handleSeoAnswers,
+  handleIndexNowFanout,
   handleLinkOpportunities,
   handleV1AuditRun,
   handleV1AuditLatest,
@@ -225,6 +226,7 @@ export {
   handleSeoMetaPatch,
   handleStatelessAnalyze,
   handleSeoAnswers,
+  handleIndexNowFanout,
   handleLinkOpportunities,
   handleV1AuditRun,
   handleV1AuditLatest,
@@ -290,7 +292,7 @@ export function hasSeoCap(role?: string | null): boolean {
   return role === 'admin' || role === 'editor';
 }
 
-export { requireSeoCap, hasSeoRole, canManageModule, type SeoManageModule } from './engine/auth.js';
+export { requireSeoCap, requireSeoCapFor, hasSeoRole, canManageModule, ROLE_CAPS_KEY, type SeoManageModule, type RoleCapsMap } from './engine/auth.js';
 
 export const SEO_MANAGE_PERMISSION = 'seo:manage';
 

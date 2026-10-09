@@ -8,6 +8,7 @@ import { handleRunAudit, handleGetAudit } from './api-audit.js';
 import {
   handleStatelessAnalyze,
   handleSeoAnswers,
+  handleIndexNowFanout,
   handleV1AuditRun,
   handleV1AuditLatest,
   handleV1Redirects,
@@ -15,7 +16,7 @@ import {
 } from './api-v1.js';
 import { handleLinkOpportunities } from './api-v1/links.js';
 import { handleSeoMetaGet, handleSeoMetaPut, handleSeoMetaPatch } from './api-v1/meta.js';
-import { requireSeoCap } from '../engine/auth.js';
+import { requireSeoCapFor } from '../engine/auth.js';
 import { purgeProtocolCache } from '../engine/protocol-cache.js';
 import {
   getOrCreateIndexNowKey,
@@ -101,6 +102,13 @@ export function createPluginRoutes(options: SeoPluginOptions): Record<string, an
       });
     }, { public: true });
     registerRoute('_emdash/api/seo/indexnow/submit', async (ctx: any) => {
+      const denied = await requireSeoCapFor(ctx, 'indexnow');
+      if (denied) {
+        return new Response(JSON.stringify({ error: 'Forbidden: editor role cannot manage indexnow.' }), {
+          status: denied.status,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
       const req = ctx?.request || ctx?.req;
       const body = ctx?.input || (await req?.json?.().catch(() => ({}))) || {};
       const urls = body.urls || [];
@@ -112,6 +120,7 @@ export function createPluginRoutes(options: SeoPluginOptions): Record<string, an
         headers: { 'Content-Type': 'application/json' },
       });
     });
+    registerRoute('_emdash/api/seo/indexnow/fanout', async (ctx: any) => handleIndexNowFanout(ctx, options));
     registerRoute('indexnow/key', async (ctx: any) => {
       const key = await getOrCreateIndexNowKey(ctx?.kv, options.indexnowKey);
       return { key, keyFile: getIndexNowKeyFileContent(key) };
@@ -169,7 +178,7 @@ export function createPluginRoutes(options: SeoPluginOptions): Record<string, an
   });
 
   registerRoute('settings/save', async (ctx: any) => {
-    const denied = requireSeoCap(ctx);
+    const denied = await requireSeoCapFor(ctx, 'settings');
     if (denied) {
       return new Response(JSON.stringify({ error: 'Forbidden: seo:manage capability required.' }), {
         status: denied.status,
@@ -195,7 +204,7 @@ export function createPluginRoutes(options: SeoPluginOptions): Record<string, an
   });
 
   registerRoute('settings/export', async (ctx: any) => {
-    const denied = requireSeoCap(ctx);
+    const denied = await requireSeoCapFor(ctx, 'settings');
     if (denied) {
       return new Response(JSON.stringify({ error: 'Forbidden: seo:manage capability required.' }), {
         status: denied.status,
@@ -224,7 +233,7 @@ export function createPluginRoutes(options: SeoPluginOptions): Record<string, an
   });
 
   registerRoute('settings/import', async (ctx: any) => {
-    const denied = requireSeoCap(ctx);
+    const denied = await requireSeoCapFor(ctx, 'settings');
     if (denied) {
       return new Response(JSON.stringify({ error: 'Forbidden: seo:manage capability required.' }), {
         status: denied.status,

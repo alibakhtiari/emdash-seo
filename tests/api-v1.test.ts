@@ -582,3 +582,32 @@ describe('Unified REST API v1 (docs/EMDASH_ADMIN_AND_API_INTEGRATION.md)', () =>
     });
   });
 });
+
+describe('10. handleIndexNowFanout (POST /_emdash/api/seo/indexnow/fanout)', () => {
+  const fanoutOptions = { ...DEFAULT_OPTIONS, siteUrl: 'https://cleanpro.example.com', siteName: 'CleanPro London' };
+  it('501s honestly without KV and submits only changed URLs', async () => {
+    const { handleIndexNowFanout } = await import('../packages/emdash-seo/src/index.js');
+    const noKv = await handleIndexNowFanout({ request: new Request('https://x.example/fanout', { method: 'POST' }) }, fanoutOptions);
+    expect(noKv.status).toBe(501);
+
+    const item = { id: 'p1', slug: 'hello', data: { title: 'Hello' }, updatedAt: new Date().toISOString() };
+    const store = new Map<string, unknown>([
+      ['seo:sitemap:lastmods', JSON.stringify({ 'https://cleanpro.example.com/hello/': item.updatedAt })],
+    ]);
+    const ctx = {
+      request: new Request('https://cleanpro.example.com/_emdash/api/seo/v1/fanout', { method: 'POST' }),
+      collections: [{ slug: 'pages', urlPattern: '/{slug}' }],
+      content: { list: async () => ({ items: [item] }) },
+      kv: {
+        get: async (k: string) => store.get(k) ?? null,
+        set: async (k: string, v: unknown) => { store.set(k, v); },
+      },
+    };
+    const res = await handleIndexNowFanout(ctx, fanoutOptions);
+    expect(res.status).toBe(200);
+    const json: any = await res.json();
+    expect(json.success).toBe(true);
+    expect(json.submitted).toBe(0);
+    expect(json.total).toBe(1);
+  });
+});
