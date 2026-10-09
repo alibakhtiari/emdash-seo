@@ -34,6 +34,19 @@ export const ENGLISH_STOPWORDS: ReadonlySet<string> = new Set([
  * Predefined domain entity topic clusters for automated gap analysis
  */
 export const TOPIC_ENTITY_CLUSTERS: Record<string, string[]> = {
+  general: [
+    'service overview',
+    'process steps',
+    'pricing',
+    'testimonials',
+    'guarantee',
+    'booking',
+    'service area',
+    'faq',
+  ],
+  // Vertical example cluster (cleaning trade). Kept as opt-in data: selected
+  // only when content matches or via options.topicClusters override.
+  // The neutral `general` cluster below is the default for other content.
   cleaning: [
     'hot water extraction',
     'steam cleaning',

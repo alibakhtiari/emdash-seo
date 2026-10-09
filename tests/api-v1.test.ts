@@ -418,6 +418,13 @@ describe('Unified REST API v1 (docs/EMDASH_ADMIN_AND_API_INTEGRATION.md)', () =>
 
   describe('7. handleV1Redirects (GET / POST /_emdash/api/seo/v1/redirects)', () => {
     it('lists configured edge redirects with pagination', async () => {
+      await handleV1Redirects({
+        request: new Request('https://cleanpro.example.com/_emdash/api/seo/v1/redirects', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pattern: '/seeded-list-probe', destination: '/services/probe' }),
+        }),
+      }, options);
       const ctx = {
         request: new Request('https://cleanpro.example.com/_emdash/api/seo/v1/redirects?page=1&limit=10'),
       };
@@ -534,6 +541,8 @@ describe('Unified REST API v1 (docs/EMDASH_ADMIN_AND_API_INTEGRATION.md)', () =>
     });
 
     it('respects limit parameter', async () => {
+      record404Hit('/limit-probe-a');
+      record404Hit('/limit-probe-b');
       const ctx = {
         request: new Request('https://cleanpro.example.com/_emdash/api/seo/v1/404s?limit=1'),
       };

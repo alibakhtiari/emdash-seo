@@ -158,6 +158,85 @@ export function LinksTab() {
   );
 }
 
+export function BulkMetaTab() {
+  const [rows, setRows] = React.useState<Array<{ collection: string; id: string; metaTitle: string; metaDescription: string; noIndex: boolean }>>([
+    { collection: 'posts', id: '', metaTitle: '', metaDescription: '', noIndex: false },
+  ]);
+  const [saving, setSaving] = React.useState(false);
+  const [message, setMessage] = React.useState<string | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
+
+  const update = (idx: number, patch: Partial<{ collection: string; id: string; metaTitle: string; metaDescription: string; noIndex: boolean }>) => {
+    setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
+  };
+
+  const saveAll = async () => {
+    setSaving(true);
+    setMessage(null);
+    setError(null);
+    try {
+      const entries = rows
+        .filter((r) => r.id.trim())
+        .slice(0, 100)
+        .map((r) => ({
+          collection: r.collection.trim() || 'posts',
+          id: r.id.trim(),
+          metaTitle: r.metaTitle || undefined,
+          metaDescription: r.metaDescription || undefined,
+          noIndex: r.noIndex,
+        }));
+      if (entries.length === 0) {
+        setError('Add at least one entry ID to save.');
+        setSaving(false);
+        return;
+      }
+      const data = await callSeoApi('/_emdash/api/seo/v1/meta', {
+        method: 'PATCH',
+        body: JSON.stringify({ entries }),
+      });
+      if (typeof data.error === 'string') {
+        setError(data.error);
+      } else {
+        const results = Array.isArray(data.results) ? data.results : [];
+        const failed = results.filter((r: { success?: boolean }) => !r.success).length;
+        setMessage(failed === 0 ? `Saved ${results.length} entr${results.length === 1 ? 'y' : 'ies'}.` : `Saved with ${failed} failure(s).`);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+    setSaving(false);
+  };
+
+  return (
+    <div style={{ maxWidth: 840 }}>
+      <div style={{ ...subtle, marginBottom: '0.75rem' }}>Edit titles, descriptions, and noindex flags across entries, then save all at once (max 100).</div>
+      <table style={tableStyle}>
+        <thead>
+          <tr><th style={thStyle}>Collection</th><th style={thStyle}>ID</th><th style={thStyle}>Meta Title</th><th style={thStyle}>Meta Description</th><th style={thStyle}>Noindex</th><th style={thStyle}></th></tr>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => (
+            <tr key={i}>
+              <td style={tdStyle}><input type="text" value={row.collection} onChange={(e) => update(i, { collection: e.target.value })} style={{ ...inputStyle, minWidth: 80 }} /></td>
+              <td style={tdStyle}><input type="text" value={row.id} onChange={(e) => update(i, { id: e.target.value })} placeholder="post-1" style={{ ...inputStyle, minWidth: 80 }} /></td>
+              <td style={tdStyle}><input type="text" value={row.metaTitle} onChange={(e) => update(i, { metaTitle: e.target.value })} style={{ ...inputStyle, minWidth: 120 }} /></td>
+              <td style={tdStyle}><input type="text" value={row.metaDescription} onChange={(e) => update(i, { metaDescription: e.target.value })} style={{ ...inputStyle, minWidth: 140 }} /></td>
+              <td style={tdStyle}><input type="checkbox" checked={row.noIndex} onChange={(e) => update(i, { noIndex: e.target.checked })} /></td>
+              <td style={tdStyle}><button type="button" onClick={() => setRows((prev) => prev.filter((_, j) => j !== i))} style={btnGhostStyle}>Remove</button></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+        <button type="button" onClick={() => setRows((prev) => [...prev, { collection: 'posts', id: '', metaTitle: '', metaDescription: '', noIndex: false }])} style={btnGhostStyle}>Add Row</button>
+        <button type="button" onClick={saveAll} disabled={saving} style={btnStyle}>{saving ? 'Saving...' : 'Save All'}</button>
+      </div>
+      {message && <div style={{ ...subtle, marginTop: '0.5rem' }}>{message}</div>}
+      {error && <div style={{ ...subtle, color: 'var(--text-color-kumo-danger, #f87171)', marginTop: '0.5rem' }}>{error}</div>}
+    </div>
+  );
+}
+
 const btnStyle: React.CSSProperties = {
   padding: '0.375rem 0.875rem', borderRadius: 6, background: 'var(--color-kumo-brand, #f6821f)',
   color: 'var(--color-kumo-contrast, #ffffff)', border: 'none', cursor: 'pointer',

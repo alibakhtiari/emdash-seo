@@ -4,7 +4,7 @@ import { ContentTypesIntegrationPanel } from './editor/ContentTypesIntegrationPa
 import { SerpPreviewPage } from '../admin-preview.js';
 import { ReadabilityAdminPage, ImageAltAuditorAdminPage } from './standalone-pages.js';
 import { FuzzyRedirectsPage } from '../admin-redirects.js';
-import { AuditTab, LinksTab } from './settings/HubDataTabs.js';
+import { AuditTab, LinksTab, BulkMetaTab } from './settings/HubDataTabs.js';
 import { CornerstonePanel } from './settings/CornerstonePanel.js';
 import {
   IconSettings,
@@ -14,6 +14,7 @@ import {
   IconArrowRight,
   IconChecklist,
   IconList,
+  IconEdit,
 } from './icons.js';
 
 const API = '/_emdash/api/plugins/emdash-seo';
@@ -123,7 +124,7 @@ import {
 export { BreadcrumbLabelsEditor, BreadcrumbRulesEditor };
 
 
-type HubTab = 'settings' | 'preview' | 'readability' | 'alts' | 'redirects' | 'audit' | 'links';
+type HubTab = 'settings' | 'preview' | 'readability' | 'alts' | 'redirects' | 'audit' | 'links' | 'bulk';
 
 const HUB_TABS: Array<{ id: HubTab; label: string; Icon: (p: { size?: number }) => React.ReactElement }> = [
   { id: 'settings', label: 'SEO Settings', Icon: IconSettings },
@@ -133,6 +134,7 @@ const HUB_TABS: Array<{ id: HubTab; label: string; Icon: (p: { size?: number }) 
   { id: 'redirects', label: 'Fuzzy 301 Redirects', Icon: IconArrowRight },
   { id: 'audit', label: 'Site Audit', Icon: IconChecklist },
   { id: 'links', label: 'Link Opportunities', Icon: IconList },
+  { id: 'bulk', label: 'Bulk Editor', Icon: IconEdit },
 ];
 
 const HUB_TAB_IDS = HUB_TABS.map((t) => t.id);
@@ -332,6 +334,7 @@ export function SettingsPage() {
       {hubTab === 'redirects' && <FuzzyRedirectsPage />}
       {hubTab === 'audit' && <AuditTab />}
       {hubTab === 'links' && <LinksTab />}
+      {hubTab === 'bulk' && <BulkMetaTab />}
     </div>
   );
 }

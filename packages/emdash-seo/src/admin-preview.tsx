@@ -29,11 +29,11 @@ export interface SerpPreviewProps {
 }
 
 export function SerpPreviewPage({
-  initialTitle = 'Professional Carpet Cleaning London | Eco Steam Care',
-  initialSlug = 'carpet-cleaning-london',
-  initialDescription = 'Book certified 5.0-star professional carpet cleaning in London. Eco-friendly steam extraction, rapid drying times, and pet odor removal.',
+  initialTitle = 'Acme BusinessCo Services | Trusted Local Experts',
+  initialSlug = 'services-overview',
+  initialDescription = 'Discover Acme BusinessCo services, transparent pricing, customer reviews, and easy online booking.',
   initialImage = 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=1200&h=630&q=80',
-  initialContent = 'Our hot water extraction and steam cleaning process removes deep stains, pet odors, and allergens. Drying time is under 2 hours. Eco-friendly and fully insured with transparent pricing and guarantee. Additionally, we utilize advanced methods that were implemented by our certified specialists.\n\n<img src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=800&q=80" alt="Professional technician cleaning carpet with steam extraction equipment" />\n\n<img src="/images/IMG_5021.jpg" alt="photo of rug" />',
+  initialContent = 'Our service overview explains our process steps, transparent pricing, and satisfaction guarantee. Browse customer testimonials, service area details, and booking options. Our team follows clear process steps implemented by experienced specialists.\n\n<img src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=800&q=80" alt="BusinessCo team at work" />\n\n<img src="/images/IMG_5021.jpg" alt="BusinessCo project example" />',
   siteUrl = 'https://example.com',
   siteName = 'Modern Service Co',
 }: SerpPreviewProps) {

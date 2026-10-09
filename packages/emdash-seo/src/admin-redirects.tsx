@@ -134,6 +134,7 @@ export function RedirectsAdminPage() {
   const [pattern, setPattern] = React.useState('');
   const [destination, setDestination] = React.useState('');
   const [isRegex, setIsRegex] = React.useState(false);
+  const [statusCode, setStatusCode] = React.useState(301);
   const [editing, setEditing] = React.useState<Record<string, string>>({});
 
   const load = React.useCallback(async () => {
@@ -159,12 +160,10 @@ export function RedirectsAdminPage() {
       await createRedirectRule({
         pattern: pattern.trim(),
         destination: destination.trim(),
-        statusCode: 301,
+        statusCode,
         comparison: isRegex ? 'regex' : 'exact',
       });
-      setPattern('');
-      setDestination('');
-      setIsRegex(false);
+      setPattern(''); setDestination(''); setIsRegex(false); setStatusCode(301);
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -211,7 +210,10 @@ export function RedirectsAdminPage() {
         <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.8125rem' }}>
           <input type="checkbox" checked={isRegex} onChange={(e) => setIsRegex(e.target.checked)} /> regex
         </label>
-        <button onClick={() => void handleCreate()} style={primaryButtonStyle}>Add 301</button>
+        <select value={statusCode} onChange={(e) => setStatusCode(Number(e.target.value))} style={inputStyle} aria-label="Status code">
+          {[301, 302, 307, 308, 410].map((s) => (<option key={s} value={s}>{s}</option>))}
+        </select>
+        <button onClick={() => void handleCreate()} style={primaryButtonStyle}>Add redirect</button>
       </div>
       {loading ? (
         <div style={{ fontSize: '0.875rem', color: 'var(--text-color-kumo-subtle, #a0a0a0)' }}>Loading…</div>

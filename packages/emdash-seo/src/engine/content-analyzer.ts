@@ -18,6 +18,7 @@ export interface ContentAnalyzeOptions {
   siteUrl?: string;
   minWordCount?: number;
   expectedEntities?: string[];
+  topicClusters?: Record<string, string[]>;
 }
 
 export function analyzeContent(options: ContentAnalyzeOptions): AnalysisReport {
@@ -255,7 +256,7 @@ export function analyzeContent(options: ContentAnalyzeOptions): AnalysisReport {
     severity: 'info',
     message: hasInternal
       ? `Page includes ${internalLinks} internal link(s).`
-      : 'Add contextual internal links to related cleaning services or guides.',
+      : 'Add contextual internal links to related services or guides.',
   });
 
   // Readability signals wired into the score (warning-level checks)
@@ -390,12 +391,14 @@ export function analyzeContent(options: ContentAnalyzeOptions): AnalysisReport {
   const keywordInFirstParagraph = checks.find(c => c.id === 'kw_in_intro')?.passed ?? false;
   const keywordInSubheadings = checks.find(c => c.id === 'kw_in_headings')?.passed ?? false;
   const hasImagesWithAlt = checks.find(c => c.id === 'img_alt')?.passed ?? false;
-  // Semantic analysis
+  // Semantic analysis: explicit expectedEntities win, else neutral
+  // config-driven clusters (options.topicClusters) with generic fallback.
   let expectedEntities = options.expectedEntities;
   if (!expectedEntities || expectedEntities.length === 0) {
+    const clusters = options.topicClusters ?? TOPIC_ENTITY_CLUSTERS;
     const combinedContext = `${title} ${primaryKw} ${focusKeywords.join(' ')}`.toLowerCase();
     if (combinedContext.includes('clean') || combinedContext.includes('carpet')) {
-      expectedEntities = TOPIC_ENTITY_CLUSTERS.cleaning;
+      expectedEntities = clusters.cleaning ?? clusters.general;
     } else if (
       combinedContext.includes('code') ||
       combinedContext.includes('api') ||
@@ -403,7 +406,7 @@ export function analyzeContent(options: ContentAnalyzeOptions): AnalysisReport {
       combinedContext.includes('architecture') ||
       combinedContext.includes('technical')
     ) {
-      expectedEntities = TOPIC_ENTITY_CLUSTERS.technical;
+      expectedEntities = clusters.technical;
     } else if (
       combinedContext.includes('service') ||
       combinedContext.includes('repair') ||
@@ -411,7 +414,9 @@ export function analyzeContent(options: ContentAnalyzeOptions): AnalysisReport {
       combinedContext.includes('electrician') ||
       combinedContext.includes('business')
     ) {
-      expectedEntities = TOPIC_ENTITY_CLUSTERS.local_business;
+      expectedEntities = clusters.local_business;
+    } else if (clusters.general) {
+      expectedEntities = clusters.general;
     } else {
       expectedEntities = focusKeywords.filter((k) => Boolean(k?.trim()));
     }
