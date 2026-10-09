@@ -25,6 +25,21 @@ Verify per task: `pnpm vitest run`, `pnpm run typecheck`, `pnpm run lint`.
 - [ ] Score history/trends: persist capped audit snapshots (e.g. last 30, KV list)
   and render a trend sparkline/table in the Audit hub tab. Today only latest is
   kept (`routes/api-v1/state.ts`, `admin/settings/HubDataTabs.tsx`).
+- [ ] Entity→schema output: emit ECI `detected` entities as `mentions` (Thing
+  nodes, cap 5) and point page `about` at the top entity instead of always the
+  publisher org (verified gap 2026-10-09: signal computed then discarded;
+  `engine/schema-builder.ts`, keywords already flow in).
+- [ ] Speakable template contract: default selectors match no theme DOM
+  (verified: only admin/docs/tests reference them). Ship documented classes in
+  layouts (or drop defaults) so emitted `cssSelector` resolves; fall back to
+  `speakableText` excerpt when selectors are absent.
+- [ ] Training/search crawler split: per-group robots policies (allow
+  `OAI-SearchBot`/`Claude-SearchBot` for citations, deny `Google-Extended`/
+  `CCBot`/`anthropic-ai` for training) replacing the single `blockAiBots`
+  boolean (`routes/robots.ts`).
+- [ ] GEO research trio: freshness check (`dateModified` age),
+  statistic-attribution check ("According to…" sourcing), semantic-slug check
+  (slug mirrors focus keyword terms).
 - [ ] Product commerce depth: dedicated `sku`, `gtin`, `brand`, `price`,
   `availability`, `shipping` fields flowing into the Product emitter instead of
   `schemaOverrides` passthrough only (`types.ts`, `engine/schema-builder.ts`,
@@ -41,6 +56,8 @@ Verify per task: `pnpm vitest run`, `pnpm run typecheck`, `pnpm run lint`.
   domains in E-E-A-T scoring (today only counts exist via `external_links`).
 - [ ] Settings-template import: map RankMath `rank-math-options-titles` /
   robots rules into plugin options during migration (`importers/*`).
+- [ ] HowTo/FAQ rich-result copy: review admin guidance strings against
+  current Google documentation (flagged 2026-10-09, unverified wording).
 - [ ] RSS footer/header link attribution (minor).
 - [ ] Attachment-URL redirect handling (minor; likely host-adjacent — verify
   before building).
@@ -48,10 +65,26 @@ Verify per task: `pnpm vitest run`, `pnpm run typecheck`, `pnpm run lint`.
 ## Remaining — blocked (do not build until unblocked)
 
 - [ ] GSC integration — blocked: external OAuth/API credentials and consent flow.
-- [ ] Corpus IDF + vector salience — blocked: sync `analyzeContent` has no async
+- [ ] Corpus IDF + vector salience (incl. honest BM25 labeling: `idf` defaults
+  to 1.0 at the sole call site) — blocked: sync `analyzeContent` has no async
   KV path; needs engine refactor. No dead code shipped instead.
 - [ ] IndexNow fan-out cron trigger — blocked: no host cron hook. The
   `_emdash/api/seo/indexnow/fanout` route is ready for an external scheduler.
+
+## Audit 2026-10-09 v2 — verified findings log (all claims checked line-level)
+
+Fixed same-day: `/answers` draft disclosure (published-status 404 +
+confidence-floor nulls instead of `faqs[0]`); robots llms exception when
+blocked + 5 missing search/training bots; `llms-full` HTML stripped via
+`cleanHtmlStructure`; `score += 0` no-op removed; docs corrected (redirect
+wording, agent statuses). Refuted with evidence: title digit/power checks stay
+(info-weight CTR hints mirroring RankMath's own title tests); `extractTopicalNgrams`
++ `getWorkersAiEmbeddings` are tested public API exports, not dead code.
+Accepted risk: auth fail-open on identity-less ctx (server-side/host-internal
+calls carry no identity; host route permission is the primary layer) — recorded
+here instead of silently assumed. Nuance kept: redirect matcher + fuzzy + 404
+store are library/admin surfaces over host-owned serving, not request hooks;
+no mass deletion (write-through already primary).
 
 ## Decisions — intentionally not built
 
