@@ -41,5 +41,6 @@ export function parseYoastMeta(rawMeta: Record<string, any>): EntrySeoMetadata {
     twitterDescription,
     twitterImage,
     schemaType: 'CleaningService',
+    cornerstone: rawMeta['_yoast_wpseo_is_cornerstone'] === '1' || rawMeta['_yoast_wpseo_is_cornerstone'] === 1 || undefined,
   };
 }

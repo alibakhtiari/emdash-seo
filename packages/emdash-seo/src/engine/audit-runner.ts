@@ -18,6 +18,7 @@ export interface AuditEntryInput {
 export function runSitewideAudit(entries: AuditEntryInput[]): AuditSnapshot {
   const seenTitles = new Map<string, string[]>();
   const seenDescriptions = new Map<string, string[]>();
+  const seenKeywords = new Map<string, string[]>();
 
   let totalCritical = 0;
   let totalWarning = 0;
@@ -25,7 +26,7 @@ export function runSitewideAudit(entries: AuditEntryInput[]): AuditSnapshot {
 
   const pageReports: AuditSnapshot['report'] = [];
 
-  // Pass 1: Index titles and descriptions for duplicate detection
+  // Pass 1: Index titles, descriptions, and focus keywords for duplicate detection
   for (const entry of entries) {
     if (entry.noIndex) continue;
 
@@ -41,6 +42,14 @@ export function runSitewideAudit(entries: AuditEntryInput[]): AuditSnapshot {
       const list = seenDescriptions.get(effectiveDesc) || [];
       list.push(entry.slug);
       seenDescriptions.set(effectiveDesc, list);
+    }
+
+    for (const kw of entry.focusKeywords || []) {
+      const norm = (kw || '').trim().toLowerCase();
+      if (!norm) continue;
+      const list = seenKeywords.get(norm) || [];
+      list.push(entry.slug);
+      seenKeywords.set(norm, list);
     }
   }
 
@@ -167,7 +176,8 @@ export function runSitewideAudit(entries: AuditEntryInput[]): AuditSnapshot {
     }
 
     // 5. Thin Content Check (cornerstone content: 900 words, standard: 300 words)
-    const thinThreshold = entry.cornerstone ? 900 : 300;
+    // Single content-length standard (matches editor guidance: 1200 cornerstone / 600 standard)
+    const thinThreshold = entry.cornerstone ? 1200 : 600;
     if (words.length < thinThreshold) {
       issues.push(`Critical: Thin content detected (${words.length} words). Minimum recommended is ${thinThreshold} words${entry.cornerstone ? ' for cornerstone content' : ''}.`);
       pageScore -= 25;
@@ -193,6 +203,31 @@ export function runSitewideAudit(entries: AuditEntryInput[]): AuditSnapshot {
       issues.push('Warning: Orphan page detected (no inbound internal links).');
       pageScore -= 10;
       totalWarning++;
+      const primaryKw = ((entry.focusKeywords || [])[0] || entry.title || '').trim().toLowerCase();
+      if (primaryKw) {
+        const hubs: string[] = [];
+        for (const other of evaluated) {
+          if (other.id === entry.id || hubs.length >= 2) break;
+          const hay = `${other.title} ${(other.metaDescription || '')}`.toLowerCase();
+          if (hay.includes(primaryKw)) hubs.push(other.slug);
+        }
+        if (hubs.length > 0) {
+          issues.push(`Notice: Link opportunity — ask ${hubs.map((s) => `/${s}`).join(', ')} to link here via "${primaryKw}".`);
+          totalNotice++;
+        }
+      }
+    }
+
+    // 9. Keyword cannibalization (same focus keyword targets multiple URLs)
+    for (const kw of entry.focusKeywords || []) {
+      const norm = (kw || '').trim().toLowerCase();
+      const rivals = (seenKeywords.get(norm) || []).filter((s) => s !== entry.slug);
+      if (norm && rivals.length > 0) {
+        issues.push(`Warning: Keyword cannibalization — "${kw}" also targets ${rivals.map((s) => `/${s}`).join(', ')}. Consolidate or differentiate intent.`);
+        pageScore -= 10;
+        totalWarning++;
+        break;
+      }
     }
 
     pageScore = Math.max(0, pageScore);

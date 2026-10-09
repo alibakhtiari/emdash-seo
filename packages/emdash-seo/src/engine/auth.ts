@@ -12,6 +12,18 @@ export function hasSeoRole(role?: string | null): boolean {
   return role === 'admin' || role === 'editor';
 }
 
+export type SeoManageModule = 'settings' | 'redirects' | 'audit' | 'meta' | 'indexnow' | 'links';
+
+/**
+ * Per-module capability check (RankMath-style role matrix, minimal):
+ * admins manage everything; editors manage everything except settings.
+ */
+export function canManageModule(role?: string | null, module?: SeoManageModule): boolean {
+  if (role === 'admin') return true;
+  if (role === 'editor') return module !== 'settings';
+  return false;
+}
+
 function ctxRole(ctx: any): string | null | undefined {
   const c = ctx?.user?.role ?? ctx?.actor?.role ?? ctx?.role ?? ctx?.auth?.role;
   return typeof c === 'string' ? c : c === null ? null : undefined;

@@ -73,6 +73,7 @@ export async function handleContentBeforeSave(
       if ((!s.focusKeywords || s.focusKeywords.length === 0) && p.focusKeywords?.length) s.focusKeywords = p.focusKeywords;
       s.noIndex = s.noIndex || (p as any).noIndex || false;
       s.noFollow = s.noFollow || (p as any).noFollow || false;
+      if (!s.cornerstone && (p as any).cornerstone) s.cornerstone = true;
     }
   }
   if (content.data.focus_keyword && typeof content.data.focus_keyword === 'string') {

@@ -75,6 +75,7 @@ export function parseRankMathMeta(rawMeta: Record<string, any>, postContent = ''
     twitterImage,
     schemaType,
     faqs: faqs.length > 0 ? faqs : undefined,
+    cornerstone: rawMeta['rank_math_cornerstone_content'] === 'on' || rawMeta['rank_math_cornerstone_content'] === '1' || undefined,
   };
 }
 
