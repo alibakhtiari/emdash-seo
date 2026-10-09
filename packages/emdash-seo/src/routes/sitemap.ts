@@ -12,6 +12,16 @@ export interface SitemapEntry {
   changefreq?: 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never';
   priority?: number;
   images?: { loc: string; title?: string; caption?: string }[];
+  alternates?: { hreflang: string; href: string }[];
+}
+
+/** Tiny local BCP 47 encoder (inline to avoid an import cycle with hreflang engine). */
+function normalizeHreflang(code: string): string {
+  if (!code) return 'x-default';
+  const p = code.trim().toLowerCase().split(/[-_]/);
+  if (p.length === 1) return p[0];
+  if (p.length === 2) return `${p[0]}-${p[1].toUpperCase()}`;
+  return `${p[0]}-${p[1].charAt(0).toUpperCase()}${p[1].slice(1)}-${p.slice(2).join('-').toUpperCase()}`;
 }
 
 export function generateSitemapXml(entries: SitemapEntry[]): string {
@@ -19,7 +29,8 @@ export function generateSitemapXml(entries: SitemapEntry[]): string {
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"',
-    '        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">',
+    '        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"',
+    '        xmlns:xhtml="http://www.w3.org/1999/xhtml">',
   ];
   for (const entry of entries) {
     const imgParts: string[] = [];
@@ -32,12 +43,20 @@ export function generateSitemapXml(entries: SitemapEntry[]): string {
         );
       }
     }
+    const altParts: string[] = [];
+    if (entry.alternates) {
+      for (const alt of entry.alternates) {
+        if (alt?.hreflang && alt?.href) {
+          altParts.push(`\n    <xhtml:link rel="alternate" hreflang="${escapeXml(normalizeHreflang(alt.hreflang))}" href="${escapeXml(alt.href)}" />`);
+        }
+      }
+    }
     parts.push(
       `  <url>\n    <loc>${escapeXml(entry.loc)}</loc>` +
         `${entry.lastmod ? `\n    <lastmod>${entry.lastmod}</lastmod>` : ''}` +
         `${entry.changefreq ? `\n    <changefreq>${entry.changefreq}</changefreq>` : ''}` +
         `${entry.priority ? `\n    <priority>${entry.priority.toFixed(1)}</priority>` : ''}` +
-        `${imgParts.join('')}\n  </url>`
+        `${altParts.join('')}${imgParts.join('')}\n  </url>`
     );
   }
   parts.push('</urlset>');
@@ -89,18 +108,41 @@ function listCollections(ctx: any): Array<{ slug: string; urlPattern?: string }>
   ];
 }
 
+/** Effective per-file URL cap: sitemapOptions.maxUrlsPerFile or protocol default. */
+function pageSize(options: SeoPluginOptions): number {
+  const n = Number(options.sitemapOptions?.maxUrlsPerFile);
+  return Number.isFinite(n) && n >= 100 && n <= 50000 ? Math.floor(n) : SITEMAP_PAGE_SIZE;
+}
+
+/** Extract up to 3 in-content <img src> URLs (capped, CF-safe regex). */
+function extractContentImages(content: unknown, siteUrl: string): string[] {
+  if (typeof content !== 'string' || content.length === 0) return [];
+  const out: string[] = [];
+  const re = /<img[^>]+src=["']([^"']+)["']/gi;
+  let m: RegExpExecArray | null;
+  while (out.length < 3 && (m = re.exec(content.slice(0, 20000))) !== null) {
+    const src = m[1].trim();
+    if (!src || src.startsWith('data:')) continue;
+    out.push(src.startsWith('http') ? src : `${siteUrl}${src.startsWith('/') ? '' : '/'}${src}`);
+  }
+  return out;
+}
+
 /**
  * Content-driven sitemap collection: published entries only.
- * Excludes noindex entries, drafts, and admin/API paths.
+ * Excludes noindex entries, drafts, admin/API paths, and any collection
+ * listed in sitemapOptions.excludeCollections.
  */
 export async function collectSitemapEntries(ctx: any, options: SeoPluginOptions): Promise<CollectedSitemap[]> {
   const siteUrl = options.siteUrl.replace(/\/+$/, '');
   const out: CollectedSitemap[] = [];
+  const excluded = new Set((options.sitemapOptions?.excludeCollections || []).map((s) => String(s).toLowerCase()));
 
   if (!ctx?.content?.list) return out;
 
   for (const col of listCollections(ctx)) {
     if (ADMIN_SLUGS_RE.test(col.slug)) continue;
+    if (excluded.has(col.slug.toLowerCase())) continue;
     const entries: SitemapEntry[] = [];
     let cursor: string | undefined;
     try {
@@ -130,6 +172,12 @@ export async function collectSitemapEntries(ctx: any, options: SeoPluginOptions)
               (typeof data.name === 'string' && data.name) ||
               undefined;
             images.push({ loc: imgLoc.startsWith('http') ? imgLoc : `${siteUrl}${imgLoc}`, caption });
+          }
+          if (options.sitemapOptions?.includeImages !== false) {
+            for (const src of extractContentImages(data.content, siteUrl)) {
+              if (!images.some((i) => i.loc === src)) images.push({ loc: src });
+              if (images.length >= 4) break;
+            }
           }
           entries.push({
             loc,
@@ -179,7 +227,7 @@ export async function renderSitemap(ctx: any, options: SeoPluginOptions): Promis
   }
 
   const total = collected.reduce((n, c) => n + c.entries.length, 0);
-  if (total <= SITEMAP_PAGE_SIZE) {
+  if (total <= pageSize(options)) {
     return xmlResponse(generateSitemapXml(collected.flatMap((c) => c.entries)));
   }
   // Large sites: serve an index of per-collection sitemaps
@@ -199,7 +247,7 @@ export async function renderSitemapIndex(
     sitemaps.push({ loc: `${siteUrl}/sitemap.xml` });
   }
   for (const g of groups) {
-    const chunks = chunkEntries(g.entries);
+    const chunks = chunkEntries(g.entries, pageSize(options));
     chunks.forEach((chunk, i) => {
       const suffix = chunks.length > 1 ? `-${i + 1}` : '';
       sitemaps.push({
@@ -228,6 +276,19 @@ export async function renderSitemapCollection(
     return xmlResponse(generateSitemapXml(defaultEntries(siteUrl)));
   }
   const pageNum = Math.max(1, Number(ctx?.params?.page ?? ctx?.input?.page ?? 1) || 1);
-  const chunks = chunkEntries(match.entries);
+  const chunks = chunkEntries(match.entries, pageSize(options));
   return xmlResponse(generateSitemapXml(chunks[Math.min(pageNum, chunks.length) - 1] || []));
+}
+
+/** Minimal XSL stylesheet so /sitemap.xsl renders human-readable in browsers. */
+export function renderSitemapXsl(): Response {
+  const xsl = `<?xml version="1.0" encoding="UTF-8"?>\n<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:sitemap="http://www.sitemaps.org/schemas/sitemap/0.9">\n<xsl:template match="/"><html><head><title>XML Sitemap</title></head><body><h1>XML Sitemap</h1><ul><xsl:for-each select="sitemap:urlset/sitemap:url|sitemap:sitemapindex/sitemap:sitemap"><li><a href="{sitemap:loc}"><xsl:value-of select="sitemap:loc"/></a><xsl:if test="sitemap:lastmod"> (<xsl:value-of select="sitemap:lastmod"/>)</xsl:if></li></xsl:for-each></ul></body></html></xsl:template>\n</xsl:stylesheet>`;
+  return new Response(xsl, {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/xslt+xml; charset=utf-8',
+      'Cache-Control': 'public, max-age=86400',
+      'X-Robots-Tag': 'noindex',
+    },
+  });
 }

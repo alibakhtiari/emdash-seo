@@ -6,7 +6,7 @@
 
 import type { SeoPluginOptions, PageMetadataEvent, PageMetadataContribution } from '../types.js';
 import { DEFAULT_OPTIONS, resolveSeoVariables } from '../config.js';
-import { cleanOgTitle, normalizeOgLocale, generateRobotsDirective, extractTaxonomyTerms } from './metadata-utils.js';
+import { cleanOgTitle, normalizeOgLocale, generateRobotsDirective, extractTaxonomyTerms, pickTemplate, templateKeyFor, getPagedNumber, stripPageParam, buildPagedPath } from './metadata-utils.js';
 import { buildConnectedSchemaGraph } from './schema-builder.js';
 import { generateAutoBreadcrumbs } from './breadcrumbs.js';
 import { buildAlternateLinks, type HreflangEntry } from './hreflang.js';
@@ -28,33 +28,47 @@ export async function handlePageMetadata(
 
   const contributions: PageMetadataContribution[] = [];
 
-  // 1. Titles (metaTitle wins, resolved through defaultTitleTemplate)
+  // 1. Titles (metaTitle wins, resolved through per-type titleTemplates)
   const dataSeo: any = (page.content?.data as any)?.seo || {};
   const rawTitle = page.seo?.metaTitle || dataSeo?.metaTitle || page.title || siteName;
+  const pageNum = getPagedNumber(path);
+  const tplKey = templateKeyFor(page.content?.collection, path, is404);
+  const titleTpl = pickTemplate(options.titleTemplates, tplKey, options.defaultTitleTemplate);
   const templateCtx = {
     title: rawTitle,
     excerpt: page.description || '',
     seoTitle: page.seo?.metaTitle,
     focusKeyword: dataSeo?.focusKeywords?.[0],
     category: (page.content?.data as any)?.category,
+    page: pageNum > 1 ? pageNum : undefined,
   };
   const templateOpts = { siteName, defaultSeparator: separator };
   let fullTitle: string;
   if (is404) {
-    fullTitle = `Page not found${separator}${siteName}`;
+    const t404 = pickTemplate(options.titleTemplates, '404', undefined);
+    fullTitle = t404
+      ? resolveSeoVariables(t404, templateCtx, templateOpts)
+      : `Page not found${separator}${siteName}`;
   } else if (rawTitle.includes('%')) {
     fullTitle = resolveSeoVariables(rawTitle, templateCtx, templateOpts);
   } else if (rawTitle.includes(siteName)) {
     fullTitle = rawTitle;
-  } else if (options.defaultTitleTemplate) {
-    fullTitle = resolveSeoVariables(options.defaultTitleTemplate, { ...templateCtx, title: rawTitle }, templateOpts);
+  } else if (titleTpl) {
+    fullTitle = resolveSeoVariables(titleTpl, { ...templateCtx, title: rawTitle }, templateOpts);
   } else {
     fullTitle = rawTitle;
   }
-  const ogTitle = is404 ? 'Page not found' : cleanOgTitle(fullTitle, siteName, separator);
+  const ogTitle = is404
+    ? 'Page not found'
+    : (page.seo?.ogTitle || dataSeo?.ogTitle || cleanOgTitle(fullTitle, siteName, separator));
 
-  // 2. Meta Description (metaDescription wins, ogDescription fallback)
-  const description = page.seo?.metaDescription || page.seo?.ogDescription || dataSeo.metaDescription || dataSeo.ogDescription || page.description || '';
+  // 2. Meta Description (metaDescription wins, ogDescription fallback, then per-type template)
+  let description = page.seo?.metaDescription || page.seo?.ogDescription || dataSeo.metaDescription || dataSeo.ogDescription || '';
+  if (!description) {
+    const descTpl = pickTemplate(options.descriptionTemplates, tplKey, undefined);
+    if (descTpl) description = resolveSeoVariables(descTpl, templateCtx, templateOpts);
+  }
+  if (!description) description = page.description || '';
   if (description && !is404) {
     contributions.push({ kind: 'meta', name: 'description', content: description });
   }
@@ -90,11 +104,28 @@ export async function handlePageMetadata(
     contributions.push({ kind: 'meta', name: 'robots', content: robots });
   }
 
-  // 4. Canonical URL (Strict 404 & noindex suppression)
+  // 4. Canonical URL (Strict 404 & noindex suppression; /page/1 collapses to base)
   let canonical: string | null = null;
   if (!is404 && !page.seo?.noIndex) {
-    canonical = page.canonical || `${siteUrl}${path.endsWith('/') ? path : `${path}/`}`;
+    if (page.canonical) {
+      canonical = page.canonical;
+    } else if (pageNum > 1) {
+      canonical = `${siteUrl}${buildPagedPath(path, pageNum)}`;
+    } else if (/\/page\/1\/?$/.test(path)) {
+      canonical = `${siteUrl}${stripPageParam(path)}`;
+    } else {
+      canonical = `${siteUrl}${path.endsWith('/') ? path : `${path}/`}`;
+    }
     contributions.push({ kind: 'link', rel: 'canonical', href: canonical });
+    if (pageNum > 1 && canonical) {
+      const base = stripPageParam(path);
+      contributions.push({
+        kind: 'link',
+        rel: 'prev',
+        href: pageNum === 2 ? `${siteUrl}${base}` : `${siteUrl}${buildPagedPath(base, pageNum - 1)}`,
+      });
+      contributions.push({ kind: 'link', rel: 'next', href: `${siteUrl}${buildPagedPath(base, pageNum + 1)}` });
+    }
   }
 
   // 5. Multilingual & hreflang Alternates

@@ -14,6 +14,11 @@ import {
   normalizeOgLocale,
   generateRobotsDirective,
   extractTaxonomyTerms,
+  pickTemplate,
+  templateKeyFor,
+  getPagedNumber,
+  stripPageParam,
+  buildPagedPath,
 } from './metadata-utils.js';
 import { buildConnectedSchemaGraph } from './schema-builder.js';
 import { generateAutoBreadcrumbs, type BreadcrumbItem } from './breadcrumbs.js';
@@ -111,36 +116,6 @@ function extractNormalizedMetadata(entry: any, options: SeoPluginOptions) {
   const siteName = options.siteName || DEFAULT_OPTIONS.siteName;
   const cleanSiteUrl = (options.siteUrl || DEFAULT_OPTIONS.siteUrl).replace(/\/+$/, '');
 
-  const rawTitle = seo.metaTitle || data.title || entry?.title || siteName;
-  let fullTitle = rawTitle;
-  const varCtx = {
-    title: data.title || entry?.title,
-    excerpt: data.excerpt || entry?.excerpt,
-    date: entry?.createdAt || data.createdAt,
-    category: data.category || entry?.category,
-    seoTitle: seo.metaTitle,
-    focusKeyword: focusKeywords[0],
-  };
-
-  if (!seo.metaTitle && options.defaultTitleTemplate && (data.title || entry?.title)) {
-    fullTitle = resolveSeoVariables(
-      options.defaultTitleTemplate,
-      varCtx,
-      options
-    );
-  } else if (rawTitle.includes('%')) {
-    fullTitle = resolveSeoVariables(
-      rawTitle,
-      varCtx,
-      options
-    );
-  } else if (!rawTitle.includes(siteName)) {
-    const sep = options.defaultSeparator || ' | ';
-    fullTitle = `${rawTitle}${sep}${siteName}`;
-  }
-
-  const description = seo.metaDescription || seo.ogDescription || data.excerpt || entry?.excerpt || options.defaultDescription || '';
-
   let canonicalUrl = seo.canonicalUrl || entry?.canonicalUrl || data.canonicalUrl || entry?.url || data.url;
   if (!canonicalUrl) {
     const slug = entry?.slug || data.slug || '';
@@ -161,6 +136,55 @@ function extractNormalizedMetadata(entry: any, options: SeoPluginOptions) {
     pathname = new URL(canonicalUrl, cleanSiteUrl).pathname;
   } catch {
     pathname = '/';
+  }
+
+  const tplKey = templateKeyFor(entry?.collection || data.collection, pathname, false);
+  const pageNum = getPagedNumber(pathname);
+
+  // Paginated canonical: /page/N self-references; /page/1 collapses to base.
+  if (!seo.canonicalUrl) {
+    if (pageNum > 1) {
+      canonicalUrl = `${cleanSiteUrl}${buildPagedPath(pathname, pageNum)}`;
+      pathname = new URL(canonicalUrl, cleanSiteUrl).pathname;
+    } else if (/\/page\/1\/?$/.test(pathname)) {
+      canonicalUrl = `${cleanSiteUrl}${stripPageParam(pathname)}`;
+      pathname = new URL(canonicalUrl, cleanSiteUrl).pathname;
+    }
+  }
+
+  const rawTitle = seo.metaTitle || data.title || entry?.title || siteName;
+  let fullTitle = rawTitle;
+  const varCtx = {
+    title: data.title || entry?.title,
+    excerpt: data.excerpt || entry?.excerpt,
+    date: entry?.createdAt || data.createdAt,
+    category: data.category || entry?.category,
+    page: pageNum > 1 ? pageNum : undefined,
+    seoTitle: seo.metaTitle,
+    focusKeyword: focusKeywords[0],
+  };
+
+  const titleTpl = pickTemplate(options.titleTemplates, tplKey, options.defaultTitleTemplate);
+  if (!seo.metaTitle && titleTpl && (data.title || entry?.title)) {
+    fullTitle = resolveSeoVariables(titleTpl, varCtx, options);
+  } else if (rawTitle.includes('%')) {
+    fullTitle = resolveSeoVariables(
+      rawTitle,
+      varCtx,
+      options
+    );
+  } else if (!rawTitle.includes(siteName)) {
+    const sep = options.defaultSeparator || ' | ';
+    fullTitle = `${rawTitle}${sep}${siteName}`;
+  }
+
+  let description = seo.metaDescription || seo.ogDescription || '';
+  if (!description) {
+    const descTpl = pickTemplate(options.descriptionTemplates, tplKey, undefined);
+    if (descTpl) description = resolveSeoVariables(descTpl, varCtx, options);
+  }
+  if (!description) {
+    description = data.excerpt || entry?.excerpt || options.defaultDescription || '';
   }
 
   const finalImage = seo.ogImage || data.featured_image || entry?.featured_image || data.image || entry?.image || options.defaultOgImage;
@@ -199,6 +223,8 @@ function extractNormalizedMetadata(entry: any, options: SeoPluginOptions) {
     description,
     canonicalUrl,
     pathname,
+    pageNum,
+    tplKey,
     finalImage,
     publishedTime,
     modifiedTime,
@@ -259,6 +285,16 @@ export function compilePrecomputedHead(entry: any, options: SeoPluginOptions): s
   // 3. Canonical URL (omitted if noIndex is true)
   if (!meta.seo.noIndex && meta.canonicalUrl) {
     tags.push(`<link rel="canonical" href="${escapeHtml(meta.canonicalUrl)}" />`);
+  }
+
+  // 3b. Paginated prev/next (page 1 is self-canonical, no prev/next)
+  if (meta.pageNum > 1 && meta.canonicalUrl) {
+    const base = stripPageParam(meta.pathname);
+    const prev = meta.pageNum === 2
+      ? `${meta.cleanSiteUrl}${base}`
+      : `${meta.cleanSiteUrl}${buildPagedPath(base, meta.pageNum - 1)}`;
+    tags.push(`<link rel="prev" href="${escapeHtml(prev)}" />`);
+    tags.push(`<link rel="next" href="${escapeHtml(`${meta.cleanSiteUrl}${buildPagedPath(base, meta.pageNum + 1)}`)}" />`);
   }
 
   // 4. Robots directive

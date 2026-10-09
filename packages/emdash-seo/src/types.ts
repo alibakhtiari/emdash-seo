@@ -177,6 +177,7 @@ export type SeoTemplateKey =
   | 'tag'
   | 'authorArchive'
   | 'dateArchive'
+  | 'archive'
   | 'search'
   | '404'
   | 'paginated';
@@ -395,7 +396,7 @@ export interface RedirectRule {
   to?: string;
   comparison?: 'exact' | 'prefix' | 'regex';
   matchType?: 'exact' | 'prefix' | 'regex';
-  statusCode?: 301 | 302 | 307 | 410 | number;
+  statusCode?: 301 | 302 | 307 | 308 | 410 | number;
   status?: 'active' | 'inactive';
 }
 
@@ -448,6 +449,7 @@ export interface PageMetadataEvent {
       metaTitle?: string;
       metaDescription?: string;
       ogDescription?: string;
+      ogTitle?: string;
       ogType?: 'website' | 'article' | 'service' | 'product';
       robots?: string;
       noIndex?: boolean;

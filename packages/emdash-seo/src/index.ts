@@ -278,10 +278,13 @@ export type {
 /**
  * Minimal role guard for SEO management routes.
  * Hosts map the `seo:manage` route permission to this check.
+ * Prefer requireSeoCap(ctx) from engine/auth.ts inside handlers (second layer).
  */
 export function hasSeoCap(role?: string | null): boolean {
   return role === 'admin' || role === 'editor';
 }
+
+export { requireSeoCap, hasSeoRole } from './engine/auth.js';
 
 export const SEO_MANAGE_PERMISSION = 'seo:manage';
 

@@ -253,6 +253,21 @@ export async function generateLlmsFullBody(ctx: any, options: SeoPluginOptions):
   const siteUrl = options.siteUrl.replace(/\/+$/, '');
   let count = 0;
 
+  const cfg = { locales: ['en'], defaultLocale: 'en', prefixDefaultLocale: false };
+  try {
+    const { isI18nEnabled, getI18nConfig } = await import('emdash');
+    if (isI18nEnabled?.() && getI18nConfig?.()) {
+      const c = getI18nConfig();
+      if (c) {
+        cfg.locales = c.locales || ['en'];
+        cfg.defaultLocale = c.defaultLocale || 'en';
+        cfg.prefixDefaultLocale = !!c.prefixDefaultLocale;
+      }
+    }
+  } catch {
+    // Continue with default locale config
+  }
+
   try {
     const collections = [
       { slug: 'services', label: 'Services', urlPattern: '/services/{slug}' },
@@ -284,7 +299,10 @@ export async function generateLlmsFullBody(ctx: any, options: SeoPluginOptions):
             (typeof data.description === 'string' && data.description) ||
             '';
           const body = raw.length > LLMS_FULL_ENTRY_CHARS ? `${raw.slice(0, LLMS_FULL_ENTRY_CHARS)}…` : raw;
-          lines.push(`### [${title}](${siteUrl}${col.urlPattern.replace('{slug}', item.slug)})\n\n${body}\n`);
+          const url =
+            buildPageUrl({ locale: item.locale || cfg.defaultLocale, slug: item.slug, siteUrl, cfg, urlPattern: col.urlPattern }) ||
+            `${siteUrl}${col.urlPattern.replace('{slug}', item.slug)}`;
+          lines.push(`### [${title}](${url})\n\n${body}\n`);
           count++;
         }
         cursor = page.cursor;

@@ -243,3 +243,71 @@ export function extractTaxonomyTerms(entryData: any): ExtractedTaxonomy {
 
   return result;
 }
+
+/**
+ * Pick a per-type SEO template with defaultTemplate fallback.
+ * Archive subtypes (authorArchive/dateArchive/paginated) fall back to the
+ * generic `archive` key before the global default.
+ */
+export function pickTemplate(
+  templates: Partial<Record<string, string>> | undefined,
+  key: string,
+  fallback?: string
+): string | undefined {
+  const direct = templates?.[key];
+  if (typeof direct === 'string' && direct.length > 0) return direct;
+  if (key === 'authorArchive' || key === 'dateArchive' || key === 'paginated') {
+    const generic = templates?.['archive'];
+    if (typeof generic === 'string' && generic.length > 0) return generic;
+  }
+  return fallback;
+}
+
+/**
+ * Derive a SeoTemplateKey from collection slug and/or URL path.
+ */
+export function templateKeyFor(collection?: string, path = '', is404 = false): string {
+  if (is404 || path === '/404' || path.endsWith('/404') || path.endsWith('/404/')) return '404';
+  if (/\/page\/\d+/.test(path) || /[?&](paged|page)=\d+/.test(path)) return 'paginated';
+  if (path === '/search' || path.startsWith('/search/') || path.startsWith('/search?') || path.includes('/search?')) return 'search';
+  if (path.startsWith('/categor')) return 'category';
+  if (path.startsWith('/tag')) return 'tag';
+  if (path.includes('/author/')) return 'authorArchive';
+  if (/\/\d{4}\//.test(path) || path.includes('/date/')) return 'dateArchive';
+  const c = (collection || '').toLowerCase();
+  if (c === 'posts' || c === 'post' || c === 'blog' || c === 'articles' || c === 'article') return 'post';
+  if (c === 'pages' || c === 'page') return 'page';
+  if (c === 'products' || c === 'product') return 'product';
+  if (c === 'categories' || c === 'category') return 'category';
+  if (c === 'tags' || c === 'tag') return 'tag';
+  return c || 'post';
+}
+
+/** Parse archive page number from /page/N or ?paged=N (?page=N); defaults to 1. */
+export function getPagedNumber(path: string): number {
+  const seg = path.match(/\/page\/(\d+)/);
+  if (seg) {
+    const n = parseInt(seg[1], 10);
+    return Number.isFinite(n) && n > 0 ? n : 1;
+  }
+  const q = path.match(/[?&](?:paged|page)=(\d+)/);
+  if (q) {
+    const n = parseInt(q[1], 10);
+    return Number.isFinite(n) && n > 0 ? n : 1;
+  }
+  return 1;
+}
+
+/** Strip /page/N (and query/fragment) from a path, normalizing trailing slash. */
+export function stripPageParam(path: string): string {
+  const bare = path.split(/[?#]/)[0].replace(/\/page\/\d+\/?$/, '');
+  if (!bare || bare === '') return '/';
+  return bare.endsWith('/') ? bare : `${bare}/`;
+}
+
+/** Build a paginated archive path from a base path (page 1 returns the base). */
+export function buildPagedPath(basePath: string, page: number): string {
+  const root = stripPageParam(basePath);
+  if (page <= 1) return root;
+  return `${root.replace(/\/+$/, '')}/page/${Math.floor(page)}/`;
+}

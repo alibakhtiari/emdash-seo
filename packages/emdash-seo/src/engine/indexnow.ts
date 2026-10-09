@@ -9,6 +9,28 @@ import type { SeoPluginOptions } from '../types.js';
 
 export const INDEXNOW_ENDPOINT = 'https://api.indexnow.org/indexnow';
 export const KEY_KV = 'indexnow:key';
+export const LOG_KV = 'seo:indexnow:log';
+
+export async function persistIndexNowLog(ctx: any): Promise<void> {
+  try {
+    await ctx?.kv?.set?.(LOG_KV, getIndexNowLog());
+  } catch {
+    // Memory fallback already holds the log
+  }
+}
+
+export async function loadIndexNowLog(ctx: any): Promise<IndexNowLogEntry[]> {
+  try {
+    const raw = await ctx?.kv?.get?.(LOG_KV);
+    const items = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    if (Array.isArray(items) && items.length > 0 && indexNowLog.length === 0) {
+      for (const e of items.slice(0, 10)) indexNowLog.push(e);
+    }
+  } catch {
+    // Memory fallback
+  }
+  return getIndexNowLog();
+}
 export const URLMAP_PREFIX = 'indexnow:urlmap:';
 export const LASTPING_PREFIX = 'indexnow:lastping:';
 export const PING_DEBOUNCE_MS = 60_000;
@@ -275,6 +297,7 @@ export async function handleIndexNowPublished(
 
   const key = await getOrCreateIndexNowKey(ctx?.kv, options.indexnowKey);
   const result = await submitToIndexNow({ host, key, urls: [url] });
+  await persistIndexNowLog(ctx);
 
   if (ctx?.log) {
     if (result.ok) {
@@ -311,6 +334,7 @@ export async function handleIndexNowTransition(
 
   const key = await getOrCreateIndexNowKey(ctx?.kv, options.indexnowKey);
   await submitToIndexNow({ host, key, urls: [url] });
+  await persistIndexNowLog(ctx);
 }
 
 /**
@@ -343,6 +367,7 @@ export async function handleIndexNowDelete(
 
     const key = await getOrCreateIndexNowKey(ctx.kv, options.indexnowKey);
     await submitToIndexNow({ host, key, urls: [url] });
+    await persistIndexNowLog(ctx);
 
     // Clean up tombstone & ping cache
     await ctx.kv.delete(mapKey);
