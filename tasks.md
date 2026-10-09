@@ -67,24 +67,27 @@ Refuted / nuanced (not added as defects):
 - [x] Honest scoring surfaces (audit-confirmed): audit bands match analyzer (30-60 / 120-156); GEO copy matches code windows; `requireSeoCap` second layer on mutating handlers (`engine/auth.ts`, redirects/meta/settings-save); already-linked exclusion in `findInternalLinkOpportunities`
 - [x] De-brand generic engine (audit-confirmed, corrected): neutral `general` default + `topicClusters` override + neutral strings/demo copy; `cleaning` cluster kept as opt-in vertical data (content-matched only) after proving generic-only broke ECI on trade content; per-post `ogTitle` honored on `page:metadata` path
 
-## P1 — scoring, schema long-tail, migration depth
+## P1 — scoring, schema long-tail, migration depth (landed 2026-10-09; open tails noted)
 
-- [ ] Cannibalization: duplicate-`focusKeywords` check across entries (`audit-runner.ts:29-45` dedupes titles/descs only); score secondary keywords (today `focusKeywords[0]` only in `content-analyzer.ts:36,196`); add keyphrase-length, URL-length/stopwords, title sentiment/power-word/number checks
-- [ ] Wire computed readability into score: Flesch threshold, `consecutiveSentenceStarters`, `longParagraphsCount`, `longSectionsCount`, subheading-distribution (`>300w` without H2/H3) — today advisory in `readability-auditor.ts:121-339`, unscored in `content-analyzer.ts:262-292`
-- [ ] E-E-A-T scoring: `eeat_author/reviewer/experience/citations` checks from existing `content-hooks.ts:90-120` + `geo-aeo-analyzer.ts:152-158` (author/reviewer/dates/outbound citations); fuse into weighted grade
-- [ ] Fuse GEO into SEO grade: `geoScore/aeoScore/overallAiScore` penalize content grade (today side-by-side in `WidgetGeoAeoTab.tsx:16-108` only); fix window copy drift (detector 18-75w vs 35-55w vs 8-65w in `geo-aeo-analyzer.ts:123,200,275,332`)
-- [ ] Per-page orphan + link-opps in `analyzeContent` (today boolean `internal_links` in `content-analyzer.ts:251-259`; graph only sitewide in `audit-runner.ts:178-183`); call `findInternalLinkOpportunities` (`link-analyzer.ts:67-103`) from report; fix relative-href miss in `audit-runner.ts:74-76`; add anchor-text/`rel` quality
-- [ ] Schema long-tail: `JobPosting`, LocalBusiness subtypes, per-post `aggregateRating`, VideoObject duration/contentUrl, Collection/SearchPage inference, NewsArticle <-> news-sitemap coupling (`schema-builder.ts:270-438`)
-- [ ] Head auto-fill: `og:locale:alternate` from hreflang set (today manual `localeAlternate`, `SeoHead.astro:210-230`); content-first-image fallback; `twitter:image:alt`; `keywords/articleSection` passthrough in `SchemaGraph.astro:53-74`
-- [ ] Migration depth: map Yoast `_yoast_wpseo_is_cornerstone`, RankMath secondary keywords/score/pillar, AIOSEO truSEO/link-assistant, title-template + robots-txt rule import (`importers/*`, `content-hooks.ts:44-72`)
-- [ ] Roles: per-module caps + settings UI (today binary `hasSeoCap` admin/editor in `index.ts:282`); cornerstone bulk assignment; `settings/save:149` permission check in `plugin-routes.ts:149`
+- [x] Cannibalization: duplicate-`focusKeywords` warning in `audit-runner.ts`; secondary keywords scored (`secondary_keywords` info in `engine/extended-checks.ts`); keyphrase-length (`keyphrase_length`), URL-length (`slug_length` 75), title number (`title_engagement`) checks. Open: sentiment/power-word dictionaries, stemming (exact `\bkw\b` kept intentionally — dependency-free)
+- [x] Readability in score: `readability_flesch` (60+), `readability_paragraphs` (150w), `readability_subheadings` (300w) warnings (`engine/extended-checks.ts`); new checks live in `engine/extended-checks.ts` to hold the 500-line cap
+- [x] E-E-A-T scoring: `eeat_author` warning + `authorName` plumbed through editor widgets and `v1/analyze` (`content-editor-panel.tsx`, `FocusKeywordFieldWidget.tsx`, `api-v1/analyze.ts`); citations covered via `external_links`; experience via GEO signals. Open: reviewer-presence and outbound-authority heuristics
+- [x] GEO fused: `ai_citability` info check (`overallAiScore` 60+) in every `analyzeContent` grade
+- [x] Orphan loop: audit orphan issues append hub suggestions; `findInternalLinkOpportunities` excludes already-linked targets; per-page `internal_links` kept (graph unavailable at analyze time by design)
+- [x] Schema long-tail: `JobPosting` emitter, `CollectionPage`/`SearchResultsPage` inference (`schema-nodes.ts`), VideoObject duration/contentUrl/embedUrl, per-post `aggregateRating` preferred over business (`seo.aggregateRating` in `types.ts`); union completed (Event/Recipe/VideoObject/Course/JobPosting/Collection/Search). Open: LocalBusiness subtypes, News-sitemap coupling
+- [x] Head auto-fill: `og:locale:alternate` derived from hreflang (both paths), `twitter:image:alt` (both paths), full `SchemaGraph.astro` passthrough (keywords/section/principles/license/blog/nav), content first-`<img>` fallback before default OG image
+- [x] Migration depth: Yoast `_yoast_wpseo_is_cornerstone` + RankMath cornerstone mapped into `seo.cornerstone` via merge (`content-hooks.ts`). Open: RankMath secondary-keyword key unverified (not guessed), truSEO payload, settings-template import
+- [x] Roles: `canManageModule` helper + export (`engine/auth.ts`, `index.ts`; editors blocked from settings). Open: admin UI matrix
 
-## P2 — modern beyond WordPress (GEO/AEO/moat)
+## P2 — modern beyond WordPress (GEO/AEO/moat; answers + budget landed, rest open)
 
-- [ ] Passage citability index + `llms-full` injection: score `parseBlocks` paragraphs (definition-verb + stat-density + experience + Q-proximity, 35-55w), persist top-3 in `seo.geoOptimization`, emit TL;DR/stats/FAQ blocks in `generateLlmsFullBody` (`llms-txt.ts:251-298`) instead of blind slice
-- [ ] Corpus IDF in D1 + Workers-AI hybrid: accumulate DF on `afterPublish`, real `idf=log((N-df+0.5)/(df+0.5))+1` with `1.0` fallback, blend `0.7*BM25 + 0.3*cosine(bge-small)` via `getWorkersAiEmbeddings` (`semantic-analyzer.ts:445-461`)
-- [ ] Edge KV precompute for `sitemap-*.xml`/`robots`/`llms*` on publish (reuse `computeContentHash/isCacheValid` in `head-compiler.ts:51-64`), stale-while-revalidate for <10 ms p99
-- [ ] AI-crawler budget router: per-bot robots groups + lightweight `llms`-first HTML for GPTBot/ClaudeBot/PerplexityBot, KV hit log dashboard (extend `robots.ts:72-80`)
-- [ ] Answers API `GET /_emdash/api/seo/v1/answers?q=` returning `speakableCandidate` + FAQs/HowTo + citing URLs (`geo-aeo-analyzer.ts:228-258,375-394`)
-- [ ] Sitemap-`lastmod` IndexNow fan-out on cron (hourly diff of `collectSitemapEntries` in `sitemap.ts:96-149` vs KV snapshot, batch `submitToIndexNow`); cool cron from `* * * * *` to hourly in `wrangler.jsonc:23`
-- [ ] i18n discovery: `Link: <u>; rel=alternate; hreflang=..` headers + `llms.txt` discovery link (`head-compiler.ts:233-359` / `SeoHead.astro:189-256`); fix `llms-full` locale prefixes (`llms-txt.ts:287` hardcodes `siteUrl+pattern`); `speakableSelectors` default audit + Service/VideoObject Speakable (`schema-builder.ts:182,313`); TOC/breadcrumb emission checks for `>1500w`; guard `shouldSkipSegment` 1-2-digit over-match (`breadcrumbs.ts:50-51` eats `/top-10/`); single cornerstone threshold source (`content-editor-panel.tsx:75` 1200/600 vs analyzer 600 vs audit 900/300)
+- [x] Answers API `GET /_emdash/api/seo/v1/answers?q=` (`routes/api-v1/answers.ts`, public, tested in `tests/api-v1.test.ts`)
+- [x] Cron cooled hourly (`wrangler.jsonc`) for free-tier CPU/D1 budget
+- [x] Single cornerstone threshold 1200/600 (audit aligned to editor; `audit-runner.ts`)
+- [ ] Passage citability index + `llms-full` injection (`llms-txt.ts:251-298` still blind-slices)
+- [ ] Corpus IDF in D1 + Workers-AI hybrid (`semantic-analyzer.ts:445-461` stub unused; `idf=1.0` stands in)
+- [ ] Edge KV precompute for `sitemap-*.xml`/`robots`/`llms*` on publish
+- [ ] AI-crawler budget router (per-bot groups + lightweight HTML + KV hit log)
+- [ ] Sitemap-`lastmod` IndexNow fan-out on cron (no plugin cron hook — needs host scheduler)
+- [ ] i18n `Link:` headers + `llms.txt` discovery link; `speakableSelectors` default audit; TOC/breadcrumb emission checks; `shouldSkipSegment` digit guard (`breadcrumbs.ts` eats `/top-10/`); settings import/export; GSC integration; video/news sitemaps
+
