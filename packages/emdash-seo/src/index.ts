@@ -139,6 +139,16 @@ import {
   tokenizeSentence,
 } from './components/LiveSentenceHighlighter.js';
 import { defineHook } from './hooks/define-hook.js';
+import { runSeoDigest, ensureSeoSchedules, DIGEST_TASK_WEEKLY, FANOUT_TASK_DAILY } from './engine/digest.js';
+
+async function handleSeoCron(event: any, ctx: any, options: SeoPluginOptions): Promise<void> {
+  const name = event?.name || event?.task || '';
+  if (name === DIGEST_TASK_WEEKLY) {
+    await runSeoDigest(ctx, options);
+  } else if (name === FANOUT_TASK_DAILY) {
+    await handleIndexNowFanout(ctx, options);
+  }
+}
 import {
   handleContentBeforeSave,
   handleContentAfterPublish,
@@ -206,6 +216,10 @@ export {
   handleIndexNowPublished,
   handleIndexNowTransition,
   handleIndexNowDelete,
+  runSeoDigest,
+  ensureSeoSchedules,
+  DIGEST_TASK_WEEKLY,
+  FANOUT_TASK_DAILY,
   getOrCreateIndexNowKey,
   submitToIndexNow,
   validateIndexNowKey,
@@ -314,7 +328,7 @@ export function createPlugin(userOptions: Partial<SeoPluginOptions> = {}) {
   return {
     id: 'emdash-seo',
     version: '1.2.0',
-    capabilities: ['content:read', 'content:write', 'page:inject', 'network:fetch'],
+    capabilities: ['content:read', 'content:write', 'page:inject', 'network:fetch', 'email:send'],
     allowedHosts: ['api.indexnow.org'],
     storage: {},
     admin: {
@@ -351,6 +365,14 @@ export function createPlugin(userOptions: Partial<SeoPluginOptions> = {}) {
         async (event: any, ctx: any) => handleContentAfterDelete(event, ctx, options, modIndexNow),
         { priority: 50, errorPolicy: 'continue' }
       ),
+      'plugin:activate': defineHook(
+        async (_event: any, ctx: any) => ensureSeoSchedules(ctx),
+        { priority: 50, errorPolicy: 'continue' }
+      ),
+      'cron': defineHook(
+        async (event: any, ctx: any) => handleSeoCron(event, ctx, options),
+        { priority: 50, errorPolicy: 'continue' }
+      ),
     },
     routes,
   };
@@ -368,7 +390,7 @@ export function seoPlugin(userOptions: Partial<SeoPluginOptions> = {}) {
     version: '1.2.0',
     entrypoint: '@emdash/plugin-seo',
     format: 'native' as const,
-    capabilities: ['content:read', 'content:write', 'page:inject', 'network:fetch'],
+    capabilities: ['content:read', 'content:write', 'page:inject', 'network:fetch', 'email:send'],
     adminEntry: new URL('./admin.tsx', import.meta.url).pathname,
     adminPages: [
       { path: '/settings', label: 'WebABC SEO', icon: 'globe' },

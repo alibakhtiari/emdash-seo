@@ -29,3 +29,21 @@ describe('Role capability matrix', () => {
     expect(canManageModule('editor', 'settings')).toBe(false);
   });
 });
+
+describe('Weekly digest honesty', () => {
+  it('reports skip reasons instead of fabricating sends', async () => {
+    const { runSeoDigest } = await import('../packages/emdash-seo/src/index.js');
+    const disabled = await runSeoDigest({}, { siteUrl: 'https://example.com', siteName: 'Ex' } as any);
+    expect(disabled).toEqual({ ran: false, emailed: false, reason: 'digest disabled (digest_enabled not set)' });
+    const noProvider = await runSeoDigest(
+      {
+        settings: { get: async (k: string) => (k === 'digest_enabled' ? '1' : k === 'digest_email' ? 'a@b.c' : null) },
+        content: { list: async () => ({ items: [{ id: '1', slug: 'a', data: { title: 'A Sufficiently Long Page Title Here', content: 'Word '.repeat(400) } }] }) },
+      },
+      { siteUrl: 'https://example.com', siteName: 'Ex' } as any
+    );
+    expect(noProvider.ran).toBe(true);
+    expect(noProvider.emailed).toBe(false);
+    expect(noProvider.reason).toBe('email provider not configured');
+  });
+});
