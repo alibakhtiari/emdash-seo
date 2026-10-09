@@ -132,6 +132,8 @@ export interface LocalBusinessInfo {
   name: string;
   legalName?: string;
   description?: string;
+  /** Explicit schema.org LocalBusiness subtype (e.g. Restaurant, Dentist). Auto-inferred when omitted. */
+  businessType?: string;
   url: string;
   logo: string;
   image?: string;

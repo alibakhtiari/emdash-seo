@@ -75,6 +75,23 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
   const cleanSiteUrl = siteUrl.replace(/\/+$/, '');
   const cleanCanonical = canonicalUrl.replace(/\/+$/, '');
 
+  const BUSINESS_SUBTYPE_HINTS: Array<[RegExp, string]> = [
+    [/restaurant|pizzeria|\bcafe\b|coffee ?shop|bistro/i, 'Restaurant'],
+    [/hotel|guest ?house|bed ?and ?breakfast|\binn\b/i, 'Hotel'],
+    [/dentist|dental/i, 'Dentist'],
+    [/plumber|plumbing/i, 'Plumber'],
+    [/electrician|electrical/i, 'Electrician'],
+    [/hair|salon|barber/i, 'HairSalon'],
+    [/\bgym\b|fitness|personal train/i, 'ExerciseGym'],
+    [/bakery|butcher|grocery|\bstore\b|\bshop\b/i, 'Store'],
+    [/lawyer|law ?firm|solicitor/i, 'Attorney'],
+    [/estate ?agent|realtor/i, 'RealEstateAgent'],
+  ];
+  const haystack = `${business.name} ${business.legalName || ''} ${title}`.toLowerCase();
+  const inferredSubtype = business.businessType
+    || BUSINESS_SUBTYPE_HINTS.find(([re]) => re.test(haystack))?.[1]
+    || null;
+
   // Resolve Schema Type & Author Nodes
   const schemaType = inferSchemaType(pathname, seo.schemaType || options.seo?.schemaType);
   const effectiveAuthor: AuthorProfile =
@@ -114,7 +131,7 @@ export function buildConnectedSchemaGraph(options: BuildSchemaGraphOptions): Rec
 
   // 2. Organization / LocalBusiness Node
   const organizationNode: Record<string, any> = {
-    "@type": ["LocalBusiness", "Organization"],
+    "@type": inferredSubtype ? ["LocalBusiness", "Organization", inferredSubtype] : ["LocalBusiness", "Organization"],
     "@id": `${cleanSiteUrl}/#organization`,
     "name": business.name,
     "legalName": business.legalName,

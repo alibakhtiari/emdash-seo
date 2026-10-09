@@ -334,12 +334,19 @@ export async function handlePageMetadata(
     });
   }
 
-  // 9. NLWeb Agent Link Discovery
+  // 9. NLWeb Agent Link Discovery + llms.txt discovery link
   if (options.nlwebEndpoint && !is404) {
     contributions.push({
       kind: 'link',
       rel: 'nlweb',
       href: options.nlwebEndpoint,
+    });
+  }
+  if (options.enableLlmsTxt !== false && !is404) {
+    contributions.push({
+      kind: 'link',
+      rel: 'alternate',
+      href: `${siteUrl}/llms.txt`,
     });
   }
 

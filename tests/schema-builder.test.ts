@@ -43,3 +43,27 @@ describe("Connected JSON-LD Schema Builder", () => {
     expect(Number(businessNode.aggregateRating.reviewCount)).toBe(150);
   });
 });
+
+describe("LocalBusiness subtype inference", () => {
+  it("emits a specific subtype for matching verticals and stays generic otherwise", () => {
+    const base = {
+      siteUrl: "https://example.com",
+      siteName: "Example",
+      canonicalUrl: "https://example.com/",
+      title: "Welcome",
+      description: "Home.",
+      business: DEFAULT_LOCAL_BUSINESS,
+    };
+    const orgOf = (g: any) => (g["@graph"] as any[]).find((n) => n["@id"].includes("#organization"))["@type"];
+    expect(orgOf(buildConnectedSchemaGraph({ ...base, title: "Luigi's Restaurant" }))).toContain("Restaurant");
+    expect(orgOf(buildConnectedSchemaGraph({ ...base, title: "Welcome" }))).toEqual(["LocalBusiness", "Organization"]);
+    expect(
+      orgOf(
+        buildConnectedSchemaGraph({
+          ...base,
+          business: { ...DEFAULT_LOCAL_BUSINESS, businessType: "Dentist" },
+        })
+      )
+    ).toContain("Dentist");
+  });
+});

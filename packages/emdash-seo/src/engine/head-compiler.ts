@@ -343,6 +343,11 @@ export function compilePrecomputedHead(entry: any, options: SeoPluginOptions): s
     tags.push(`<link rel="nlweb" href="${escapeHtml(options.nlwebEndpoint)}" />`);
   }
 
+  // 6b. llms.txt discovery link (HTTP Link headers are host-owned; HTML link is the plugin surface)
+  if (options.enableLlmsTxt !== false) {
+    tags.push(`<link rel="alternate" type="text/plain" title="LLM context" href="${escapeHtml(`${meta.cleanSiteUrl}/llms.txt`)}" />`);
+  }
+
   // 7. OpenGraph
   tags.push(`<meta property="og:title" content="${escapeHtml(meta.cleanSocialTitle)}" />`);
   if (meta.ogDescription) {
