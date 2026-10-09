@@ -98,6 +98,59 @@ function parseBlocks(text: string): ContentBlock[] {
 /**
  * Audits content for Generative Engine (GEO) and Answer Engine (AEO) readiness
  */
+export interface ScoredPassage {
+  text: string;
+  score: number;
+}
+
+/**
+ * Passage-level citability index: scores every paragraph block for
+ * verbatim-quote selection by generative engines (definition verb +
+ * stat density + experience voice + Q-heading proximity + 35-55w window).
+ * Returns the top 3 passages. Powers llms-full.txt injection.
+ */
+export function scorePassages(content: string, focusKeyword = ''): ScoredPassage[] {
+  const rawText = content.includes('<') ? cleanHtmlStructure(content) : content;
+  const blocks = parseBlocks(rawText);
+  const kwLower = focusKeyword.trim().toLowerCase();
+  const kwTokens = kwLower.split(/\s+/).filter((w) => w.length > 3);
+  const scored: ScoredPassage[] = [];
+  let prevWasQuestion = false;
+
+  for (const block of blocks) {
+    if (block.type !== 'paragraph') {
+      prevWasQuestion = QUESTION_HEADING_REGEX.test(block.text);
+      continue;
+    }
+    const words = block.text.split(/\s+/).filter(Boolean);
+    const wc = words.length;
+    if (wc < 15 || wc > 120) {
+      prevWasQuestion = false;
+      continue;
+    }
+    const lower = block.text.toLowerCase();
+    let score = 20;
+    if (wc >= 35 && wc <= 55) score += 20;
+    else if (wc >= 18 && wc <= 75) score += 10;
+    if (kwLower && (lower.includes(kwLower) || kwTokens.some((w) => lower.includes(w)))) score += 20;
+    if (/\b(is|are|refers to|means|defined as|consists of|involves|requires)\b/i.test(block.text)) score += 15;
+    let stats = 0;
+    for (const re of STATS_REGEXES) {
+      re.lastIndex = 0;
+      if (re.test(block.text)) stats++;
+    }
+    score += Math.min(15, stats * 5);
+    if (EXPERIENCE_PHRASES.some((p) => lower.includes(p))) score += 10;
+    if (prevWasQuestion) score += 10;
+    if (block.text.endsWith('.')) score += 0;
+    scored.push({ text: block.text, score: Math.min(100, score) });
+    prevWasQuestion = false;
+  }
+
+  return scored.sort((a, b) => b.score - a.score).slice(0, 3);
+}
+
+
 export function auditGeoAeo(content: string, options: AuditGeoAeoOptions = {}): GeoAeoReport {
   const { title = '', focusKeyword = '', excerpt = '' } = options;
   const rawText = content.includes('<') ? cleanHtmlStructure(content) : content;

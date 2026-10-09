@@ -19,10 +19,12 @@ import {
   handleIndexNowTransition,
   handleIndexNowDelete,
 } from '../engine/indexnow.js';
+import { purgeProtocolCache } from '../engine/protocol-cache.js';
 import {
   extractAutoFaqs,
   extractAutoHowTo,
   auditGeoAeo,
+  scorePassages,
 } from '../engine/geo-aeo-analyzer.js';
 import { inferSchemaType } from '../engine/schema-nodes.js';
 
@@ -210,6 +212,14 @@ export async function handleContentBeforeSave(
       directAnswerText: geoAeo.aeo.directAnswerCandidate,
       speakableText: geoAeo.aeo.speakableCandidate,
     };
+    try {
+      (content.data.seo.geoOptimization as any).topPassages = scorePassages(
+        rawContent,
+        content.data.seo.focusKeywords?.[0] || ''
+      );
+    } catch {
+      // Passage index is best-effort
+    }
   }
 
   // Pre-computed Edge Delivery Compilation (< 0.1ms TTFB on Cloudflare Workers)
@@ -235,6 +245,7 @@ export async function handleContentAfterPublish(
   if (ctx?.log?.info) {
     ctx.log.info('SEO Suite: Indexed published entry', { id: event.id, collection: event.collection });
   }
+  await purgeProtocolCache(ctx);
   if (modIndexNow) {
     await handleIndexNowPublished(event, ctx, options);
   }
@@ -246,6 +257,7 @@ export async function handleContentAfterSave(
   options: SeoPluginOptions,
   modIndexNow: boolean
 ) {
+  await purgeProtocolCache(ctx);
   if (modIndexNow) {
     await handleIndexNowPublished(event, ctx, options);
   }

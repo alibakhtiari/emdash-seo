@@ -4,6 +4,7 @@ import {
   extractAutoFaqs,
   extractAutoHowTo,
   extractSpeakableText,
+  scorePassages,
 } from '../packages/emdash-seo/src/engine/geo-aeo-analyzer.js';
 
 describe('GEO (Generative Engine Optimization) & AEO (Answer Engine Optimization) Engine', () => {
@@ -147,5 +148,22 @@ Combine water and cleaner gently.
       expect(speakable.length).toBeLessThan(300);
       expect(speakable).toContain('Persian rug cleaning requires pH-neutral solutions');
     });
+  });
+});
+
+describe('Passage citability index', () => {
+  it('ranks definition plus stat passages first and caps at three', () => {
+    const content = [
+      'Short filler sentence with little meaning here.',
+      'Persian rug cleaning is the process of extracting soil from delicate wool fibers using pH-neutral solutions and cold-water methods.',
+      'Over the last 12 years, we tested 150 antique Persian rugs and found that standard detergents caused stiffness in 85% of samples we measured.',
+      'Another plain paragraph about scheduling an appointment next week for services rendered today.',
+      'Wool-safe shampoo mixed with lukewarm water cleans gently without harsh bleaches or damage.',
+    ].join('\n\n');
+    const top = scorePassages(content, 'persian rug cleaning');
+    expect(top.length).toBeLessThanOrEqual(3);
+    expect(top[0].score).toBeGreaterThanOrEqual(top[top.length - 1].score);
+    expect(top[0].text).toContain('150 antique Persian rugs');
+    expect(top.some((p) => p.text.includes('Persian rug cleaning is'))).toBe(true);
   });
 });

@@ -6,6 +6,7 @@
 
 import type { SeoPluginOptions } from '../types.js';
 import { buildPageUrl } from '../engine/urls.js';
+import { cachedProtocol } from '../engine/protocol-cache.js';
 
 export interface LlmsTxtEntry {
   title: string;
@@ -180,13 +181,15 @@ export function renderLlmsTxt(_ctx: any, options: SeoPluginOptions): Response {
 
 /** Dynamic variant: uses published content when ctx.content is available. */
 export async function renderLlmsTxtAsync(ctx: any, options: SeoPluginOptions): Promise<Response> {
-  const body = ctx?.content?.list ? await generateLlmsTxtBody(ctx, options) : buildLlmsTxtOverview(options);
-  return new Response(body, {
-    status: 200,
-    headers: {
-      'Content-Type': 'text/plain; charset=utf-8',
-      'Cache-Control': 'public, max-age=86400',
-    },
+  return cachedProtocol(ctx, 'seo:cache:llms.txt', async () => {
+    const body = ctx?.content?.list ? await generateLlmsTxtBody(ctx, options) : buildLlmsTxtOverview(options);
+    return new Response(body, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'public, max-age=86400',
+      },
+    });
   });
 }
 
@@ -231,13 +234,15 @@ export function renderLlmsFullTxt(_ctx: any, options: SeoPluginOptions): Respons
 
 /** Dynamic variant: injects per-entry full content (length-capped) when available. */
 export async function renderLlmsFullTxtAsync(ctx: any, options: SeoPluginOptions): Promise<Response> {
-  const body = ctx?.content?.list ? await generateLlmsFullBody(ctx, options) : buildLlmsFullOverview(options);
-  return new Response(body, {
-    status: 200,
-    headers: {
-      'Content-Type': 'text/plain; charset=utf-8',
-      'Cache-Control': 'public, max-age=86400',
-    },
+  return cachedProtocol(ctx, 'seo:cache:llms-full.txt', async () => {
+    const body = ctx?.content?.list ? await generateLlmsFullBody(ctx, options) : buildLlmsFullOverview(options);
+    return new Response(body, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'public, max-age=86400',
+      },
+    });
   });
 }
 
@@ -299,10 +304,30 @@ export async function generateLlmsFullBody(ctx: any, options: SeoPluginOptions):
             (typeof data.description === 'string' && data.description) ||
             '';
           const body = raw.length > LLMS_FULL_ENTRY_CHARS ? `${raw.slice(0, LLMS_FULL_ENTRY_CHARS)}…` : raw;
+          // Prefer persisted passage citability index + FAQs over blind slicing
+          const seo = (data.seo || {}) as Record<string, any>;
+          const extras: string[] = [];
+          const topPassages = seo?.geoOptimization?.topPassages;
+          if (Array.isArray(topPassages)) {
+            for (const p of topPassages.slice(0, 3)) {
+              const text = typeof p === 'string' ? p : p?.text;
+              if (typeof text === 'string' && text.trim()) {
+                extras.push(`> ${text.trim().slice(0, 400)}`);
+              }
+            }
+          }
+          if (Array.isArray(seo?.faqs)) {
+            for (const f of (seo.faqs as any[]).slice(0, 3)) {
+              if (f?.question && f?.answer) {
+                extras.push(`**${String(f.question).slice(0, 200)}**\n${String(f.answer).slice(0, 400)}`);
+              }
+            }
+          }
+          const entryBody = extras.length > 0 ? `${extras.join('\n\n')}\n\n${body}`.slice(0, LLMS_FULL_ENTRY_CHARS + 1600) : body;
           const url =
             buildPageUrl({ locale: item.locale || cfg.defaultLocale, slug: item.slug, siteUrl, cfg, urlPattern: col.urlPattern }) ||
             `${siteUrl}${col.urlPattern.replace('{slug}', item.slug)}`;
-          lines.push(`### [${title}](${url})\n\n${body}\n`);
+          lines.push(`### [${title}](${url})\n\n${entryBody}\n`);
           count++;
         }
         cursor = page.cursor;

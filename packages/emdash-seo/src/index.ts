@@ -112,6 +112,7 @@ import {
   extractAutoFaqs,
   extractAutoHowTo,
   extractSpeakableText,
+  scorePassages,
 } from './engine/geo-aeo-analyzer.js';
 import {
   buildAuthorNode,
@@ -164,6 +165,7 @@ export {
   extractAutoFaqs,
   extractAutoHowTo,
   extractSpeakableText,
+  scorePassages,
   buildAuthorNode,
   buildHowToNode,
   inferSchemaType,
