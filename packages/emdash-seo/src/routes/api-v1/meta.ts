@@ -1,7 +1,7 @@
 import type { SeoPluginOptions, EntrySeoMetadata } from '../../types.js';
 import { handlePageMetadata } from '../../engine/metadata-handler.js';
 import { jsonResponse, extractMetaParams, parseRequestBody } from './helpers.js';
-import { requireSeoCap } from '../../engine/auth.js';
+import { requireSeoCapFor } from '../../engine/auth.js';
 
 export async function handleSeoMetaGet(ctx: any, options: SeoPluginOptions): Promise<Response> {
   const { collection, id } = extractMetaParams(ctx);
@@ -101,7 +101,7 @@ const MAX_BULK_ENTRIES = 100;
  * Capped at 100 entries. Reuses handleSeoMetaPut per entry.
  */
 export async function handleSeoMetaPatch(ctx: any, options: SeoPluginOptions): Promise<Response> {
-  const denied = requireSeoCap(ctx);
+  const denied = await requireSeoCapFor(ctx, 'meta');
   if (denied) return jsonResponse({ error: 'Forbidden: seo:manage capability required.' }, denied.status);
   const body = await parseRequestBody(ctx);
   const entries: BulkMetaEntry[] | null = Array.isArray(body?.entries) ? body.entries : null;
@@ -156,7 +156,7 @@ export async function handleSeoMetaPatch(ctx: any, options: SeoPluginOptions): P
 }
 
 export async function handleSeoMetaPut(ctx: any, options: SeoPluginOptions): Promise<Response> {
-  const denied = requireSeoCap(ctx);
+  const denied = await requireSeoCapFor(ctx, 'meta');
   if (denied) return jsonResponse({ error: 'Forbidden: seo:manage capability required.' }, denied.status);
   const { collection, id } = extractMetaParams(ctx);
 

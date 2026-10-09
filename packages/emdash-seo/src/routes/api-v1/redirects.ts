@@ -1,6 +1,6 @@
 import type { SeoPluginOptions, RedirectRule } from '../../types.js';
 import { jsonResponse, parseRequestBody } from './helpers.js';
-import { requireSeoCap } from '../../engine/auth.js';
+import { requireSeoCapFor } from '../../engine/auth.js';
 import {
   v1RedirectRules,
   loadRedirectRules,
@@ -160,8 +160,8 @@ export async function handleV1Redirects(ctx: any, _options: SeoPluginOptions): P
   const method = (req?.method || ctx?.method || 'GET').toUpperCase();
 
   if (method !== 'GET') {
-    const denied = requireSeoCap(ctx);
-    if (denied) return jsonResponse({ error: 'Forbidden: seo:manage capability required.' }, denied.status);
+    const denied = await requireSeoCapFor(ctx, 'redirects');
+    if (denied) return jsonResponse({ error: 'Forbidden: editor role cannot manage redirects.' }, denied.status);
   }
 
   // GET: List configured redirects with pagination

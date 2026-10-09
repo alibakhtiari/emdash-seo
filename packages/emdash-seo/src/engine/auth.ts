@@ -35,3 +35,42 @@ export function requireSeoCap(ctx: any): { status: number; body: string } | null
   if (hasSeoRole(role)) return null;
   return { status: 403, body: JSON.stringify({ error: 'Forbidden: seo:manage capability required.' }) };
 }
+
+export const ROLE_CAPS_KEY = 'seo_role_caps';
+
+export type RoleCapsMap = Record<string, Partial<Record<SeoManageModule, boolean>>>;
+
+async function readRoleCaps(ctx: any): Promise<RoleCapsMap | null> {
+  try {
+    let raw: unknown = null;
+    if (ctx?.settings?.get) raw = await ctx.settings.get(ROLE_CAPS_KEY);
+    else if (ctx?.kv?.get) raw = await ctx.kv.get(`settings:${ROLE_CAPS_KEY}`);
+    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed as RoleCapsMap;
+  } catch {
+    // Fall through to compiled-in defaults
+  }
+  return null;
+}
+
+/**
+ * Module-scoped guard honoring the stored role matrix (`seo_role_caps`
+ * in settings/KV, edited in Settings → Role Capabilities). Falls back to
+ * canManageModule() when nothing is stored. Usage mirrors requireSeoCap.
+ */
+export async function requireSeoCapFor(
+  ctx: any,
+  module: SeoManageModule
+): Promise<{ status: number; body: string } | null> {
+  const role = ctxRole(ctx);
+  if (role === undefined) return null;
+  if (role === 'admin') return null;
+  if (role !== 'editor') {
+    return { status: 403, body: JSON.stringify({ error: 'Forbidden: seo:manage capability required.' }) };
+  }
+  const caps = await readRoleCaps(ctx);
+  const stored = caps?.editor?.[module];
+  const allowed = typeof stored === 'boolean' ? stored : canManageModule('editor', module);
+  if (allowed) return null;
+  return { status: 403, body: JSON.stringify({ error: `Forbidden: editor role cannot manage ${module}.` }) };
+}

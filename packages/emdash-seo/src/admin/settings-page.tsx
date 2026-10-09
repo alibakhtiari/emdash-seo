@@ -6,6 +6,7 @@ import { ReadabilityAdminPage, ImageAltAuditorAdminPage } from './standalone-pag
 import { FuzzyRedirectsPage } from '../admin-redirects.js';
 import { AuditTab, LinksTab, BulkMetaTab } from './settings/HubDataTabs.js';
 import { CornerstonePanel } from './settings/CornerstonePanel.js';
+import { RoleCapsPanel } from './settings/RoleCapsPanel.js';
 import {
   IconSettings,
   IconSearch,
@@ -302,6 +303,16 @@ export function SettingsPage() {
               Pillar posts flagged in the content editor. Cornerstone entries target 1,200+ words.
             </p>
             <CornerstonePanel fallbackCount={settings.cornerstoneCount} />
+          </div>
+
+          <div style={{ marginBottom: '2rem' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.75rem', borderBottom: '1px solid var(--color-kumo-line, rgba(255, 255, 255, 0.1))', paddingBottom: '0.5rem', color: 'var(--text-color-kumo-strong, #ffffff)' }}>
+              Role Capabilities
+            </h3>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--text-color-kumo-subtle, #a0a0a0)', marginBottom: '0.75rem' }}>
+              Admins manage everything. Toggle which modules editors may change; enforced on every mutating API route.
+            </p>
+            <RoleCapsPanel />
           </div>
 
           <div style={{ marginBottom: '2rem' }}>
