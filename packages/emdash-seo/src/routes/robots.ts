@@ -1,7 +1,22 @@
 import type { SeoPluginOptions } from '../types.js';
+import { cachedProtocol } from '../engine/protocol-cache.js';
 
 /** AI crawler user-agents governed by the block-AI toggle. */
-const AI_BOTS = ['GPTBot', 'ClaudeBot', 'PerplexityBot', 'Google-Extended', 'CCBot'];
+const AI_BOTS = [
+  'GPTBot',
+  'ChatGPT-User',
+  'ClaudeBot',
+  'anthropic-ai',
+  'PerplexityBot',
+  'Google-Extended',
+  'Applebot-Extended',
+  'Bytespider',
+  'Amazonbot',
+  'Cohere-ai',
+  'Meta-ExternalAgent',
+  'YouBot',
+  'CCBot',
+];
 
 export interface RobotsKnobs {
   /** Extra raw `Disallow:`/`Allow:` lines from seo_settings or options. */
@@ -67,7 +82,7 @@ export function buildRobotsTxt(options: SeoPluginOptions, knobs: RobotsKnobs = {
   }
   if (merged.crawlDelay != null) lines.push(`Crawl-delay: ${merged.crawlDelay}`);
 
-  lines.push('', '# Sitemaps', `Sitemap: ${siteUrl}/sitemap.xml`, `Sitemap: ${siteUrl}/sitemap-index.xml`);
+  lines.push('', '# Sitemaps', `Sitemap: ${siteUrl}/sitemap.xml`, `Sitemap: ${siteUrl}/sitemap-index.xml`, `Sitemap: ${siteUrl}/sitemap-news.xml`);
 
   lines.push('', '# AI Agent Directives');
   for (const bot of AI_BOTS) {
@@ -92,12 +107,14 @@ export function renderRobots(_ctx: any, options: SeoPluginOptions): Response {
 
 /** Settings-driven variant: merges seo_settings custom rules over option knobs. */
 export async function renderRobotsAsync(ctx: any, options: SeoPluginOptions): Promise<Response> {
-  const fromSettings = await knobsFromSettings(ctx);
-  return new Response(buildRobotsTxt(options, fromSettings), {
-    status: 200,
-    headers: {
-      'Content-Type': 'text/plain; charset=utf-8',
-      'Cache-Control': 'public, max-age=86400',
-    },
+  return cachedProtocol(ctx, 'seo:cache:robots.txt', async () => {
+    const fromSettings = await knobsFromSettings(ctx);
+    return new Response(buildRobotsTxt(options, fromSettings), {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'public, max-age=86400',
+      },
+    });
   });
 }

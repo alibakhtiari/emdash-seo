@@ -1,5 +1,6 @@
 import type { SeoPluginOptions } from '../types.js';
 import { buildPageUrl } from '../engine/urls.js';
+import { cachedProtocol } from '../engine/protocol-cache.js';
 
 /** Max URLs per sitemap file (sitemaps.org limit is 50k; 1000 keeps edge CPU safe). */
 export const SITEMAP_PAGE_SIZE = 1000;
@@ -13,6 +14,26 @@ export interface SitemapEntry {
   priority?: number;
   images?: { loc: string; title?: string; caption?: string }[];
   alternates?: { hreflang: string; href: string }[];
+  videos?: { title: string; description?: string; thumbnail?: string; playerLoc?: string }[];
+  newsTitle?: string;
+  newsDate?: string;
+}
+
+/** Detect embedded videos (YouTube/Vimeo iframes, <video> tags) in content. Capped at 2. */
+export function extractContentVideos(content: unknown): Array<{ playerLoc?: string }> {
+  if (typeof content !== 'string' || content.length === 0) return [];
+  const out: Array<{ playerLoc?: string }> = [];
+  const src = content.slice(0, 20000);
+  const re = /<(?:iframe|video)[^>]+(?:src|data-src)=["']([^"']+)["']/gi;
+  let m: RegExpExecArray | null;
+  while (out.length < 2 && (m = re.exec(src)) !== null) {
+    const url = m[1].trim();
+    if (!url || url.startsWith('data:')) continue;
+    if (/youtube(?:-nocookie)?\.com|youtu\.be|vimeo\.com|\.(mp4|webm|mov)(\?|#|$)/i.test(url)) {
+      if (!out.some((v) => v.playerLoc === url)) out.push({ playerLoc: url });
+    }
+  }
+  return out;
 }
 
 /** Tiny local BCP 47 encoder (inline to avoid an import cycle with hreflang engine). */
@@ -30,6 +51,7 @@ export function generateSitemapXml(entries: SitemapEntry[]): string {
     '<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"',
     '        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"',
+    '        xmlns:video="http://www.google.com/schemas/sitemap-video/1.1"',
     '        xmlns:xhtml="http://www.w3.org/1999/xhtml">',
   ];
   for (const entry of entries) {
@@ -51,12 +73,24 @@ export function generateSitemapXml(entries: SitemapEntry[]): string {
         }
       }
     }
+    const videoParts: string[] = [];
+    if (entry.videos) {
+      for (const v of entry.videos) {
+        if (!v?.title) continue;
+        videoParts.push(
+          `\n    <video:video>\n      <video:title>${escapeXml(v.title.slice(0, 100))}</video:title>` +
+            `${v.description ? `\n      <video:description>${escapeXml(v.description.slice(0, 500))}</video:description>` : ''}` +
+            `${v.thumbnail ? `\n      <video:thumbnail_loc>${escapeXml(v.thumbnail)}</video:thumbnail_loc>` : ''}` +
+            `${v.playerLoc ? `\n      <video:player_loc>${escapeXml(v.playerLoc)}</video:player_loc>` : `\n      <video:content_loc>${escapeXml(entry.loc)}</video:content_loc>`}\n    </video:video>`
+        );
+      }
+    }
     parts.push(
       `  <url>\n    <loc>${escapeXml(entry.loc)}</loc>` +
         `${entry.lastmod ? `\n    <lastmod>${entry.lastmod}</lastmod>` : ''}` +
         `${entry.changefreq ? `\n    <changefreq>${entry.changefreq}</changefreq>` : ''}` +
         `${entry.priority ? `\n    <priority>${entry.priority.toFixed(1)}</priority>` : ''}` +
-        `${altParts.join('')}${imgParts.join('')}\n  </url>`
+        `${altParts.join('')}${imgParts.join('')}${videoParts.join('')}\n  </url>`
     );
   }
   parts.push('</urlset>');
@@ -89,6 +123,62 @@ function escapeXml(unsafe: string): string {
 export interface CollectedSitemap {
   collection: string;
   entries: SitemapEntry[];
+}
+
+/** Map embed URLs onto sitemap video entries (title/description/thumbnail context). */
+function collectEntryVideos(
+  data: Record<string, unknown>,
+  thumbnail: string | undefined,
+  siteUrl: string
+): SitemapEntry['videos'] {
+  const embeds = extractContentVideos(data.content);
+  if (embeds.length === 0) return undefined;
+  const title = (typeof data.title === 'string' && data.title) || (typeof data.name === 'string' && data.name) || 'Video';
+  const description =
+    (typeof data.excerpt === 'string' && data.excerpt) ||
+    (typeof data.description === 'string' && data.description) ||
+    undefined;
+  return embeds.map((e) => ({
+    title,
+    description,
+    thumbnail,
+    playerLoc: e.playerLoc?.startsWith('http')
+      ? e.playerLoc
+      : e.playerLoc
+        ? `${siteUrl}${e.playerLoc.startsWith('/') ? '' : '/'}${e.playerLoc}`
+        : undefined,
+  }));
+}
+
+/** News window: modified within the last 2 days (Google News sitemap rule). */
+function isNewsFresh(lastmod: unknown): boolean {
+  if (!lastmod) return false;
+  const t = new Date(typeof lastmod === 'string' ? lastmod : (lastmod as any)).getTime();
+  if (!Number.isFinite(t)) return false;
+  return Date.now() - t < 2 * 24 * 60 * 60 * 1000;
+}
+
+/** Google News sitemap for entries modified in the last 2 days. */
+export function generateNewsSitemapXml(
+  entries: SitemapEntry[],
+  publicationName: string,
+  language = 'en'
+): string {
+  const items = entries
+    .filter((e) => e.newsTitle && e.newsDate)
+    .slice(0, 1000)
+    .map(
+      (e) => `  <url>\n    <loc>${escapeXml(e.loc)}</loc>\n    <news:news>\n      <news:publication>\n        <news:name>${escapeXml(publicationName.slice(0, 100))}</news:name>\n        <news:language>${escapeXml(language)}</news:language>\n      </news:publication>\n      <news:publication_date>${escapeXml(e.newsDate as string)}</news:publication_date>\n      <news:title>${escapeXml((e.newsTitle as string).slice(0, 200))}</news:title>\n    </news:news>\n  </url>`
+    );
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">\n${items.join('\n')}\n</urlset>`;
+}
+
+export async function renderSitemapNews(ctx: any, options: SeoPluginOptions): Promise<Response> {
+  return cachedProtocol(ctx, 'seo:cache:sitemap-news.xml', async () => {
+    const collected = await collectSitemapEntries(ctx, options);
+    const fresh = collected.flatMap((c) => c.entries).filter((e) => e.newsTitle && e.newsDate);
+    return xmlResponse(generateNewsSitemapXml(fresh, options.siteName, (options as any).defaultLocale || 'en'));
+  });
 }
 
 /** Chunk entries into pages of SITEMAP_PAGE_SIZE for index pagination. */
@@ -184,6 +274,13 @@ export async function collectSitemapEntries(ctx: any, options: SeoPluginOptions)
             lastmod: typeof lastmod === 'string' ? lastmod : lastmod ? new Date(lastmod).toISOString() : undefined,
             changefreq: col.slug === 'posts' ? 'daily' : 'weekly',
             images: images.length > 0 ? images : undefined,
+            videos: collectEntryVideos(data, images[0]?.loc, siteUrl),
+            ...(isNewsFresh(lastmod)
+              ? {
+                  newsTitle: (typeof data.title === 'string' && data.title) || item.slug,
+                  newsDate: typeof lastmod === 'string' ? lastmod : new Date(lastmod).toISOString(),
+                }
+              : {}),
           });
         }
         cursor = page.cursor;
@@ -219,19 +316,21 @@ function defaultEntries(siteUrl: string): SitemapEntry[] {
 }
 
 export async function renderSitemap(ctx: any, options: SeoPluginOptions): Promise<Response> {
-  const siteUrl = options.siteUrl.replace(/\/+$/, '');
-  const collected = await collectSitemapEntries(ctx, options);
+  return cachedProtocol(ctx, 'seo:cache:sitemap.xml', async () => {
+    const siteUrl = options.siteUrl.replace(/\/+$/, '');
+    const collected = await collectSitemapEntries(ctx, options);
 
-  if (collected.length === 0) {
-    return xmlResponse(generateSitemapXml(defaultEntries(siteUrl)));
-  }
+    if (collected.length === 0) {
+      return xmlResponse(generateSitemapXml(defaultEntries(siteUrl)));
+    }
 
-  const total = collected.reduce((n, c) => n + c.entries.length, 0);
-  if (total <= pageSize(options)) {
-    return xmlResponse(generateSitemapXml(collected.flatMap((c) => c.entries)));
-  }
-  // Large sites: serve an index of per-collection sitemaps
-  return renderSitemapIndex(ctx, options, collected);
+    const total = collected.reduce((n, c) => n + c.entries.length, 0);
+    if (total <= pageSize(options)) {
+      return xmlResponse(generateSitemapXml(collected.flatMap((c) => c.entries)));
+    }
+    // Large sites: serve an index of per-collection sitemaps
+    return renderSitemapIndex(ctx, options, collected);
+  });
 }
 
 /** Sitemap index over per-collection sitemaps, paginated at SITEMAP_PAGE_SIZE. */
@@ -240,23 +339,25 @@ export async function renderSitemapIndex(
   options: SeoPluginOptions,
   collected?: CollectedSitemap[]
 ): Promise<Response> {
-  const siteUrl = options.siteUrl.replace(/\/+$/, '');
-  const groups = collected ?? (await collectSitemapEntries(ctx, options));
-  const sitemaps: { loc: string; lastmod?: string }[] = [];
-  if (groups.length === 0) {
-    sitemaps.push({ loc: `${siteUrl}/sitemap.xml` });
-  }
-  for (const g of groups) {
-    const chunks = chunkEntries(g.entries, pageSize(options));
-    chunks.forEach((chunk, i) => {
-      const suffix = chunks.length > 1 ? `-${i + 1}` : '';
-      sitemaps.push({
-        loc: `${siteUrl}/sitemap-${g.collection}${suffix}.xml`,
-        lastmod: chunk[0]?.lastmod,
+  return cachedProtocol(ctx, 'seo:cache:sitemap-index.xml', async () => {
+    const siteUrl = options.siteUrl.replace(/\/+$/, '');
+    const groups = collected ?? (await collectSitemapEntries(ctx, options));
+    const sitemaps: { loc: string; lastmod?: string }[] = [];
+    if (groups.length === 0) {
+      sitemaps.push({ loc: `${siteUrl}/sitemap.xml` });
+    }
+    for (const g of groups) {
+      const chunks = chunkEntries(g.entries, pageSize(options));
+      chunks.forEach((chunk, i) => {
+        const suffix = chunks.length > 1 ? `-${i + 1}` : '';
+        sitemaps.push({
+          loc: `${siteUrl}/sitemap-${g.collection}${suffix}.xml`,
+          lastmod: chunk[0]?.lastmod,
+        });
       });
-    });
-  }
-  return xmlResponse(generateSitemapIndexXml(sitemaps));
+    }
+    return xmlResponse(generateSitemapIndexXml(sitemaps));
+  });
 }
 
 /** Per-collection sitemap (sitemap-{collection}.xml, optional `-{page}` suffix). */

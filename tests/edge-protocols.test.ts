@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { renderSitemap } from "../packages/emdash-seo/src/routes/sitemap.js";
+import { renderSitemap, generateSitemapXml, generateNewsSitemapXml, extractContentVideos } from "../packages/emdash-seo/src/routes/sitemap.js";
 import { renderRobots } from "../packages/emdash-seo/src/routes/robots.js";
 import { renderLlmsTxt, renderLlmsFullTxt } from "../packages/emdash-seo/src/routes/llms-txt.js";
 import { DEFAULT_OPTIONS } from "../packages/emdash-seo/src/config.js";
@@ -46,5 +46,34 @@ describe("Edge Protocols (Sitemaps, Robots, LLMs.txt)", () => {
     expect(text).toContain(`# ${DEFAULT_OPTIONS.siteName} — Full LLM Knowledge Base`);
     expect(text).toContain("Edge Performance & SEO Standards");
     expect(text).toContain("Connected JSON-LD @graph");
+  });
+});
+
+describe("News and video sitemap extensions", () => {
+  it("emits video and xhtml namespaces with video blocks", () => {
+    const xml = generateSitemapXml([
+      {
+        loc: "https://example.com/posts/film/",
+        videos: [{ title: "Launch Film", playerLoc: "https://www.youtube.com/embed/abc123" }],
+        alternates: [{ hreflang: "fr-CA", href: "https://example.com/fr-ca/film/" }],
+      },
+    ]);
+    expect(xml).toContain("xmlns:video=");
+    expect(xml).toContain("<video:title>Launch Film</video:title>");
+    expect(xml).toContain("youtube.com/embed/abc123");
+    expect(xml).toContain('hreflang="fr-CA"');
+  });
+
+  it("detects YouTube embeds and renders a news sitemap for fresh posts", () => {
+    expect(
+      extractContentVideos('<p>Hi</p><iframe src="https://www.youtube.com/embed/abc123"></iframe>')
+    ).toEqual([{ playerLoc: "https://www.youtube.com/embed/abc123" }]);
+    expect(extractContentVideos("<p>No video here</p>")).toEqual([]);
+    const news = generateNewsSitemapXml(
+      [{ loc: "https://example.com/posts/fresh/", newsTitle: "Fresh Post", newsDate: new Date().toISOString() }],
+      "Example Site"
+    );
+    expect(news).toContain("xmlns:news=");
+    expect(news).toContain("<news:title>Fresh Post</news:title>");
   });
 });

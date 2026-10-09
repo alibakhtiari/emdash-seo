@@ -1,5 +1,5 @@
 import type { SeoPluginOptions } from '../types.js';
-import { renderSitemap, renderSitemapIndex, renderSitemapCollection, renderSitemapXsl } from './sitemap.js';
+import { renderSitemap, renderSitemapIndex, renderSitemapCollection, renderSitemapNews, renderSitemapXsl } from './sitemap.js';
 import { renderRobotsAsync } from './robots.js';
 import { renderLlmsTxtAsync, renderLlmsFullTxtAsync, generateLlmsTxtBody } from './llms-txt.js';
 import { renderSchemaMap, listPublishedSchemaUrls } from './schema-map.js';
@@ -16,6 +16,7 @@ import {
 import { handleLinkOpportunities } from './api-v1/links.js';
 import { handleSeoMetaGet, handleSeoMetaPut, handleSeoMetaPatch } from './api-v1/meta.js';
 import { requireSeoCap } from '../engine/auth.js';
+import { purgeProtocolCache } from '../engine/protocol-cache.js';
 import {
   getOrCreateIndexNowKey,
   submitToIndexNow,
@@ -57,6 +58,7 @@ export function createPluginRoutes(options: SeoPluginOptions): Record<string, an
     registerRoute('sitemap_index.xml', async (ctx: any) => renderSitemap(ctx, options), { public: true });
     registerRoute('sitemap-index.xml', async (ctx: any) => renderSitemapIndex(ctx, options), { public: true });
     registerRoute('sitemap.xsl', async () => renderSitemapXsl(), { public: true });
+    registerRoute('sitemap-news.xml', async (ctx: any) => renderSitemapNews(ctx, options), { public: true });
     for (const col of ['services', 'posts', 'pages']) {
       registerRoute(`sitemap-${col}.xml`, async (ctx: any) => renderSitemapCollection(ctx, options, col), {
         public: true,
@@ -190,6 +192,66 @@ export function createPluginRoutes(options: SeoPluginOptions): Record<string, an
       // Fallback
     }
     return { ok: true };
+  });
+
+  registerRoute('settings/export', async (ctx: any) => {
+    const denied = requireSeoCap(ctx);
+    if (denied) {
+      return new Response(JSON.stringify({ error: 'Forbidden: seo:manage capability required.' }), {
+        status: denied.status,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    const { indexnowKey: _omit, ...publicOptions } = options as Record<string, any>;
+    const settings: Record<string, string> = {};
+    try {
+      if (ctx?.settings?.list) {
+        const entries = await ctx.settings.list();
+        for (const { key, value } of entries) {
+          settings[key] = typeof value === 'string' ? value : String(value);
+        }
+      } else if (ctx?.kv?.list) {
+        const entries = (await ctx.kv.list('settings:')) || [];
+        for (const { key, value } of entries) {
+          const k = String(key).replace('settings:', '');
+          settings[k] = typeof value === 'string' ? value : String(value);
+        }
+      }
+    } catch {
+      // Fallback: options snapshot only
+    }
+    return { version: 1, exportedAt: new Date().toISOString(), settings, options: publicOptions };
+  });
+
+  registerRoute('settings/import', async (ctx: any) => {
+    const denied = requireSeoCap(ctx);
+    if (denied) {
+      return new Response(JSON.stringify({ error: 'Forbidden: seo:manage capability required.' }), {
+        status: denied.status,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    const body = ctx?.input || (await ctx?.request?.json?.().catch(() => ({}))) || {};
+    const incoming = body.settings || body;
+    if (!incoming || typeof incoming !== 'object' || Array.isArray(incoming)) {
+      return { ok: false, error: 'Expected { settings: { key: value } }.' };
+    }
+    let applied = 0;
+    try {
+      for (const [key, value] of Object.entries(incoming)) {
+        if (typeof key !== 'string' || key.length === 0 || key.length > 120) continue;
+        const str = typeof value === 'string' ? value : String(value ?? '');
+        if (str.length > 20000) continue;
+        if (ctx?.settings?.set) await ctx.settings.set(key, str);
+        else if (ctx?.kv?.set) await ctx.kv.set(`settings:${key}`, str);
+        else break;
+        applied++;
+      }
+    } catch {
+      // Partial application reported below
+    }
+    await purgeProtocolCache(ctx);
+    return { ok: true, applied };
   });
 
   return routes;
