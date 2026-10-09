@@ -118,7 +118,8 @@ In `src/layouts/Base.astro`:
 - `/robots.txt`: Robots directives with sitemap declarations and AI crawler rules.
 - `/llms.txt` & `/llms-full.txt`: Markdown endpoints conforming to [llmstxt.org](https://llmstxt.org) standard for AI search agents.
 - `/schemamap.xml` & `/_emdash/api/seo/schema-map`: Schema map index of published structured data URLs.
-- Edge 301 Redirect matching and 404 logging.
+- Edge 301 Redirect matching via host `RedirectAccess` store (plugin reads/writes
+  `ctx.redirects`; request-time serving is host middleware) and KV-backed 404 log API.
 
 ---
 
@@ -143,9 +144,9 @@ A multi-agent team was invoked to implement the missing specifications in parall
 
 | Agent / Role | Focus Area | Deliverables | Status |
 |---|---|---|---|
-| **Agent 1: Semantic NLP Engineer** | Semantic SEO & Entity Intelligence | `packages/emdash-seo/src/engine/semantic-analyzer.ts`, update `content-analyzer.ts`, `tests/semantic-analyzer.test.ts`. | 🟡 Running |
-| **Agent 2: Edge Performance Engineer** | Pre-Computed Edge Delivery Fast Path | `packages/emdash-seo/src/engine/head-compiler.ts`, update `<SeoHead />` fast path, `tests/precomputed-edge.test.ts`. | 🟡 Running |
-| **Agent 3: REST API Engineer** | Unified REST API Endpoints | `packages/emdash-seo/src/routes/api-v1.ts`, `tests/api-v1.test.ts`. | 🟡 Running |
+| **Agent 1: Semantic NLP Engineer** | Semantic SEO & Entity Intelligence | `packages/emdash-seo/src/engine/semantic-analyzer.ts`, update `content-analyzer.ts`, `tests/semantic-analyzer.test.ts`. | ✅ Shipped |
+| **Agent 2: Edge Performance Engineer** | Pre-Computed Edge Delivery Fast Path | `packages/emdash-seo/src/engine/head-compiler.ts`, update `<SeoHead />` fast path, `tests/precomputed-edge.test.ts`. | ✅ Shipped |
+| **Agent 3: REST API Engineer** | Unified REST API Endpoints | `packages/emdash-seo/src/routes/api-v1.ts`, `tests/api-v1.test.ts`. | ✅ Shipped |
 | **Orchestrator** | Integration & QA | Wire `head-compiler` into `content:beforeSave`, mount `api-v1` in `index.ts`, run lint, typecheck, tests, and build. | ⏳ Pending Agent Completion |
 
 ---

@@ -52,7 +52,7 @@ const EXPERIENCE_PHRASES = [
 /**
  * Strips HTML tags while preserving headings and paragraph boundaries
  */
-function cleanHtmlStructure(html: string): string {
+export function cleanHtmlStructure(html: string): string {
   return html
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
@@ -142,7 +142,6 @@ export function scorePassages(content: string, focusKeyword = ''): ScoredPassage
     score += Math.min(15, stats * 5);
     if (EXPERIENCE_PHRASES.some((p) => lower.includes(p))) score += 10;
     if (prevWasQuestion) score += 10;
-    if (block.text.endsWith('.')) score += 0;
     scored.push({ text: block.text, score: Math.min(100, score) });
     prevWasQuestion = false;
   }

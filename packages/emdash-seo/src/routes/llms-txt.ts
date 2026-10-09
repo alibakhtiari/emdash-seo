@@ -7,6 +7,7 @@
 import type { SeoPluginOptions } from '../types.js';
 import { buildPageUrl } from '../engine/urls.js';
 import { cachedProtocol } from '../engine/protocol-cache.js';
+import { cleanHtmlStructure } from '../engine/geo-aeo-analyzer.js';
 
 export interface LlmsTxtEntry {
   title: string;
@@ -298,11 +299,12 @@ export async function generateLlmsFullBody(ctx: any, options: SeoPluginOptions):
             (typeof data.title === 'string' && data.title) ||
             (typeof data.name === 'string' && data.name) ||
             item.slug;
-          const raw =
+          const rawHtml =
             (typeof data.content === 'string' && data.content) ||
             (typeof data.excerpt === 'string' && data.excerpt) ||
             (typeof data.description === 'string' && data.description) ||
             '';
+          const raw = rawHtml.includes('<') ? cleanHtmlStructure(rawHtml) : rawHtml;
           const body = raw.length > LLMS_FULL_ENTRY_CHARS ? `${raw.slice(0, LLMS_FULL_ENTRY_CHARS)}…` : raw;
           // Prefer persisted passage citability index + FAQs over blind slicing
           const seo = (data.seo || {}) as Record<string, any>;

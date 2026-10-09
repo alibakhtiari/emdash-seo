@@ -77,3 +77,18 @@ describe("News and video sitemap extensions", () => {
     expect(news).toContain("<news:title>Fresh Post</news:title>");
   });
 });
+
+describe("Robots AI governance", () => {
+  it("keeps llms endpoints open when AI training is blocked", async () => {
+    const { buildRobotsTxt } = await import("../packages/emdash-seo/src/routes/robots.js");
+    const txt = buildRobotsTxt(
+      { ...DEFAULT_OPTIONS, siteUrl: "https://example.com" },
+      { blockAiBots: true }
+    );
+    expect(txt).toContain("User-agent: OAI-SearchBot");
+    expect(txt).toContain("User-agent: Claude-SearchBot");
+    expect(txt).toContain("Disallow: /");
+    expect(txt).toContain("Allow: /llms.txt");
+    expect(txt).toContain("Allow: /llms-full.txt");
+  });
+});

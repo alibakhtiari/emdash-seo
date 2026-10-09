@@ -1,13 +1,19 @@
 import type { SeoPluginOptions } from '../types.js';
 import { cachedProtocol } from '../engine/protocol-cache.js';
 
-/** AI crawler user-agents governed by the block-AI toggle. */
+/** AI crawler user-agents governed by the block-AI toggle. Training and
+ * search crawlers share one toggle today; per-group policies are tracked
+ * in tasks.md (training/search split). */
 const AI_BOTS = [
   'GPTBot',
   'ChatGPT-User',
+  'OAI-SearchBot',
   'ClaudeBot',
+  'Claude-User',
+  'Claude-SearchBot',
   'anthropic-ai',
   'PerplexityBot',
+  'Perplexity-User',
   'Google-Extended',
   'Applebot-Extended',
   'Bytespider',
@@ -15,6 +21,7 @@ const AI_BOTS = [
   'Cohere-ai',
   'Meta-ExternalAgent',
   'YouBot',
+  'DuckAssistBot',
   'CCBot',
 ];
 
@@ -88,9 +95,7 @@ export function buildRobotsTxt(options: SeoPluginOptions, knobs: RobotsKnobs = {
   for (const bot of AI_BOTS) {
     lines.push(`User-agent: ${bot}`);
     lines.push(merged.blockAiBots ? 'Disallow: /' : 'Allow: /');
-    if (!merged.blockAiBots) {
-      lines.push('Allow: /llms.txt', 'Allow: /llms-full.txt');
-    }
+    lines.push('Allow: /llms.txt', 'Allow: /llms-full.txt');
   }
   return `${lines.join('\n')}\n`;
 }
