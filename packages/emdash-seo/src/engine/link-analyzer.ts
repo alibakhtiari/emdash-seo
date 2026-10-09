@@ -72,8 +72,28 @@ export function findInternalLinkOpportunities(
   const opportunities: LinkOpportunity[] = [];
   const cleanContent = content.replace(/<[^>]*>?/gm, ' ');
 
+  // Targets already linked in the body are not opportunities.
+  const linked = new Set<string>();
+  const collectHref = (raw: string): void => {
+    let href = raw.trim().split('#')[0].split('?')[0].trim();
+    if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
+    try {
+      if (href.includes('://')) href = new URL(href).pathname;
+    } catch {
+      return;
+    }
+    if (!href.startsWith('/')) return;
+    linked.add(href.replace(/^\/+|\/+$/g, '').toLowerCase());
+  };
+  const htmlHrefRegex = /<a\s+[^>]*href=["']([^"']+)["'][^>]*>/gi;
+  let hrefMatch: RegExpExecArray | null;
+  while ((hrefMatch = htmlHrefRegex.exec(content)) !== null) collectHref(hrefMatch[1]);
+  const mdLinkRegex = /\[[^\]]*\]\(([^)]+)\)/g;
+  while ((hrefMatch = mdLinkRegex.exec(content)) !== null) collectHref(hrefMatch[1]);
+
   for (const candidate of candidates) {
     if (candidate.id === currentEntryId) continue;
+    if (linked.has(candidate.slug.replace(/^\/+|\/+$/g, '').toLowerCase())) continue;
 
     // Check title and focus keywords
     const searchTerms = [candidate.title, ...(candidate.focusKeywords || [])].filter(Boolean);

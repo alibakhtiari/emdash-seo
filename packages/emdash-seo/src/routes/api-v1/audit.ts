@@ -3,7 +3,7 @@ import { runSitewideAudit, type AuditEntryInput } from '../../engine/audit-runne
 import { jsonResponse, parseRequestBody } from './helpers.js';
 import { latestV1AuditSnapshot, setLatestV1AuditSnapshot } from './state.js';
 
-export async function handleV1AuditRun(ctx: any, options: SeoPluginOptions): Promise<Response> {
+export async function handleV1AuditRun(ctx: any, _options: SeoPluginOptions): Promise<Response> {
   let entries: AuditEntryInput[] = [];
   const body = await parseRequestBody(ctx);
 
@@ -13,13 +13,20 @@ export async function handleV1AuditRun(ctx: any, options: SeoPluginOptions): Pro
     entries = ctx.entries;
   } else if (ctx?.content?.list) {
     for (const col of ['posts', 'services', 'pages']) {
+      let cursor: string | undefined;
+      let offset = 0;
       try {
-        const listRes = await ctx.content.list(col, {
-          limit: 100,
-          where: { status: 'published' },
-        });
-        if (listRes?.items) {
-          for (const item of listRes.items) {
+        for (;;) {
+          const page = await ctx.content.list(col, {
+            limit: 100,
+            cursor,
+            offset,
+            where: { status: 'published' },
+          });
+          const items = page?.items;
+          if (!items || items.length === 0) break;
+          for (const item of items) {
+            if (entries.length >= 2000) break;
             entries.push({
               id: item.id,
               slug: item.slug || item.data?.slug || '',
@@ -29,28 +36,39 @@ export async function handleV1AuditRun(ctx: any, options: SeoPluginOptions): Pro
               metaDescription: item.data?.seo?.metaDescription || item.metaDescription,
               focusKeywords: item.data?.seo?.focusKeywords || item.focusKeywords || [],
               noIndex: item.data?.seo?.noIndex || item.noIndex,
+              schemaType: item.data?.seo?.schemaType || item.data?.schema_type || item.schemaType,
+              cornerstone: item.data?.seo?.cornerstone ?? item.data?.cornerstone ?? item.cornerstone,
             });
+          }
+          if (entries.length >= 2000) break;
+          const nextCursor = page?.cursor ?? page?.nextCursor ?? null;
+          if (nextCursor && nextCursor !== cursor) {
+            cursor = nextCursor;
+            offset += items.length;
+          } else if (page?.hasMore && items.length > 0) {
+            offset += items.length;
+          } else {
+            break;
           }
         }
       } catch {
-        // Ignore
+        // Skip failing collections; zero usable entries surfaces as a 500 below.
       }
+      if (entries.length >= 2000) break;
+    }
+    if (entries.length === 0) {
+      return jsonResponse(
+        { success: false, error: 'Failed to load content entries for audit.' },
+        500,
+      );
     }
   }
 
-  // Fallback sample if no entries exist
   if (entries.length === 0) {
-    entries = [
-      {
-        id: 'home',
-        slug: '',
-        title: `${options.siteName} | Professional Services`,
-        content: 'Welcome to our website. We provide top-tier professional services with comprehensive guarantees.',
-        metaTitle: `${options.siteName} | Professional Services`,
-        metaDescription: `Discover high-quality professional services at ${options.siteName}. Contact our specialists today.`,
-        focusKeywords: ['professional services'],
-      },
-    ];
+    return jsonResponse(
+      { success: false, error: 'No published entries available for audit.' },
+      500,
+    );
   }
 
   const snapshot: AuditSnapshot = runSitewideAudit(entries);

@@ -1,42 +1,70 @@
-import { runSitewideAudit } from '../engine/audit-runner.js';
+import { runSitewideAudit, type AuditEntryInput } from '../engine/audit-runner.js';
 import type { AuditSnapshot } from '../types.js';
 
 let latestAudit: AuditSnapshot | null = null;
 
-export async function handleRunAudit(_ctx: any): Promise<Response> {
-  // Query all published content from DB
-  const entries = [
-    {
-      id: "home",
-      slug: "",
-      title: "Home | Professional Local Services & Solutions",
-      content: "Welcome to our website. We provide top-tier professional services with unmatched quality and customer satisfaction.",
-      metaTitle: "Home | Professional Local Services & Solutions",
-      metaDescription: "Top-tier professional services and modern solutions. Explore our offerings, read customer reviews, and get in touch today.",
-      focusKeywords: ["professional services"],
-    },
-    {
-      id: "sample-service",
-      slug: "services/sample-service",
-      title: "Expert Service Solutions | Local Specialists",
-      content: "High quality professional services for residential and commercial clients with comprehensive guarantees.",
-      metaTitle: "Expert Service Solutions | Local Specialists",
-      metaDescription: "Reliable, accredited, and professional services tailored to your needs. Get an instant quote today.",
-      focusKeywords: ["expert service solutions"],
+const AUDIT_COLLECTIONS = ['posts', 'services', 'pages'];
+const MAX_AUDIT_ENTRIES = 2000;
+
+async function collectEntries(ctx: any): Promise<AuditEntryInput[] | null> {
+  if (Array.isArray(ctx?.entries) && ctx.entries.length > 0) {
+    return ctx.entries as AuditEntryInput[];
+  }
+  if (!ctx?.content?.list) return null;
+  const entries: AuditEntryInput[] = [];
+  for (const col of AUDIT_COLLECTIONS) {
+    let cursor: string | undefined;
+    try {
+      do {
+        const page = await ctx.content.list(col, {
+          limit: 100,
+          cursor,
+          where: { status: 'published' },
+        });
+        if (!page?.items) break;
+        for (const item of page.items) {
+          if (entries.length >= MAX_AUDIT_ENTRIES) break;
+          entries.push({
+            id: item.id,
+            slug: item.slug || item.data?.slug || '',
+            title: item.title || item.data?.title || '',
+            content: item.content || item.data?.content || '',
+            metaTitle: item.data?.seo?.metaTitle || item.metaTitle,
+            metaDescription: item.data?.seo?.metaDescription || item.metaDescription,
+            focusKeywords: item.data?.seo?.focusKeywords || item.focusKeywords || [],
+            noIndex: item.data?.seo?.noIndex || item.noIndex,
+            schemaType: item.data?.seo?.schemaType || item.data?.schema_type || item.schemaType,
+            cornerstone: item.data?.seo?.cornerstone ?? item.data?.cornerstone ?? item.cornerstone,
+          });
+        }
+        cursor = page.cursor;
+        if (entries.length >= MAX_AUDIT_ENTRIES) break;
+      } while (cursor);
+    } catch {
+      return null;
     }
-  ];
+  }
+  return entries;
+}
 
-  latestAudit = runSitewideAudit(entries);
-
-  return new Response(JSON.stringify({ success: true, audit: latestAudit }), {
-    status: 200,
+function json(data: unknown, status = 200): Response {
+  return new Response(JSON.stringify(data), {
+    status,
     headers: { 'Content-Type': 'application/json' },
   });
 }
 
+export async function handleRunAudit(ctx: any): Promise<Response> {
+  const entries = await collectEntries(ctx);
+  if (!entries) {
+    return json({ success: false, error: 'not wired' }, 501);
+  }
+
+  latestAudit = runSitewideAudit(entries);
+
+  return json({ success: true, audit: latestAudit });
+}
+
 export async function handleGetAudit(_ctx: any): Promise<Response> {
-  return new Response(JSON.stringify({ success: true, audit: latestAudit }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' },
-  });
+  return json({ success: true, audit: latestAudit });
 }

@@ -27,7 +27,7 @@ const STATS_REGEXES = [
   /\b(?:19|20)\d{2}\b/g,
   /\b\d+(?:\.\d+)?\s*(?:km|miles|meters|kg|lbs|hours|mins|minutes|seconds|x|times|years|months|weeks|days)\b/gi,
   /\b\d+\s*:\s*\d+\b/g,
-  /\b\d+\s+(?:samples|items|cases|respondents|products|rugs|carpets|users|clients|studies)\b/gi,
+  /\b\d+\s+(?:samples|items|cases|respondents|products|users|clients|studies)\b/gi,
   /\b\d(?:\.\d)?(?:\s*\/\s*5|\s*stars?)\b/gi,
 ];
 
@@ -115,7 +115,7 @@ export function auditGeoAeo(content: string, options: AuditGeoAeoOptions = {}): 
     tableCount = (content.match(/<table/gi) || []).length || 1;
   }
 
-  // Detect quotable definition / answer blocks (35 to 65 words)
+  // Detect quotable definition / answer blocks (18 to 75 words)
   const kwLower = focusKeyword.trim().toLowerCase();
   for (const block of blocks) {
     if (block.type === 'paragraph') {
@@ -272,7 +272,7 @@ export function auditGeoAeo(content: string, options: AuditGeoAeoOptions = {}): 
       dimension: 'GEO',
       type: 'critical',
       title: 'Add a Definitive Quotable Paragraph',
-      message: 'Generative engines (ChatGPT, Gemini) quote clear 35-55 word definition or summary passages. Add a concise summary block answering the main user intent.',
+      message: 'Generative engines (ChatGPT, Gemini) quote clear 18-75 word definition or summary passages. Add a concise summary block answering the main user intent.',
     });
   } else {
     recommendations.push({
@@ -329,7 +329,7 @@ export function auditGeoAeo(content: string, options: AuditGeoAeoOptions = {}): 
       dimension: 'AEO',
       type: 'critical',
       title: 'Provide Direct Answers After Questions',
-      message: 'Keep the paragraph immediately following a question heading between 25-50 words for optimal featured snippet selection.',
+      message: 'Keep the paragraph immediately following a question heading between 8-65 words for optimal featured snippet selection.',
     });
   }
 

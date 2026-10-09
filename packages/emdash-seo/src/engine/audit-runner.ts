@@ -54,14 +54,18 @@ export function runSitewideAudit(entries: AuditEntryInput[]): AuditSnapshot {
   }
   const linkGraph: LinkGraphEntry[] = [];
   for (const entry of evaluated) {
+    const baseParts = entry.slug.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean);
+    baseParts.pop();
     const hrefRegex = /<a\s+[^>]*href=["']([^"']+)["'][^>]*>/gi;
     let hrefMatch: RegExpExecArray | null;
     while ((hrefMatch = hrefRegex.exec(entry.content)) !== null) {
-      const href = hrefMatch[1].trim();
-      if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) {
+      const rawHref = hrefMatch[1].trim();
+      if (!rawHref || rawHref.startsWith('#') || rawHref.startsWith('mailto:') || rawHref.startsWith('tel:')) {
         continue;
       }
-      let path: string | null = null;
+      let path: string | null;
+      const href = rawHref.split('#')[0].split('?')[0].trim();
+      if (!href) continue;
       if (href.startsWith('/')) {
         path = href;
       } else if (href.includes('://')) {
@@ -70,6 +74,15 @@ export function runSitewideAudit(entries: AuditEntryInput[]): AuditSnapshot {
         } catch {
           path = null;
         }
+      } else {
+        // Relative href: resolve against the entry's parent directory
+        const parts = [...baseParts];
+        for (const seg of href.split('/')) {
+          if (!seg || seg === '.') continue;
+          if (seg === '..') parts.pop();
+          else parts.push(seg);
+        }
+        path = `/${parts.join('/')}`;
       }
       if (!path) {
         continue;
@@ -111,10 +124,10 @@ export function runSitewideAudit(entries: AuditEntryInput[]): AuditSnapshot {
       pageScore -= 25;
       totalCritical++;
     } else if (effectiveTitle.length < 30) {
-      issues.push(`Notice: Page title is short (${effectiveTitle.length} characters). Target: 40-60 characters.`);
+      issues.push(`Notice: Page title is short (${effectiveTitle.length} characters). Target: 30-60 characters.`);
       pageScore -= 5;
       totalNotice++;
-    } else if (effectiveTitle.length > 70) {
+    } else if (effectiveTitle.length > 60) {
       issues.push(`Warning: Page title is long (${effectiveTitle.length} characters) and may truncate in SERP.`);
       pageScore -= 10;
       totalWarning++;
@@ -133,12 +146,12 @@ export function runSitewideAudit(entries: AuditEntryInput[]): AuditSnapshot {
       issues.push('Warning: Missing meta description.');
       pageScore -= 15;
       totalWarning++;
-    } else if (effectiveDesc.length < 70) {
+    } else if (effectiveDesc.length < 120) {
       issues.push(`Notice: Meta description is short (${effectiveDesc.length} characters).`);
       pageScore -= 5;
       totalNotice++;
-    } else if (effectiveDesc.length > 165) {
-      issues.push(`Notice: Meta description exceeds 160 characters (${effectiveDesc.length} characters).`);
+    } else if (effectiveDesc.length > 156) {
+      issues.push(`Notice: Meta description exceeds 156 characters (${effectiveDesc.length} characters).`);
       pageScore -= 5;
       totalNotice++;
     }
