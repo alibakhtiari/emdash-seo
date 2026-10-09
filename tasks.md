@@ -79,15 +79,19 @@ Refuted / nuanced (not added as defects):
 - [x] Migration depth: Yoast `_yoast_wpseo_is_cornerstone` + RankMath cornerstone mapped into `seo.cornerstone` via merge (`content-hooks.ts`). Open: RankMath secondary-keyword key unverified (not guessed), truSEO payload, settings-template import
 - [x] Roles: `canManageModule` helper + export (`engine/auth.ts`, `index.ts`; editors blocked from settings). Open: admin UI matrix
 
-## P2 — modern beyond WordPress (GEO/AEO/moat; answers + budget landed, rest open)
+## P2 — modern beyond WordPress (GEO/AEO/moat; landed 2026-10-09, tails noted)
 
-- [x] Answers API `GET /_emdash/api/seo/v1/answers?q=` (`routes/api-v1/answers.ts`, public, tested in `tests/api-v1.test.ts`)
-- [x] Cron cooled hourly (`wrangler.jsonc`) for free-tier CPU/D1 budget
-- [x] Single cornerstone threshold 1200/600 (audit aligned to editor; `audit-runner.ts`)
-- [ ] Passage citability index + `llms-full` injection (`llms-txt.ts:251-298` still blind-slices)
-- [ ] Corpus IDF in D1 + Workers-AI hybrid (`semantic-analyzer.ts:445-461` stub unused; `idf=1.0` stands in)
-- [ ] Edge KV precompute for `sitemap-*.xml`/`robots`/`llms*` on publish
-- [ ] AI-crawler budget router (per-bot groups + lightweight HTML + KV hit log)
-- [ ] Sitemap-`lastmod` IndexNow fan-out on cron (no plugin cron hook — needs host scheduler)
-- [ ] i18n `Link:` headers + `llms.txt` discovery link; `speakableSelectors` default audit; TOC/breadcrumb emission checks; `shouldSkipSegment` digit guard (`breadcrumbs.ts` eats `/top-10/`); settings import/export; GSC integration; video/news sitemaps
-
+- [x] Passage citability index (`scorePassages`, top-3 persisted on save) + `llms-full` injection (key excerpts + FAQs over blind slice)
+- [x] News sitemap (`sitemap-news.xml`, 2-day window) + video sitemap blocks (YouTube/Vimeo/`<video>` detection, capped)
+- [x] Edge KV protocol cache (1h TTL, purge on publish/save) on sitemap/index/news/robots/llms endpoints
+- [x] AI bot list extended (13 agents) with per-bot groups + llms allowances; hit-log dashboard impossible without host request hook (noted)
+- [x] Settings export/import routes (`settings/export`, `settings/import`, admin-guarded, secrets excluded)
+- [x] llms discovery link (HTML `rel=alternate`; HTTP `Link:` headers are host-owned, not plugin-emittable)
+- [x] Speakable readiness + reviewer + power-wording + TOC-presence checks; numeric-slug breadcrumb guard (`/top-10/` kept, date archives skipped)
+- [x] LocalBusiness subtype inference (10 verticals + explicit `businessType` override)
+- [x] Answers API `GET /_emdash/api/seo/v1/answers?q=` (tested)
+- [x] Cron cooled hourly; single cornerstone threshold 1200/600
+- [ ] Corpus IDF in D1 + Workers-AI hybrid (blocked: sync `analyzeContent` has no async KV path; needs engine refactor)
+- [ ] Sitemap-`lastmod` IndexNow fan-out on cron (blocked: no plugin cron hook — needs host scheduler)
+- [ ] GSC integration (blocked: external OAuth/API credentials)
+- [ ] Roles admin UI matrix (helper `canManageModule` shipped); truSEO/secondary-key import (RankMath key unverified, not guessed); stemming (exact-match kept intentionally, dependency-free)
