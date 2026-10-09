@@ -8,6 +8,7 @@ import {
   handleV1AuditLatest,
   handleV1Redirects,
   handleV1404s,
+  handleSeoAnswers,
   resetApiV1State,
   record404Hit,
 } from '../packages/emdash-seo/src/index.js';
@@ -551,6 +552,33 @@ describe('Unified REST API v1 (docs/EMDASH_ADMIN_AND_API_INTEGRATION.md)', () =>
       expect(res.status).toBe(200);
       const json: any = await res.json();
       expect(json.items.length).toBe(1);
+    });
+  });
+
+  describe('9. handleSeoAnswers (GET /_emdash/api/seo/v1/answers)', () => {
+    it('returns direct answer, FAQs, and citing URL for posted content', async () => {
+      const ctx = {
+        request: new Request('https://cleanpro.example.com/_emdash/api/seo/v1/answers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            q: 'drying time',
+            contentHtml: '<h2>How long is drying time?</h2><p>Drying time is under 2 hours for most carpets.</p>',
+          }),
+        }),
+      };
+      const res = await handleSeoAnswers(ctx, options);
+      expect(res.status).toBe(200);
+      const json: any = await res.json();
+      expect(json.success).toBe(true);
+      expect(json.directAnswer).toContain('2 hours');
+      expect(json.faqs.length).toBeGreaterThanOrEqual(1);
+      expect(json.cites[0]).toContain('https://cleanpro.example.com');
+    });
+
+    it('400s without q/collection/id or contentHtml', async () => {
+      const res = await handleSeoAnswers({ request: new Request('https://cleanpro.example.com/_emdash/api/seo/v1/answers') }, options);
+      expect(res.status).toBe(400);
     });
   });
 });

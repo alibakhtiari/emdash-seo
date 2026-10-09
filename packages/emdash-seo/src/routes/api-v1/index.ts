@@ -3,6 +3,7 @@ export * from './state.js';
 export * from './helpers.js';
 export * from './meta.js';
 export * from './analyze.js';
+export * from './answers.js';
 export * from './links.js';
 export * from './audit.js';
 export * from './redirects.js';

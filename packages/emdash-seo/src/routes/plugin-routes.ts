@@ -7,6 +7,7 @@ import { handleFuzzyRedirects } from './api-fuzzy-redirects.js';
 import { handleRunAudit, handleGetAudit } from './api-audit.js';
 import {
   handleStatelessAnalyze,
+  handleSeoAnswers,
   handleV1AuditRun,
   handleV1AuditLatest,
   handleV1Redirects,
@@ -129,6 +130,7 @@ export function createPluginRoutes(options: SeoPluginOptions): Record<string, an
 
   // Unified Typed REST API v1 routes
   registerRoute('_emdash/api/seo/v1/analyze', async (ctx: any) => handleStatelessAnalyze(ctx, options));
+  registerRoute('_emdash/api/seo/v1/answers', async (ctx: any) => handleSeoAnswers(ctx, options), { public: true });
   registerRoute('_emdash/api/seo/v1/links/opportunities', async (ctx: any) => handleLinkOpportunities(ctx, options));
   registerRoute('_emdash/api/seo/v1/meta', async (ctx: any) => {
     const req = ctx?.request || ctx?.req;
