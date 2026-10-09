@@ -31,7 +31,7 @@ export function EditorFaqTab({ faqs, onChange }: EditorFaqTabProps) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
       {faqs.length === 0 && (
         <div style={{ padding: '0.75rem', borderRadius: 6, background: 'var(--color-kumo-recessed, #141414)', border: '1px dashed var(--color-kumo-line, rgba(255, 255, 255, 0.15))', color: 'var(--text-color-kumo-subtle, #a0a0a0)', textAlign: 'center', fontSize: '0.75rem' }}>
-          No FAQs yet. Add question/answer pairs for FAQ rich snippets.
+          No FAQs yet. Add question/answer pairs for FAQ schema markup and AI answers.
         </div>
       )}
       {faqs.map((faq, idx) => (
