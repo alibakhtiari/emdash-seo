@@ -7,12 +7,64 @@ export function setLatestV1AuditSnapshot(snapshot: AuditSnapshot | null): void {
   latestV1AuditSnapshot = snapshot;
 }
 
+export interface AuditHistoryPoint {
+  at: string;
+  healthScore: number;
+  totalPages: number;
+  critical: number;
+  warning: number;
+}
+
+export const AUDIT_HISTORY_KV_KEY = 'seo:audit:history';
+const AUDIT_HISTORY_MAX = 30;
+
+let auditHistory: AuditHistoryPoint[] = [];
+
+function toHistoryPoint(snapshot: AuditSnapshot): AuditHistoryPoint {
+  return {
+    at: snapshot.completedAt || snapshot.startedAt || new Date().toISOString(),
+    healthScore: snapshot.healthScore,
+    totalPages: snapshot.totalPages,
+    critical: snapshot.issuesCritical,
+    warning: snapshot.issuesWarning,
+  };
+}
+
+/** Append a snapshot to the capped history (memory + KV, best-effort). */
+export async function appendAuditHistory(ctx: any, snapshot: AuditSnapshot): Promise<void> {
+  const point = toHistoryPoint(snapshot);
+  auditHistory.push(point);
+  if (auditHistory.length > AUDIT_HISTORY_MAX) auditHistory = auditHistory.slice(-AUDIT_HISTORY_MAX);
+  try {
+    await ctx?.kv?.set?.(AUDIT_HISTORY_KV_KEY, auditHistory);
+  } catch {
+    // Memory fallback already updated
+  }
+}
+
+/** Load history newest-last (memory first, KV fallback). */
+export async function getAuditHistory(ctx: any): Promise<AuditHistoryPoint[]> {
+  if (auditHistory.length > 0) return [...auditHistory];
+  try {
+    const raw = await ctx?.kv?.get?.(AUDIT_HISTORY_KV_KEY);
+    const items = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    if (Array.isArray(items)) {
+      auditHistory = items.slice(-AUDIT_HISTORY_MAX);
+      return [...auditHistory];
+    }
+  } catch {
+    // Fall through empty
+  }
+  return [];
+}
+
 export let v1RedirectRules: RedirectRule[] = [];
 
 export let v1NotFoundLogs: NotFoundEntry[] = [];
 
 export function resetApiV1State(): void {
   latestV1AuditSnapshot = null;
+  auditHistory = [];
   v1RedirectRules = [];
   v1NotFoundLogs = [];
 }

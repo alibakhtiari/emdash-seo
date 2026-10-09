@@ -31,6 +31,7 @@ async function callSeoApi(path: string, init?: RequestInit): Promise<Record<stri
 
 export function AuditTab() {
   const [audit, setAudit] = React.useState<AuditSnapshot | null>(null);
+  const [history, setHistory] = React.useState<Array<{ at: string; healthScore: number; totalPages: number; critical: number; warning: number }>>([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -43,6 +44,9 @@ export function AuditTab() {
         run ? { method: 'POST', body: JSON.stringify({}) } : undefined
       );
       setAudit((data.audit as AuditSnapshot | null) ?? null);
+      if (Array.isArray(data.history)) {
+        setHistory(data.history.slice(-30));
+      }
       if (!data.audit && typeof data.message === 'string') setError(data.message);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -74,6 +78,23 @@ export function AuditTab() {
             <span>Critical: <strong>{audit.issuesCritical}</strong></span>
             <span>Warnings: <strong>{audit.issuesWarning}</strong></span>
           </div>
+          {history.length > 1 && (
+            <div style={{ marginBottom: '1rem' }}>
+              <div style={subtle}>Health trend (last {history.length} runs)</div>
+              <svg width="100%" height="44" viewBox="0 0 300 44" role="img" aria-label="Audit health trend">
+                <polyline
+                  fill="none"
+                  stroke="var(--color-kumo-brand, #f6821f)"
+                  strokeWidth="2"
+                  points={history.map((h, i) => `${(i / Math.max(1, history.length - 1)) * 296 + 2},${42 - (Math.max(0, Math.min(100, h.healthScore)) / 100) * 38}`).join(' ')}
+                />
+              </svg>
+              <div style={subtle}>
+                {history[history.length - 1].healthScore - history[0].healthScore >= 0 ? '+' : ''}
+                {history[history.length - 1].healthScore - history[0].healthScore} since {new Date(history[0].at).toLocaleDateString()}
+              </div>
+            </div>
+          )}
           <table style={tableStyle}>
             <thead>
               <tr><th style={thStyle}>URL</th><th style={thStyle}>Score</th><th style={thStyle}>Issues</th></tr>

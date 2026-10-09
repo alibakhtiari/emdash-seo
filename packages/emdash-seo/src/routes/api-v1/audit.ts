@@ -1,7 +1,7 @@
 import type { SeoPluginOptions, AuditSnapshot } from '../../types.js';
 import { runSitewideAudit, type AuditEntryInput } from '../../engine/audit-runner.js';
 import { jsonResponse, parseRequestBody } from './helpers.js';
-import { latestV1AuditSnapshot, setLatestV1AuditSnapshot } from './state.js';
+import { latestV1AuditSnapshot, setLatestV1AuditSnapshot, appendAuditHistory, getAuditHistory } from './state.js';
 
 export async function handleV1AuditRun(ctx: any, _options: SeoPluginOptions): Promise<Response> {
   let entries: AuditEntryInput[] = [];
@@ -73,6 +73,7 @@ export async function handleV1AuditRun(ctx: any, _options: SeoPluginOptions): Pr
 
   const snapshot: AuditSnapshot = runSitewideAudit(entries);
   setLatestV1AuditSnapshot(snapshot);
+  await appendAuditHistory(ctx, snapshot);
 
   if (ctx?.kv?.set) {
     try {
@@ -106,6 +107,7 @@ export async function handleV1AuditLatest(ctx: any, _options: SeoPluginOptions):
     return jsonResponse({
       success: true,
       audit: null,
+      history: await getAuditHistory(ctx),
       message: 'No sitewide audit has been executed yet.',
     });
   }
@@ -113,5 +115,6 @@ export async function handleV1AuditLatest(ctx: any, _options: SeoPluginOptions):
   return jsonResponse({
     success: true,
     audit,
+    history: await getAuditHistory(ctx),
   });
 }

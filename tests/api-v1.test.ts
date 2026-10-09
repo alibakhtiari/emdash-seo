@@ -415,6 +415,19 @@ describe('Unified REST API v1 (docs/EMDASH_ADMIN_AND_API_INTEGRATION.md)', () =>
       expect(json.audit).toBeNull();
       expect(json.message).toContain('No sitewide audit has been executed yet');
     });
+
+    it('appends capped history across runs and exposes it on latest', async () => {
+      const entries = [
+        { id: 'h1', slug: 'a', title: 'A Page With A Sufficiently Long Title Here', content: 'Word '.repeat(400), metaTitle: 'A Page With A Sufficiently Long Title Here', metaDescription: 'Desc '.repeat(30), focusKeywords: ['a page'] },
+      ];
+      await handleV1AuditRun({ entries }, options);
+      await handleV1AuditRun({ entries }, options);
+      const res = await handleV1AuditLatest({}, options);
+      const json: any = await res.json();
+      expect(Array.isArray(json.history)).toBe(true);
+      expect(json.history.length).toBe(2);
+      expect(typeof json.history[1].healthScore).toBe('number');
+    });
   });
 
   describe('7. handleV1Redirects (GET / POST /_emdash/api/seo/v1/redirects)', () => {
