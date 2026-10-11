@@ -44,14 +44,22 @@ Verify per task: `pnpm vitest run`, `pnpm run typecheck`, `pnpm run lint`.
   `availability`, `shipping` fields flowing into the Product emitter instead of
   `schemaOverrides` passthrough only (`types.ts`, `engine/schema-builder.ts`,
   editor widget).
-- [ ] Email reports/webhooks: scheduled audit digest (opt-in settings keys +
-  host email/cron access) with score deltas and top issues.
+- [x] Email reports (`engine/digest.ts` + `plugin:activate` scheduling + `cron`
+  dispatch): weekly audit digest with score deltas, opt-in via `digest_enabled`/
+  `digest_email` settings, honest skip reasons, `email:send` capability declared.
+  Webhooks not shipped: outbound fetch is allowlist-bound (`allowedHosts`),
+  which cannot cover user URLs — recorded, not silently half-built.
+- [x] RSS footer / attachment redirect: verified host-side (`src/pages/rss.xml.ts`
+  renders the feed; attachment routing has no plugin request hook) — correctly
+  out of plugin scope, not built.
+- [x] HowTo/FAQ rich-result copy: corrected to "schema markup and AI answers"
+  (general sites are ineligible for FAQ rich results since 2023).
 - [ ] Multi-location entities: `locations[]` on the business profile emitting
   one node per branch (LocalBusiness + department/subOrganization links).
-- [ ] Generative Content-AI suggestions: rewrite/titleFAQ suggestions via
-  Workers AI when `env.AI` exists, lexical fallback otherwise. The
-  `getWorkersAiEmbeddings` stub (`engine/semantic-analyzer.ts`) is the seam —
-  wire it or delete it.
+- [ ] Generative Content-AI suggestions: rewrite/title FAQ copy via
+  `pickDirectAnswer`-style injection is done for ranking; full generative
+  rewrite suggestions still need a host-provided model call — open, small
+  (follow the `ctx.embedTexts` injection pattern).
 - [ ] Outbound-authority citation heuristic: reward links to authoritative
   domains in E-E-A-T scoring (today only counts exist via `external_links`).
 - [ ] Settings-template import: map RankMath `rank-math-options-titles` /
@@ -68,8 +76,11 @@ Verify per task: `pnpm vitest run`, `pnpm run typecheck`, `pnpm run lint`.
 - [ ] Corpus IDF + vector salience (incl. honest BM25 labeling: `idf` defaults
   to 1.0 at the sole call site) — blocked: sync `analyzeContent` has no async
   KV path; needs engine refactor. No dead code shipped instead.
-- [ ] IndexNow fan-out cron trigger — blocked: no host cron hook. The
-  `_emdash/api/seo/indexnow/fanout` route is ready for an external scheduler.
+- [x] IndexNow fan-out route + host cron scheduling (`plugin:activate` ensures
+  daily fan-out, `cron` dispatches to it; external scheduler still works)
+- [x] Embeddings bridged (not dead): `cosineSimilarity` + `pickDirectAnswer`
+  re-rank via `ctx.embedTexts` or `ctx.env.AI` bge-small, lexical fallback,
+  tested both paths
 
 ## Audit 2026-10-09 v2 — verified findings log (all claims checked line-level)
 
