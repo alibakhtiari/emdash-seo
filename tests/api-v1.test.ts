@@ -653,3 +653,23 @@ describe('10. handleIndexNowFanout (POST /_emdash/api/seo/indexnow/fanout)', () 
     expect(json.total).toBe(1);
   });
 });
+
+describe('11. pickDirectAnswer vector re-rank', () => {
+  it('prefers embedding similarity when the host provides embedTexts', async () => {
+    const { pickDirectAnswer } = await import('../packages/emdash-seo/src/routes/api-v1/answers.js');
+    const { cosineSimilarity } = await import('../packages/emdash-seo/src/engine/semantic-analyzer.js');
+    expect(cosineSimilarity([1, 0], [1, 0])).toBe(1);
+    expect(cosineSimilarity([1, 0], [0, 1])).toBe(0);
+    expect(cosineSimilarity([], [])).toBe(0);
+    const faqs = [
+      { question: 'How long is drying time?', answer: 'Under two hours.' },
+      { question: 'Do you move furniture?', answer: 'Yes, we move it.' },
+    ];
+    const ctx = {
+      embedTexts: async (texts: string[]) =>
+        texts.map((t) => (t.includes('furniture') || t.includes('move sofa') ? [0, 1] : [1, 0])),
+    };
+    expect(await pickDirectAnswer(ctx, 'do you move sofa', faqs)).toBe('Yes, we move it.');
+    expect(await pickDirectAnswer({}, 'quantum chromodynamics funding', faqs)).toBeNull();
+  });
+});

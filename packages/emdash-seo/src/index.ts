@@ -67,6 +67,7 @@ import {
   countSyllables,
   getReadingEaseLevel,
   getWorkersAiEmbeddings,
+  cosineSimilarity,
   ENGLISH_STOPWORDS,
   TOPIC_ENTITY_CLUSTERS,
 } from './engine/semantic-analyzer.js';
@@ -260,6 +261,7 @@ export {
   countSyllables,
   getReadingEaseLevel,
   getWorkersAiEmbeddings,
+  cosineSimilarity,
   ENGLISH_STOPWORDS,
   TOPIC_ENTITY_CLUSTERS,
   compilePrecomputedHead,
